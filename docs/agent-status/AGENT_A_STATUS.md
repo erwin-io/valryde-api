@@ -10,9 +10,9 @@
 - GitHub issues / PRs: [PR #1 — Agent A: Core Platform / Fastify API (IDs 1–11)](https://github.com/erwin-io/valryde-api/pull/1)
 - Implementation progress: READY_FOR_REVIEW
 - Tech Lead review decision (if actually issued): CHANGES_REQUIRED — Checklist ID 10 effective-route ambiguity; fix completed and pending re-review
-- Current objective: Push the deterministic effective-route contract fix to existing PR #1 for Tech Lead re-review.
+- Current objective: Await Tech Lead re-review of the deterministic effective-route contract now pushed to PR #1.
 - Last confirmed result: Final gate passed with 12 test files / 39 tests, 33-request credentialed Postman E2E / 35 assertions including effective-route resolution, build, dependency audit, and zero temporary E2E user rows.
-- Next concrete action: Push the verified fix to PR #1; Tech Lead re-reviews the contract. Agent A must not merge it.
+- Next concrete action: Tech Lead re-reviews PR #1 and issues the next decision. Agent A must not merge it.
 - Blocked by / decision owner: Real Google-client smoke test, production SMTP credentials/from-domain, permanent Admin credentials, and physical GPS/Traccar activation remain owner/operator-gated but do not block PR review.
 - Dependencies / affected agents: B (tracking/latest state/realtime), C (public route/live APIs), D (driver invitation and operator APIs), E (Admin APIs), F (device runbooks), G (shared-contract review).
 
@@ -72,8 +72,8 @@
 - Observed result (success/failure/rollback): Route assignment and group-membership mutations now use compatible row locks and reject ambiguity transactionally. Added `GET /jeepneys/{jeepneyId}/effective-route` and a reusable service resolver for Agent B. No schema migration was required.
 - Validation and evidence: Migrations, lint, typecheck, 12 files / 39 tests, build, Postman smoke, credentialed E2E 33 requests / 35 assertions, dependency audit, and diff check passed. Temporary E2E accounts and rows were removed; the cleanup transaction was retried after two pre-mutation command errors and verified zero temporary users.
 - Contracts / risks / dependencies: Agent B must use direct-over-group precedence from the API/service contract. Legacy ambiguous data is reported as `409 ROUTE_ASSIGNMENT_CONFLICT`; new ambiguous configurations are blocked at both mutation paths.
-- Commit/PR link or SHA (if available): PR #1; fix pending commit and push at this status update.
-- Next action / owner gate: Commit and push to existing PR #1 for Tech Lead re-review; do not merge.
+- Commit/PR link or SHA (if available): PR #1; effective-route fix commit `99e2929` pushed to the existing branch.
+- Next action / owner gate: Tech Lead re-review of existing PR #1; do not merge.
 
 ### 2026-10-19 16:54 +08:00 — CI credential scanner finding remediated
 
