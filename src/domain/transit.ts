@@ -39,6 +39,14 @@ export interface VehicleRouteAssignment {
   activeTo: Date | null;
 }
 
+export interface EffectiveRouteDirection {
+  source: 'DIRECT' | 'GROUP';
+  assignmentId: string;
+  groupId: string | null;
+  activeFrom: Date;
+  direction: RouteDirection;
+}
+
 export function serializeTransitRoute(route: TransitRoute) {
   return {
     ...route,
@@ -60,5 +68,13 @@ export function serializeVehicleRouteAssignment(assignment: VehicleRouteAssignme
     ...assignment,
     activeFrom: assignment.activeFrom.toISOString(),
     activeTo: assignment.activeTo?.toISOString() ?? null,
+  };
+}
+
+export function serializeEffectiveRouteDirection(effective: EffectiveRouteDirection) {
+  return {
+    ...effective,
+    activeFrom: effective.activeFrom.toISOString(),
+    direction: serializeRouteDirection(effective.direction),
   };
 }

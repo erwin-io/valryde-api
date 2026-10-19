@@ -373,7 +373,8 @@ export const fleetRoutes: FastifyPluginAsync<FleetRoutesOptions> = async (instan
         tags: [OpenApiTags.fleetGroups],
         operationId: 'addJeepneyToFleetGroup',
         summary: 'Add a jeepney to a fleet group',
-        description: 'Requires the jeepney and group to belong to the same Operator scope.',
+        description:
+          'Requires the jeepney and group to belong to the same Operator scope. Rejects membership that would make the jeepney inherit more than one active fleet-group route.',
         security: [{ bearerAuth: [] }],
         params: GroupIdParams,
         body: Type.Object({ jeepneyId: Uuid }, { additionalProperties: false }),

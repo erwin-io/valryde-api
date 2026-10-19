@@ -2,17 +2,17 @@
 
 ## Current snapshot
 
-- Updated at (ISO 8601, Asia/Manila): 2026-10-19T16:50:00+08:00
+- Updated at (ISO 8601, Asia/Manila): 2026-10-19T17:27:41+08:00
 - Agent / module: A — Core Platform / Fastify API
 - Repository: `erwin-io/valryde-api`
 - Branch / head: `feat/1-3-core-platform-foundation` / current PR #1 head (single clean Agent A commit)
 - Checklist IDs: 1–11
 - GitHub issues / PRs: [PR #1 — Agent A: Core Platform / Fastify API (IDs 1–11)](https://github.com/erwin-io/valryde-api/pull/1)
 - Implementation progress: READY_FOR_REVIEW
-- Tech Lead review decision (if actually issued): Not reviewed
-- Current objective: Publish the completed non-operator-gated Agent A implementation for Tech Lead review.
-- Last confirmed result: Final gate passed with 11 test files / 34 tests, live SMTP/Mailpit delivery, 32-request credentialed Postman E2E / 34 assertions, build, dependency audit, and zero residual E2E rows.
-- Next concrete action: Tech Lead reviews PR #1 and issues `ACCEPTED`, `CHANGES REQUIRED`, or `OPERATOR-GATED`; Agent A must not merge it.
+- Tech Lead review decision (if actually issued): CHANGES_REQUIRED — Checklist ID 10 effective-route ambiguity; fix completed and pending re-review
+- Current objective: Push the deterministic effective-route contract fix to existing PR #1 for Tech Lead re-review.
+- Last confirmed result: Final gate passed with 12 test files / 39 tests, 33-request credentialed Postman E2E / 35 assertions including effective-route resolution, build, dependency audit, and zero temporary E2E user rows.
+- Next concrete action: Push the verified fix to PR #1; Tech Lead re-reviews the contract. Agent A must not merge it.
 - Blocked by / decision owner: Real Google-client smoke test, production SMTP credentials/from-domain, permanent Admin credentials, and physical GPS/Traccar activation remain owner/operator-gated but do not block PR review.
 - Dependencies / affected agents: B (tracking/latest state/realtime), C (public route/live APIs), D (driver invitation and operator APIs), E (Admin APIs), F (device runbooks), G (shared-contract review).
 
@@ -29,31 +29,31 @@
 | 7 | Group Membership & Visibility | READY_FOR_REVIEW | Association, cross-operator rejection, group membership and Driver visibility PostgreSQL tests | Tech Lead review pending. |
 | 8 | Transit Route Management API | READY_FOR_REVIEW | Search, detail, pagination, OpenAPI, Postman and PostgreSQL/PostGIS tests | Downstream clients must adopt the pagination envelope. |
 | 9 | Route Direction Management | READY_FOR_REVIEW | GeoJSON/WGS84 validation, SRID 4326, GiST index, tests | Admin UI integration pending. |
-| 10 | Jeepney-to-Transit Assignment | READY_FOR_REVIEW | Migration 004, assignment API and ownership tests | Tech Lead contract review pending. |
+| 10 | Jeepney-to-Transit Assignment | READY_FOR_REVIEW | Direct-over-group effective-route resolver/API, transactional ambiguity guards on group assignment and membership, and five PostgreSQL scenarios | Tech Lead re-review pending. |
 | 11 | Vehicle Application/GPS workflow | READY_FOR_REVIEW | Migration 005, state-machine integration test, E2E through Admin GPS approval | Physical tracker/Traccar verification is operator-gated. |
 
 ## Latest verification
 
 | Command / check | Environment | Result | Date/time | Evidence / notes |
 |---|---|---|---|---|
-| `npm run db:migrate` | Local PostgreSQL 16 / `valrydedb` / `dbo,public` | PASSED | 2026-10-19 16:50 +08:00 | Migrations 001–005 idempotent. |
-| `npm run lint` | Local Node.js | PASSED | 2026-10-19 16:50 +08:00 | ESLint clean. |
-| `npm run typecheck` | Local Node.js | PASSED | 2026-10-19 16:50 +08:00 | TypeScript clean. |
-| `npm test` | Local PostgreSQL/PostGIS integration enabled | PASSED | 2026-10-19 16:50 +08:00 | 11 files, 34 tests. |
-| `npm run build` | Local Node.js | PASSED | 2026-10-19 16:50 +08:00 | Production TypeScript build succeeded. |
-| `npm run postman:smoke` | Live local API | PASSED | 2026-10-19 16:50 +08:00 | 2 requests, 5 assertions. Cloud publishing skipped because Postman login is not configured. |
-| Credentialed Postman E2E | Live API + Mailpit + PostgreSQL | PASSED | 2026-10-19 16:47 +08:00 | 32 requests, 34 assertions; physical GPS steps skipped; generated rows removed. |
-| `npm audit --audit-level=high` | Local lockfile | PASSED | 2026-10-19 16:50 +08:00 | Zero vulnerabilities reported. |
+| `npm run db:migrate` | Local PostgreSQL 16 / `valrydedb` / `dbo,public` | PASSED | 2026-10-19 17:25 +08:00 | Migrations 001–005 idempotent; no new migration required. |
+| `npm run lint` | Local Node.js | PASSED | 2026-10-19 17:25 +08:00 | ESLint clean. |
+| `npm run typecheck` | Local Node.js | PASSED | 2026-10-19 17:25 +08:00 | TypeScript clean. |
+| `npm test` | Local PostgreSQL/PostGIS integration enabled | PASSED | 2026-10-19 17:25 +08:00 | 12 files, 39 tests, including five effective-route contract scenarios. |
+| `npm run build` | Local Node.js | PASSED | 2026-10-19 17:25 +08:00 | Production TypeScript build succeeded. |
+| `npm run postman:smoke` | Live local API | PASSED | 2026-10-19 17:26 +08:00 | 2 requests, 5 assertions. Cloud publishing skipped because Postman login is not configured. |
+| Credentialed Postman E2E | Live API + Mailpit + PostgreSQL | PASSED | 2026-10-19 17:27 +08:00 | 33 requests, 35 assertions including effective-route resolution; physical GPS steps skipped; temporary accounts and domain rows removed. |
+| `npm audit --audit-level=high` | Local lockfile | PASSED | 2026-10-19 17:26 +08:00 | Zero vulnerabilities reported. |
 | PostGIS and residue check | `valrydedb` only | PASSED | 2026-10-19 16:49 +08:00 | PostGIS 3.6.2 / PG16; application and E2E row counts zero. |
-| `git diff --check` | Working tree | PASSED | 2026-10-19 16:50 +08:00 | No whitespace errors. |
+| `git diff --check` | Working tree | PASSED | 2026-10-19 17:27 +08:00 | No whitespace errors. |
 
 ## Shared contract / risk changes
 
-- API/DTO/schema/migration changes: Added `POST /auth/resend-verification`, `POST /driver-associations`, and `GET /transit-routes/{routeId}`. `GET /transit-routes` now accepts `q`, `page`, and `pageSize` and returns `pagination`. No new SQL migration was required.
+- API/DTO/schema/migration changes: Added `POST /auth/resend-verification`, `POST /driver-associations`, `GET /transit-routes/{routeId}`, and `GET /jeepneys/{jeepneyId}/effective-route`. `GET /transit-routes` accepts `q`, `page`, and `pageSize` and returns `pagination`. No new SQL migration was required.
 - Auth/RBAC/data-isolation impact: Challenge delivery is provider-neutral SMTP with environment-only configuration, hashed tokens, cooldown, supersession, invalidation, generic public responses, and provider-failure recovery. Driver association requires a verified DRIVER email and transactionally rejects cross-Operator claims.
-- Realtime/Traccar/geospatial impact: No realtime or Traccar implementation changed. OpenAPI categories 09–15 are metadata-only future contract areas. Existing WGS84/PostGIS behavior is unchanged.
+- Realtime/Traccar/geospatial impact: No realtime or Traccar implementation changed. Agent B now has a server-authoritative effective-route contract: active direct assignment wins; otherwise exactly one active group assignment is inherited; zero returns no route; multiple inherited routes return `409 ROUTE_ASSIGNMENT_CONFLICT`.
 - Secrets/security/privacy impact: No credentials are tracked. Postman environment values remain blank; runtime E2E credentials were generated in memory and removed. SMTP credentials, JWTs, challenge tokens, and Admin passwords are absent from source, logs, docs, and checked-in Postman data.
-- Required Tech Lead or owner decision: Review/freeze the new resend, Driver association, and paginated transit contracts before Agents C–E consume them.
+- Required Tech Lead or owner decision: Re-review/freeze Checklist ID 10. Agent B must consume the effective-route endpoint or shared service resolver rather than reproduce precedence logic.
 
 ## Operator / hardware / external gates
 
@@ -63,6 +63,17 @@
 - Gate: Physical GPS/Traccar mapping and activation. Required actor: operator/Agent F/Agent B. Requested evidence: power, SIM/APN, server connectivity, GPS fix, correct IMEI/uniqueId mapping. State: OWNER_VERIFICATION_PENDING.
 
 ## Activity log (newest first; preserve prior entries)
+
+### 2026-10-19 17:27 +08:00 — Checklist ID 10 effective-route ambiguity resolved
+
+- Action / reason: Implemented the Tech Lead `CHANGES_REQUIRED` decision by defining one deterministic effective route per jeepney: direct assignment overrides group assignment; more than one inherited active group route is rejected as a configuration conflict.
+- Checklist/issue: Agent A Checklist ID 10; PR #1 review finding.
+- Files/config/services affected: Transit domain/service/routes, fleet membership service/routes, PostgreSQL integration tests, Postman collection, OpenAPI mapping, canonical Agent A status.
+- Observed result (success/failure/rollback): Route assignment and group-membership mutations now use compatible row locks and reject ambiguity transactionally. Added `GET /jeepneys/{jeepneyId}/effective-route` and a reusable service resolver for Agent B. No schema migration was required.
+- Validation and evidence: Migrations, lint, typecheck, 12 files / 39 tests, build, Postman smoke, credentialed E2E 33 requests / 35 assertions, dependency audit, and diff check passed. Temporary E2E accounts and rows were removed; the cleanup transaction was retried after two pre-mutation command errors and verified zero temporary users.
+- Contracts / risks / dependencies: Agent B must use direct-over-group precedence from the API/service contract. Legacy ambiguous data is reported as `409 ROUTE_ASSIGNMENT_CONFLICT`; new ambiguous configurations are blocked at both mutation paths.
+- Commit/PR link or SHA (if available): PR #1; fix pending commit and push at this status update.
+- Next action / owner gate: Commit and push to existing PR #1 for Tech Lead re-review; do not merge.
 
 ### 2026-10-19 16:54 +08:00 — CI credential scanner finding remediated
 

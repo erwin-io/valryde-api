@@ -302,6 +302,15 @@
           "event": [{ "listen": "test", "script": { "type": "text/javascript", "exec": ["pm.test('route assigned', () => pm.response.to.have.status(201));"] } }]
         },
         {
+          "name": "Resolve jeepney effective route",
+          "request": {
+            "method": "GET",
+            "header": [{ "key": "Authorization", "value": "Bearer {{operatorAccessToken}}" }],
+            "url": "{{baseUrl}}/jeepneys/{{jeepneyId}}/effective-route"
+          },
+          "event": [{ "listen": "test", "script": { "type": "text/javascript", "exec": ["pm.test('direct route is the effective route', () => { pm.response.to.have.status(200); const effective = pm.response.json().effectiveRouteDirection; pm.expect(effective.source).to.eql('DIRECT'); pm.expect(effective.direction.id).to.eql(pm.environment.get('routeDirectionId')); });"] } }]
+        },
+        {
           "name": "Submit vehicle application",
           "request": {
             "method": "POST",

@@ -306,12 +306,52 @@ export class FleetService {
     if (jeepney.operatorId !== group.operatorId) {
       throw new ApiError(403, 'FORBIDDEN', 'Jeepney does not belong to this operator');
     }
-    await this.pool.query(
-      `INSERT INTO fleet_group_jeepneys(group_id, jeepney_id) VALUES ($1, $2)
-       ON CONFLICT DO NOTHING`,
-      [groupId, jeepneyId],
-    );
-    await this.audit(actor.id, 'FLEET_GROUP_JEEPNEY_ADDED', 'FLEET_GROUP', groupId, { jeepneyId });
+    const client = await this.pool.connect();
+    try {
+      await client.query('BEGIN');
+      await client.query('SELECT 1 FROM fleet_groups WHERE id = $1 FOR UPDATE', [groupId]);
+      await client.query('SELECT 1 FROM jeepneys WHERE id = $1 FOR UPDATE', [jeepneyId]);
+      const conflict = await client.query(
+        `SELECT 1
+         FROM vehicle_route_assignments target_assignment
+         JOIN fleet_group_jeepneys existing_membership
+           ON existing_membership.jeepney_id = $2
+          AND existing_membership.group_id <> $1
+         JOIN vehicle_route_assignments existing_assignment
+           ON existing_assignment.group_id = existing_membership.group_id
+          AND existing_assignment.active_to IS NULL
+         WHERE target_assignment.group_id = $1
+           AND target_assignment.active_to IS NULL
+         LIMIT 1`,
+        [groupId, jeepneyId],
+      );
+      if (conflict.rowCount !== 0) {
+        throw new ApiError(
+          409,
+          'ROUTE_ASSIGNMENT_CONFLICT',
+          'Jeepney cannot inherit active routes from more than one fleet group',
+        );
+      }
+      await client.query(
+        `INSERT INTO fleet_group_jeepneys(group_id, jeepney_id) VALUES ($1, $2)
+         ON CONFLICT DO NOTHING`,
+        [groupId, jeepneyId],
+      );
+      await this.audit(
+        actor.id,
+        'FLEET_GROUP_JEEPNEY_ADDED',
+        'FLEET_GROUP',
+        groupId,
+        { jeepneyId },
+        client,
+      );
+      await client.query('COMMIT');
+    } catch (error) {
+      await client.query('ROLLBACK');
+      throw error;
+    } finally {
+      client.release();
+    }
   }
 
   async assignDriver(actor: User, jeepneyId: string, driverId: string): Promise<DriverAssignment> {

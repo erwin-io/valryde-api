@@ -4,6 +4,7 @@ import { Type } from 'typebox';
 
 import type { User } from '../domain/identity.js';
 import {
+  serializeEffectiveRouteDirection,
   serializeRouteDirection,
   serializeTransitRoute,
   serializeVehicleRouteAssignment,
@@ -73,6 +74,13 @@ const AssignmentSchema = Type.Object({
   assignedByUserId: Uuid,
   activeFrom: DateTime,
   activeTo: Type.Union([DateTime, Type.Null()]),
+});
+const EffectiveRouteDirectionSchema = Type.Object({
+  source: Type.Union([Type.Literal('DIRECT'), Type.Literal('GROUP')]),
+  assignmentId: Uuid,
+  groupId: Type.Union([Uuid, Type.Null()]),
+  activeFrom: DateTime,
+  direction: DirectionSchema,
 });
 const PaginationSchema = Type.Object({
   page: Type.Integer({ minimum: 1 }),
@@ -360,6 +368,41 @@ export const transitRoutes: FastifyPluginAsync<TransitRoutesOptions> = async (in
         request.body,
       );
       return reply.code(201).send({ assignment: serializeVehicleRouteAssignment(assignment) });
+    },
+  );
+
+  fastify.get(
+    '/jeepneys/:jeepneyId/effective-route',
+    {
+      preHandler: fastify.requireRoles('DRIVER', 'OPERATOR', 'ADMIN'),
+      schema: {
+        tags: [OpenApiTags.transit],
+        operationId: 'getJeepneyEffectiveRoute',
+        summary: 'Resolve a jeepney effective route direction',
+        description:
+          'Returns the single server-authoritative route direction for a permitted jeepney. An active direct jeepney assignment takes precedence; otherwise exactly one active fleet-group assignment is used. Multiple inherited group assignments produce ROUTE_ASSIGNMENT_CONFLICT.',
+        security: [{ bearerAuth: [] }],
+        params: Type.Object({ jeepneyId: Uuid }),
+        response: {
+          200: Type.Object({
+            effectiveRouteDirection: Type.Union([EffectiveRouteDirectionSchema, Type.Null()]),
+          }),
+          401: ErrorSchema,
+          403: ErrorSchema,
+          404: ErrorSchema,
+          409: ErrorSchema,
+        },
+      },
+    },
+    async (request) => {
+      const effective = await options.transitService.getEffectiveRouteDirection(
+        requireUser(request.currentUser),
+        request.params.jeepneyId,
+      );
+      return {
+        effectiveRouteDirection:
+          effective === null ? null : serializeEffectiveRouteDirection(effective),
+      };
     },
   );
 };

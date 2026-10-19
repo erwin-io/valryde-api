@@ -54,6 +54,12 @@ The OpenAPI server URL is `/api`; paths below are relative to that base. Categor
 - `POST /admin/transit-routes/{routeId}/directions` — `createRouteDirection`
 - `PATCH /admin/route-directions/{directionId}` — `updateRouteDirection`
 - `POST /route-assignments` — `assignTransitRoute`
+- `GET /jeepneys/{jeepneyId}/effective-route` — `getJeepneyEffectiveRoute`
+
+Effective-route precedence is server-owned: an active direct jeepney assignment wins; otherwise one
+active group assignment is inherited. Zero group assignments returns `null`; an ambiguous legacy
+configuration returns `409 ROUTE_ASSIGNMENT_CONFLICT`. Agents B–E must consume this endpoint or the
+shared `TransitService.resolveEffectiveRouteDirection()` method instead of recreating precedence logic.
 
 ## 07 — Vehicle Applications & Approvals
 

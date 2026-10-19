@@ -2,6 +2,7 @@ import type pg from 'pg';
 
 import type { User } from '../domain/identity.js';
 import type {
+  EffectiveRouteDirection,
   LineStringGeometry,
   RecordStatus,
   RouteDirection,
@@ -42,6 +43,12 @@ interface AssignmentRow {
   assigned_by_user_id: string;
   active_from: Date;
   active_to: Date | null;
+}
+
+interface EffectiveRouteRow extends DirectionRow {
+  assignment_id: string;
+  assignment_group_id: string | null;
+  assignment_active_from: Date;
 }
 
 export class TransitService {
@@ -275,6 +282,40 @@ export class TransitService {
     const client = await this.pool.connect();
     try {
       await client.query('BEGIN');
+      if (input.jeepneyId !== undefined) {
+        await client.query('SELECT 1 FROM jeepneys WHERE id = $1 FOR UPDATE', [input.jeepneyId]);
+      } else {
+        await client.query('SELECT 1 FROM fleet_groups WHERE id = $1 FOR UPDATE', [input.groupId]);
+        await client.query(
+          `SELECT j.id
+           FROM fleet_group_jeepneys fgj
+           JOIN jeepneys j ON j.id = fgj.jeepney_id
+           WHERE fgj.group_id = $1
+           ORDER BY j.id
+           FOR UPDATE OF j`,
+          [input.groupId],
+        );
+        const conflict = await client.query(
+          `SELECT target_membership.jeepney_id
+           FROM fleet_group_jeepneys target_membership
+           JOIN fleet_group_jeepneys other_membership
+             ON other_membership.jeepney_id = target_membership.jeepney_id
+            AND other_membership.group_id <> target_membership.group_id
+           JOIN vehicle_route_assignments other_assignment
+             ON other_assignment.group_id = other_membership.group_id
+            AND other_assignment.active_to IS NULL
+           WHERE target_membership.group_id = $1
+           LIMIT 1`,
+          [input.groupId],
+        );
+        if (conflict.rowCount !== 0) {
+          throw new ApiError(
+            409,
+            'ROUTE_ASSIGNMENT_CONFLICT',
+            'Group assignment would give a jeepney more than one active group route',
+          );
+        }
+      }
       await client.query(
         `UPDATE vehicle_route_assignments SET active_to = now()
          WHERE active_to IS NULL
@@ -309,6 +350,41 @@ export class TransitService {
     }
   }
 
+  async getEffectiveRouteDirection(
+    actor: User,
+    jeepneyId: string,
+  ): Promise<EffectiveRouteDirection | null> {
+    await this.assertCanReadJeepney(actor, jeepneyId);
+    return this.resolveEffectiveRouteDirection(jeepneyId);
+  }
+
+  async resolveEffectiveRouteDirection(jeepneyId: string): Promise<EffectiveRouteDirection | null> {
+    const direct = await this.pool.query<EffectiveRouteRow>(
+      `${effectiveDirectionSelect}
+       WHERE assignment.jeepney_id = $1 AND assignment.active_to IS NULL`,
+      [jeepneyId],
+    );
+    const directRow = direct.rows[0];
+    if (directRow !== undefined) return mapEffectiveRoute(directRow, 'DIRECT');
+
+    const group = await this.pool.query<EffectiveRouteRow>(
+      `${effectiveDirectionSelect}
+       JOIN fleet_group_jeepneys membership ON membership.group_id = assignment.group_id
+       WHERE membership.jeepney_id = $1 AND assignment.active_to IS NULL
+       ORDER BY assignment.active_from DESC, assignment.id`,
+      [jeepneyId],
+    );
+    if (group.rows.length > 1) {
+      throw new ApiError(
+        409,
+        'ROUTE_ASSIGNMENT_CONFLICT',
+        'Jeepney inherits more than one active fleet-group route',
+      );
+    }
+    const groupRow = group.rows[0];
+    return groupRow === undefined ? null : mapEffectiveRoute(groupRow, 'GROUP');
+  }
+
   private async actorOperator(actor: User): Promise<string> {
     if (!actor.roles.includes('OPERATOR')) {
       throw new ApiError(403, 'FORBIDDEN', 'An Operator account is required');
@@ -320,6 +396,34 @@ export class TransitService {
     const id = result.rows[0]?.id;
     if (id === undefined) throw new ApiError(403, 'FORBIDDEN', 'Active operator profile required');
     return id;
+  }
+
+  private async assertCanReadJeepney(actor: User, jeepneyId: string): Promise<void> {
+    if (actor.roles.includes('ADMIN')) {
+      const result = await this.pool.query('SELECT 1 FROM jeepneys WHERE id = $1', [jeepneyId]);
+      if (result.rowCount !== 1) throw new ApiError(404, 'NOT_FOUND', 'Jeepney not found');
+      return;
+    }
+    if (actor.roles.includes('OPERATOR')) {
+      await this.requireOwned('jeepneys', jeepneyId, await this.actorOperator(actor));
+      return;
+    }
+    if (actor.roles.includes('DRIVER')) {
+      const result = await this.pool.query(
+        `SELECT 1
+         FROM jeepneys j
+         JOIN drivers d ON d.user_id = $2
+         LEFT JOIN driver_jeepney_assignments dja
+           ON dja.jeepney_id = j.id AND dja.driver_id = d.id AND dja.active_to IS NULL
+         LEFT JOIN fleet_group_jeepneys fgj ON fgj.jeepney_id = j.id
+         LEFT JOIN fleet_group_drivers fgd ON fgd.group_id = fgj.group_id AND fgd.driver_id = d.id
+         WHERE j.id = $1 AND (j.created_by_user_id = $2 OR dja.id IS NOT NULL OR fgd.driver_id IS NOT NULL)`,
+        [jeepneyId, actor.id],
+      );
+      if (result.rowCount !== 1) throw new ApiError(403, 'FORBIDDEN', 'Jeepney is outside driver scope');
+      return;
+    }
+    throw new ApiError(403, 'FORBIDDEN', 'This role cannot view effective route assignments');
   }
 
   private async requireOwned(table: 'jeepneys' | 'fleet_groups', id: string, operatorId: string) {
@@ -378,6 +482,14 @@ const directionInsert = `INSERT INTO route_directions(
 const directionReturning = `id, route_id, direction_label, origin_name, destination_name,
   ST_AsGeoJSON(geometry)::json AS geometry, corridor_m, status, created_at, updated_at`;
 
+const effectiveDirectionSelect = `SELECT assignment.id AS assignment_id,
+  assignment.group_id AS assignment_group_id, assignment.active_from AS assignment_active_from,
+  rd.id, rd.route_id, rd.direction_label, rd.origin_name, rd.destination_name,
+  ST_AsGeoJSON(rd.geometry)::json AS geometry, rd.corridor_m, rd.status,
+  rd.created_at, rd.updated_at
+  FROM vehicle_route_assignments assignment
+  JOIN route_directions rd ON rd.id = assignment.route_direction_id`;
+
 function mapRoute(row: RouteRow): TransitRoute {
   return {
     id: row.id,
@@ -415,6 +527,19 @@ function mapAssignment(row: AssignmentRow): VehicleRouteAssignment {
     assignedByUserId: row.assigned_by_user_id,
     activeFrom: row.active_from,
     activeTo: row.active_to,
+  };
+}
+
+function mapEffectiveRoute(
+  row: EffectiveRouteRow,
+  source: EffectiveRouteDirection['source'],
+): EffectiveRouteDirection {
+  return {
+    source,
+    assignmentId: row.assignment_id,
+    groupId: row.assignment_group_id,
+    activeFrom: row.assignment_active_from,
+    direction: mapDirection(row),
   };
 }
 
