@@ -2,50 +2,50 @@
 
 ## Current snapshot
 
-- Updated at (ISO 8601, Asia/Manila): 2026-10-19T17:43:28+08:00
+- Updated at (ISO 8601, Asia/Manila): 2026-10-19T17:55:47+08:00
 - Agent / module: A — Core Platform / Fastify API
 - Repository: `erwin-io/valryde-api`
-- Branch / head: `feat/1-3-core-platform-foundation` / Driver authorization fix `fdebfc5bc170d66afb8fdfdaaea0858047d9ec15` plus this status handoff
+- Branch / head: canonical `main` / merge `711f4c45967e192be155e05e72714b99645ecc7d`; post-merge documentation branch `docs/agent-a-post-merge-handoff`
 - Checklist IDs: 1–11
 - GitHub issues / PRs: [PR #1 — Agent A: Core Platform / Fastify API (IDs 1–11)](https://github.com/erwin-io/valryde-api/pull/1)
-- Implementation progress: READY_FOR_REVIEW
-- Tech Lead review decision (if actually issued): CHANGES_REQUIRED — remaining DRIVER exact-row-count authorization defect fixed; pending re-review
-- Current objective: Await Tech Lead re-review of the scoped DRIVER existence-authorization correction on PR #1.
-- Last confirmed result: Final gate passed with 12 test files / 40 tests; authorized multi-group Driver receives 200 and unrelated Driver receives 403; build, Postman smoke, dependency audit, and diff check passed.
-- Next concrete action: Tech Lead re-reviews PR #1 and issues the next decision. Agent A must not merge it.
-- Blocked by / decision owner: Real Google-client smoke test, production SMTP credentials/from-domain, permanent Admin credentials, and physical GPS/Traccar activation remain owner/operator-gated but do not block PR review.
+- Implementation progress: DONE_AFTER_ACCEPTANCE
+- Tech Lead review decision (if actually issued): ACCEPTED — PR #1 merged to `main`
+- Current objective: Provide the frozen Agent A contracts to Agents B–E and remain available for clarification.
+- Last confirmed result: Canonical `main` synchronized to merge SHA `711f4c45967e192be155e05e72714b99645ecc7d`; migrations, contracts, 12 test files / 40 tests, build, Postman smoke, audit, and diff checks passed post-merge.
+- Next concrete action: Agents B–E integrate against `docs/AGENT_A_DOWNSTREAM_INTEGRATION_HANDOFF.md`; Agent A makes no new feature changes without Tech Lead authorization.
+- Blocked by / decision owner: No remaining Agent A source blocker. Real Google-client smoke test, production SMTP credentials/from-domain, permanent Admin credentials, and physical GPS/Traccar activation remain owner/operator-gated and do not invalidate acceptance.
 - Dependencies / affected agents: B (tracking/latest state/realtime), C (public route/live APIs), D (driver invitation and operator APIs), E (Admin APIs), F (device runbooks), G (shared-contract review).
 
 ## Checklist coverage
 
 | Checklist ID | Feature / slice | Progress | Evidence (files/tests/PR) | Blocker / next action |
 |---:|---|---|---|---|
-| 1 | Authentication, JWT & Google Sign-In | READY_FOR_REVIEW | Provider-neutral SMTP/Mailpit delivery, resend/recovery safety, Google verifier fixtures, auth tests | Real Google client smoke test and production SMTP configuration are owner-gated. |
-| 2 | Role-Based Access Control | READY_FOR_REVIEW | `src/plugins/authorization.ts`, negative RBAC integration tests | Tech Lead review and downstream client integration pending. |
-| 3 | User/Profile and first Admin | READY_FOR_REVIEW | Admin CLI and unit/PostgreSQL tests; temporary E2E Admin created and removed | Permanent Admin credentials remain owner-supplied. |
-| 4 | Jeepney Management | READY_FOR_REVIEW | `src/routes/fleet-routes.ts`, migration 003, PostgreSQL fleet test | UI/client integration pending. |
-| 5 | Driver-to-Jeepney Assignment | READY_FOR_REVIEW | Verified-email Driver association plus same-operator assignment integration tests | Tech Lead review pending. |
-| 6 | Fleet Group Management | READY_FOR_REVIEW | Fleet group API, migration 003, PostgreSQL test | Tech Lead review pending. |
-| 7 | Group Membership & Visibility | READY_FOR_REVIEW | Association, cross-operator rejection, group membership and Driver visibility PostgreSQL tests | Tech Lead review pending. |
-| 8 | Transit Route Management API | READY_FOR_REVIEW | Search, detail, pagination, OpenAPI, Postman and PostgreSQL/PostGIS tests | Downstream clients must adopt the pagination envelope. |
-| 9 | Route Direction Management | READY_FOR_REVIEW | GeoJSON/WGS84 validation, SRID 4326, GiST index, tests | Admin UI integration pending. |
-| 10 | Jeepney-to-Transit Assignment | READY_FOR_REVIEW | Direct-over-group effective-route resolver/API, transactional ambiguity guards, five precedence scenarios, and DRIVER multi-group authorization/denial PostgreSQL coverage | Tech Lead re-review pending. |
-| 11 | Vehicle Application/GPS workflow | READY_FOR_REVIEW | Migration 005, state-machine integration test, E2E through Admin GPS approval | Physical tracker/Traccar verification is operator-gated. |
+| 1 | Authentication, JWT & Google Sign-In | DONE_AFTER_ACCEPTANCE | Provider-neutral SMTP/Mailpit delivery, resend/recovery safety, Google verifier fixtures, auth tests, merged PR #1 | Real Google client smoke test and production SMTP configuration are owner-gated. |
+| 2 | Role-Based Access Control | DONE_AFTER_ACCEPTANCE | `src/plugins/authorization.ts`, negative RBAC integration tests, merged PR #1 | Downstream clients must preserve server authority. |
+| 3 | User/Profile and first Admin | DONE_AFTER_ACCEPTANCE | Admin CLI and unit/PostgreSQL tests; merged PR #1 | Permanent Admin credentials remain owner-supplied. |
+| 4 | Jeepney Management | DONE_AFTER_ACCEPTANCE | `src/routes/fleet-routes.ts`, migration 003, PostgreSQL fleet test, merged PR #1 | UI/client integration pending. |
+| 5 | Driver-to-Jeepney Assignment | DONE_AFTER_ACCEPTANCE | Verified-email Driver association plus same-operator assignment integration tests, merged PR #1 | Downstream integration pending. |
+| 6 | Fleet Group Management | DONE_AFTER_ACCEPTANCE | Fleet group API, migration 003, PostgreSQL test, merged PR #1 | Downstream integration pending. |
+| 7 | Group Membership & Visibility | DONE_AFTER_ACCEPTANCE | Cross-operator denial, membership visibility, multi-group DRIVER authorization tests, merged PR #1 | Downstream clients must preserve scope. |
+| 8 | Transit Route Management API | DONE_AFTER_ACCEPTANCE | Search, detail, pagination, OpenAPI, Postman and PostgreSQL/PostGIS tests, merged PR #1 | Downstream clients must adopt the pagination envelope. |
+| 9 | Route Direction Management | DONE_AFTER_ACCEPTANCE | GeoJSON/WGS84 validation, SRID 4326, GiST index, tests, merged PR #1 | Admin UI integration pending. |
+| 10 | Jeepney-to-Transit Assignment | DONE_AFTER_ACCEPTANCE | Frozen effective-route contract, transactional ambiguity guards, PostgreSQL coverage, merged PR #1 | Agent B must consume the shared resolver/endpoint. |
+| 11 | Vehicle Application/GPS workflow | DONE_AFTER_ACCEPTANCE | Migration 005, state-machine integration test, E2E through Admin GPS approval, merged PR #1 | Physical tracker/Traccar verification is operator-gated. |
 
 ## Latest verification
 
 | Command / check | Environment | Result | Date/time | Evidence / notes |
 |---|---|---|---|---|
-| `npm run db:migrate` | Local PostgreSQL 16 / `valrydedb` / `dbo,public` | PASSED | 2026-10-19 17:42 +08:00 | Migrations 001–005 idempotent; no new migration required. |
-| `npm run lint` | Local Node.js | PASSED | 2026-10-19 17:42 +08:00 | ESLint clean. |
-| `npm run typecheck` | Local Node.js | PASSED | 2026-10-19 17:42 +08:00 | TypeScript clean. |
-| `npm test` | Local PostgreSQL/PostGIS integration enabled | PASSED | 2026-10-19 17:43 +08:00 | 12 files, 40 tests; includes authorized multi-group Driver 200 and unrelated Driver 403. |
-| `npm run build` | Local Node.js | PASSED | 2026-10-19 17:43 +08:00 | Production TypeScript build succeeded. |
-| `npm run postman:smoke` | Live local API | PASSED | 2026-10-19 17:43 +08:00 | 2 requests, 5 assertions. Cloud publishing skipped because Postman login is not configured. |
+| `npm run db:migrate` | Canonical merged `main`; local PostgreSQL 16 / `valrydedb` / `dbo,public` | PASSED | 2026-10-19 17:55 +08:00 | Migrations 001–005 idempotent on merge SHA `711f4c4`. |
+| `npm run lint` | Canonical merged `main`; local Node.js | PASSED | 2026-10-19 17:55 +08:00 | ESLint clean. |
+| `npm run typecheck` | Canonical merged `main`; local Node.js | PASSED | 2026-10-19 17:55 +08:00 | TypeScript clean. |
+| `npm test` | Canonical merged `main`; PostgreSQL/PostGIS integration enabled | PASSED | 2026-10-19 17:55 +08:00 | 12 files, 40 tests. |
+| `npm run build` | Canonical merged `main`; local Node.js | PASSED | 2026-10-19 17:55 +08:00 | Production TypeScript build succeeded. |
+| `npm run postman:smoke` | Canonical merged `main`; live local API | PASSED | 2026-10-19 17:55 +08:00 | 2 requests, 5 assertions. Cloud publishing skipped because Postman login is not configured. |
 | Credentialed Postman E2E | Live API + Mailpit + PostgreSQL | PASSED | 2026-10-19 17:27 +08:00 | 33 requests, 35 assertions including effective-route resolution; physical GPS steps skipped; temporary accounts and domain rows removed. |
-| `npm audit --audit-level=high` | Local lockfile | PASSED | 2026-10-19 17:43 +08:00 | Zero vulnerabilities reported. |
+| `npm audit --audit-level=high` | Canonical merged `main`; local lockfile | PASSED | 2026-10-19 17:55 +08:00 | Zero vulnerabilities reported. |
 | PostGIS and residue check | `valrydedb` only | PASSED | 2026-10-19 16:49 +08:00 | PostGIS 3.6.2 / PG16; application and E2E row counts zero. |
-| `git diff --check` | Working tree | PASSED | 2026-10-19 17:43 +08:00 | No whitespace errors. |
+| `git diff --check` | Canonical merged `main` before documentation reconciliation | PASSED | 2026-10-19 17:55 +08:00 | No whitespace errors. |
 
 ## Shared contract / risk changes
 
@@ -53,7 +53,7 @@
 - Auth/RBAC/data-isolation impact: Challenge delivery is provider-neutral SMTP with environment-only configuration, hashed tokens, cooldown, supersession, invalidation, generic public responses, and provider-failure recovery. Driver association requires a verified DRIVER email and transactionally rejects cross-Operator claims.
 - Realtime/Traccar/geospatial impact: No realtime or Traccar implementation changed. Agent B now has a server-authoritative effective-route contract: active direct assignment wins; otherwise exactly one active group assignment is inherited; zero returns no route; multiple inherited routes return `409 ROUTE_ASSIGNMENT_CONFLICT`.
 - Secrets/security/privacy impact: No credentials are tracked. Postman environment values remain blank; runtime E2E credentials were generated in memory and removed. SMTP credentials, JWTs, challenge tokens, and Admin passwords are absent from source, logs, docs, and checked-in Postman data.
-- Required Tech Lead or owner decision: Re-review/freeze Checklist ID 10. Agent B must consume the effective-route endpoint or shared service resolver rather than reproduce precedence logic.
+- Required Tech Lead or owner decision: Agent A contracts are accepted and frozen at merge SHA `711f4c4`. Agent B must consume the effective-route endpoint or shared service resolver rather than reproduce precedence logic.
 
 ## Operator / hardware / external gates
 
@@ -63,6 +63,17 @@
 - Gate: Physical GPS/Traccar mapping and activation. Required actor: operator/Agent F/Agent B. Requested evidence: power, SIM/APN, server connectivity, GPS fix, correct IMEI/uniqueId mapping. State: OWNER_VERIFICATION_PENDING.
 
 ## Activity log (newest first; preserve prior entries)
+
+### 2026-10-19 17:55 +08:00 — PR #1 accepted, merged, and handed downstream
+
+- Action / reason: Synchronized local `main` to accepted PR #1 merge SHA, verified the merged Agent A migrations/endpoints/RBAC/OpenAPI/effective-route contracts, and produced the downstream integration handoff required for Agents B–E.
+- Checklist/issue: Agent A Checklist IDs 1–11; PR #1; Tech Lead decision `ACCEPTED`.
+- Files/config/services affected: Documentation-only reconciliation in `docs/agent-status/AGENT_A_STATUS.md` and `docs/AGENT_A_DOWNSTREAM_INTEGRATION_HANDOFF.md`. No runtime code, migration, API, or Agent B-owned implementation changed.
+- Observed result (success/failure/rollback): Canonical `origin/main` and local `main` are synchronized at `711f4c45967e192be155e05e72714b99645ecc7d`. The accepted source and frozen effective-route precedence are present. Unrelated `filestructure.txt` remained untouched.
+- Validation and evidence: On merged `main`, migrations, lint, typecheck, 12 files / 40 tests, build, Postman smoke (2 requests / 5 assertions), dependency audit, and diff check passed.
+- Contracts / risks / dependencies: Downstream handoff records authentication, RBAC, DB/PostGIS requirements, endpoint/DTO/pagination contracts, application/GPS states, effective-route precedence, and remaining owner/operator gates.
+- Commit/PR link or SHA (if available): Merged PR #1; merge SHA `711f4c45967e192be155e05e72714b99645ecc7d`.
+- Next action / owner gate: Agents B–E integrate against the frozen contracts. Production SMTP, real Google OAuth client IDs, permanent Admin credentials, and physical GPS/Traccar activation remain owner/operator-gated.
 
 ### 2026-10-19 17:43 +08:00 — DRIVER multi-group authorization corrected
 
