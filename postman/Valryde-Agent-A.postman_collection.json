@@ -1,0 +1,475 @@
+{
+  "info": {
+    "_postman_id": "e3f55a6f-c6be-4ca4-b72e-cdc058667b41",
+    "name": "Valryde Agent A - IDs 1-11",
+    "description": "Credential-free local workflow for authentication, RBAC, fleet, transit routes, vehicle application, and GPS setup/mapping. See postman/README.md before running mutation folders.",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "event": [
+    {
+      "listen": "prerequest",
+      "script": {
+        "type": "text/javascript",
+        "exec": [
+          "if (!pm.environment.get('baseUrl')) pm.environment.set('baseUrl', 'http://127.0.0.1:3000/api');"
+        ]
+      }
+    }
+  ],
+  "item": [
+    {
+      "name": "00 - Safe smoke",
+      "description": "Read-only checks safe to run repeatedly.",
+      "item": [
+        {
+          "name": "Health",
+          "request": { "method": "GET", "header": [], "url": "{{baseUrl}}/health" },
+          "event": [{ "listen": "test", "script": { "type": "text/javascript", "exec": [
+            "pm.test('health returns 200', () => pm.response.to.have.status(200));",
+            "const body = pm.response.json();",
+            "pm.test('API and database are healthy', () => { pm.expect(body.status).to.eql('ok'); pm.expect(['ok', 'injected']).to.include(body.database); });"
+          ] } }]
+        },
+        {
+          "name": "Public transit routes",
+          "request": { "method": "GET", "header": [], "url": "{{baseUrl}}/transit-routes?page=1&pageSize=20" },
+          "event": [{ "listen": "test", "script": { "type": "text/javascript", "exec": [
+            "pm.test('public routes return 200', () => pm.response.to.have.status(200));",
+            "pm.test('routes is an array', () => pm.expect(pm.response.json().routes).to.be.an('array'));",
+            "pm.test('pagination contract is present', () => pm.expect(pm.response.json().pagination).to.include({ page: 1, pageSize: 20 }));"
+          ] } }]
+        }
+      ]
+    },
+    {
+      "name": "01 - Operator authentication",
+      "description": "Registration requests run only when runRegistration=true. Normal repeatable E2E runs use an existing verified Operator account.",
+      "item": [
+        {
+          "name": "Register Operator (first run only)",
+          "event": [
+            { "listen": "prerequest", "script": { "type": "text/javascript", "exec": [
+              "if (pm.environment.get('runRegistration') !== 'true') pm.execution.skipRequest();",
+              "['operatorEmail', 'operatorPassword'].forEach((key) => { if (!pm.environment.get(key)) throw new Error(`Missing ${key}`); });"
+            ] } },
+            { "listen": "test", "script": { "type": "text/javascript", "exec": [
+              "pm.test('operator registration accepted', () => pm.response.to.have.status(201));",
+              "if (pm.response.code === 201) pm.environment.set('operatorUserId', pm.response.json().user.id);"
+            ] } }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": { "mode": "raw", "raw": "{\n  \"email\": \"{{operatorEmail}}\",\n  \"password\": \"{{operatorPassword}}\",\n  \"displayName\": \"Postman Operator\",\n  \"role\": \"OPERATOR\"\n}" },
+            "url": "{{baseUrl}}/auth/register"
+          }
+        },
+        {
+          "name": "Verify Operator email (first run only)",
+          "event": [
+            { "listen": "prerequest", "script": { "type": "text/javascript", "exec": [
+              "if (pm.environment.get('runRegistration') !== 'true') pm.execution.skipRequest();",
+              "if (!pm.environment.get('operatorVerificationToken')) { const query = encodeURIComponent(`to:${pm.environment.get('operatorEmail')}`); pm.sendRequest(`${pm.environment.get('mailpitUrl')}/view/latest.txt?query=${query}`, (error, response) => { if (error || response.code !== 200) throw new Error('Operator verification email was not found in Mailpit'); const match = response.text().match(/[?&]token=([^\\s]+)/); if (!match) throw new Error('Operator verification token was not found in the Mailpit message'); pm.environment.set('operatorVerificationToken', decodeURIComponent(match[1])); }); }"
+            ] } },
+            { "listen": "test", "script": { "type": "text/javascript", "exec": ["pm.test('email is verified', () => pm.response.to.have.status(200));"] } }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": { "mode": "raw", "raw": "{\n  \"token\": \"{{operatorVerificationToken}}\"\n}" },
+            "url": "{{baseUrl}}/auth/verify-email"
+          }
+        },
+        {
+          "name": "Operator login",
+          "event": [
+            { "listen": "prerequest", "script": { "type": "text/javascript", "exec": ["['operatorEmail', 'operatorPassword'].forEach((key) => { if (!pm.environment.get(key)) throw new Error(`Missing ${key}`); });"] } },
+            { "listen": "test", "script": { "type": "text/javascript", "exec": [
+              "pm.test('operator login succeeds', () => pm.response.to.have.status(200));",
+              "if (pm.response.code === 200) { const body = pm.response.json(); pm.environment.set('operatorAccessToken', body.accessToken); pm.environment.set('operatorRefreshToken', body.refreshToken); pm.environment.set('operatorUserId', body.user.id); }"
+            ] } }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": { "mode": "raw", "raw": "{\n  \"email\": \"{{operatorEmail}}\",\n  \"password\": \"{{operatorPassword}}\"\n}" },
+            "url": "{{baseUrl}}/auth/login"
+          }
+        },
+        {
+          "name": "Operator profile",
+          "request": { "method": "GET", "header": [{ "key": "Authorization", "value": "Bearer {{operatorAccessToken}}", "type": "text" }], "url": "{{baseUrl}}/auth/me" },
+          "event": [{ "listen": "test", "script": { "type": "text/javascript", "exec": [
+            "pm.test('profile returns 200', () => pm.response.to.have.status(200));",
+            "pm.test('account has OPERATOR role', () => pm.expect(pm.response.json().user.roles).to.include('OPERATOR'));"
+          ] } }]
+        }
+      ]
+    },
+    {
+      "name": "02 - Driver registration and association",
+      "description": "A Driver self-registers and verifies their own email before the Operator can associate the account.",
+      "item": [
+        {
+          "name": "Register Driver",
+          "event": [
+            { "listen": "prerequest", "script": { "type": "text/javascript", "exec": ["['driverEmail', 'driverPassword'].forEach((key) => { if (!pm.environment.get(key)) throw new Error(`Missing ${key}`); });"] } },
+            { "listen": "test", "script": { "type": "text/javascript", "exec": ["pm.test('driver registration accepted', () => pm.response.to.have.status(201));", "if (pm.response.code === 201) pm.environment.set('driverUserId', pm.response.json().user.id);"] } }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": { "mode": "raw", "raw": "{\n  \"email\": \"{{driverEmail}}\",\n  \"password\": \"{{driverPassword}}\",\n  \"displayName\": \"Postman Driver\",\n  \"role\": \"DRIVER\"\n}" },
+            "url": "{{baseUrl}}/auth/register"
+          }
+        },
+        {
+          "name": "Verify Driver email from Mailpit",
+          "event": [
+            { "listen": "prerequest", "script": { "type": "text/javascript", "exec": ["if (!pm.environment.get('driverVerificationToken')) { const query = encodeURIComponent(`to:${pm.environment.get('driverEmail')}`); pm.sendRequest(`${pm.environment.get('mailpitUrl')}/view/latest.txt?query=${query}`, (error, response) => { if (error || response.code !== 200) throw new Error('Driver verification email was not found in Mailpit'); const match = response.text().match(/[?&]token=([^\\s]+)/); if (!match) throw new Error('Driver verification token was not found in the Mailpit message'); pm.environment.set('driverVerificationToken', decodeURIComponent(match[1])); }); }"] } },
+            { "listen": "test", "script": { "type": "text/javascript", "exec": ["pm.test('driver email is verified', () => pm.response.to.have.status(200));"] } }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": { "mode": "raw", "raw": "{\n  \"token\": \"{{driverVerificationToken}}\"\n}" },
+            "url": "{{baseUrl}}/auth/verify-email"
+          }
+        },
+        {
+          "name": "Associate Driver with Operator",
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Authorization", "value": "Bearer {{operatorAccessToken}}" }, { "key": "Content-Type", "value": "application/json" }],
+            "body": { "mode": "raw", "raw": "{\n  \"email\": \"{{driverEmail}}\"\n}" },
+            "url": "{{baseUrl}}/driver-associations"
+          },
+          "event": [{ "listen": "test", "script": { "type": "text/javascript", "exec": ["pm.test('driver is associated', () => pm.response.to.have.status(200));", "if (pm.response.code === 200) pm.environment.set('driverId', pm.response.json().association.driverId);"] } }]
+        }
+      ]
+    },
+    {
+      "name": "03 - Fleet",
+      "item": [
+        {
+          "name": "Create jeepney",
+          "event": [
+            { "listen": "prerequest", "script": { "type": "text/javascript", "exec": ["pm.variables.set('plateNo', `PM-${Date.now().toString().slice(-8)}`);"] } },
+            { "listen": "test", "script": { "type": "text/javascript", "exec": [
+              "pm.test('jeepney created', () => pm.response.to.have.status(201));",
+              "if (pm.response.code === 201) pm.environment.set('jeepneyId', pm.response.json().jeepney.id);"
+            ] } }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Authorization", "value": "Bearer {{operatorAccessToken}}" }, { "key": "Content-Type", "value": "application/json" }],
+            "body": { "mode": "raw", "raw": "{\n  \"plateNo\": \"{{plateNo}}\",\n  \"colorHex\": \"#1473E6\",\n  \"description\": \"Postman Agent A workflow vehicle\"\n}" },
+            "url": "{{baseUrl}}/jeepneys"
+          }
+        },
+        {
+          "name": "Create fleet group",
+          "event": [
+            { "listen": "prerequest", "script": { "type": "text/javascript", "exec": ["pm.variables.set('groupName', `Postman Fleet ${Date.now()}`);"] } },
+            { "listen": "test", "script": { "type": "text/javascript", "exec": [
+              "pm.test('fleet group created', () => pm.response.to.have.status(201));",
+              "if (pm.response.code === 201) pm.environment.set('fleetGroupId', pm.response.json().group.id);"
+            ] } }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Authorization", "value": "Bearer {{operatorAccessToken}}" }, { "key": "Content-Type", "value": "application/json" }],
+            "body": { "mode": "raw", "raw": "{\n  \"name\": \"{{groupName}}\",\n  \"description\": \"Postman Agent A workflow group\"\n}" },
+            "url": "{{baseUrl}}/fleet-groups"
+          }
+        },
+        {
+          "name": "Add jeepney to group",
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Authorization", "value": "Bearer {{operatorAccessToken}}" }, { "key": "Content-Type", "value": "application/json" }],
+            "body": { "mode": "raw", "raw": "{\n  \"jeepneyId\": \"{{jeepneyId}}\"\n}" },
+            "url": "{{baseUrl}}/fleet-groups/{{fleetGroupId}}/jeepneys"
+          },
+          "event": [{ "listen": "test", "script": { "type": "text/javascript", "exec": ["pm.test('jeepney added to group', () => pm.response.to.have.status(200));"] } }]
+        },
+        {
+          "name": "List operator jeepneys",
+          "request": { "method": "GET", "header": [{ "key": "Authorization", "value": "Bearer {{operatorAccessToken}}" }], "url": "{{baseUrl}}/jeepneys" },
+          "event": [{ "listen": "test", "script": { "type": "text/javascript", "exec": [
+            "pm.test('operator jeepneys return 200', () => pm.response.to.have.status(200));",
+            "pm.test('created jeepney is visible', () => pm.expect(pm.response.json().jeepneys.map((item) => item.id)).to.include(pm.environment.get('jeepneyId')));"
+          ] } }]
+        }
+      ]
+    },
+    {
+      "name": "03 - Admin and transit routes",
+      "item": [
+        {
+          "name": "Admin login",
+          "event": [
+            { "listen": "prerequest", "script": { "type": "text/javascript", "exec": ["['adminEmail', 'adminPassword'].forEach((key) => { if (!pm.environment.get(key)) throw new Error(`Missing ${key}; create the account with npm run admin:bootstrap`); });"] } },
+            { "listen": "test", "script": { "type": "text/javascript", "exec": [
+              "pm.test('admin login succeeds', () => pm.response.to.have.status(200));",
+              "if (pm.response.code === 200) { const body = pm.response.json(); pm.environment.set('adminAccessToken', body.accessToken); pm.environment.set('adminRefreshToken', body.refreshToken); pm.test('account has ADMIN role', () => pm.expect(body.user.roles).to.include('ADMIN')); }"
+            ] } }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": { "mode": "raw", "raw": "{\n  \"email\": \"{{adminEmail}}\",\n  \"password\": \"{{adminPassword}}\"\n}" },
+            "url": "{{baseUrl}}/auth/login"
+          }
+        },
+        {
+          "name": "List users as Admin",
+          "request": { "method": "GET", "header": [{ "key": "Authorization", "value": "Bearer {{adminAccessToken}}" }], "url": "{{baseUrl}}/admin/users" },
+          "event": [{ "listen": "test", "script": { "type": "text/javascript", "exec": ["pm.test('Admin RBAC permits user listing', () => pm.response.to.have.status(200));"] } }]
+        },
+        {
+          "name": "Create transit route",
+          "event": [
+            { "listen": "prerequest", "script": { "type": "text/javascript", "exec": ["pm.variables.set('routeCode', `PM-${Date.now().toString().slice(-8)}`);"] } },
+            { "listen": "test", "script": { "type": "text/javascript", "exec": [
+              "pm.test('route created', () => pm.response.to.have.status(201));",
+              "if (pm.response.code === 201) pm.environment.set('routeId', pm.response.json().route.id);"
+            ] } }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Authorization", "value": "Bearer {{adminAccessToken}}" }, { "key": "Content-Type", "value": "application/json" }],
+            "body": { "mode": "raw", "raw": "{\n  \"routeCode\": \"{{routeCode}}\",\n  \"publicName\": \"Postman Cebu Route\",\n  \"description\": \"Agent A contract workflow route\",\n  \"routeColorHex\": \"#E65100\"\n}" },
+            "url": "{{baseUrl}}/admin/transit-routes"
+          }
+        },
+        {
+          "name": "Create route direction",
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Authorization", "value": "Bearer {{adminAccessToken}}" }, { "key": "Content-Type", "value": "application/json" }],
+            "body": { "mode": "raw", "raw": "{\n  \"directionLabel\": \"Outbound\",\n  \"originName\": \"Bulacao\",\n  \"destinationName\": \"Colon\",\n  \"geometry\": {\n    \"type\": \"LineString\",\n    \"coordinates\": [[123.8500, 10.2700], [123.8900, 10.3000]]\n  },\n  \"corridorM\": 100\n}" },
+            "url": "{{baseUrl}}/admin/transit-routes/{{routeId}}/directions"
+          },
+          "event": [{ "listen": "test", "script": { "type": "text/javascript", "exec": [
+            "pm.test('direction created', () => pm.response.to.have.status(201));",
+            "if (pm.response.code === 201) pm.environment.set('routeDirectionId', pm.response.json().direction.id);"
+          ] } }]
+        },
+        {
+          "name": "Activate route direction",
+          "request": {
+            "method": "PATCH",
+            "header": [{ "key": "Authorization", "value": "Bearer {{adminAccessToken}}" }, { "key": "Content-Type", "value": "application/json" }],
+            "body": { "mode": "raw", "raw": "{\n  \"status\": \"ACTIVE\"\n}" },
+            "url": "{{baseUrl}}/admin/route-directions/{{routeDirectionId}}"
+          },
+          "event": [{ "listen": "test", "script": { "type": "text/javascript", "exec": ["pm.test('direction activated', () => { pm.response.to.have.status(200); pm.expect(pm.response.json().direction.status).to.eql('ACTIVE'); });"] } }]
+        },
+        {
+          "name": "Activate transit route",
+          "request": {
+            "method": "PATCH",
+            "header": [{ "key": "Authorization", "value": "Bearer {{adminAccessToken}}" }, { "key": "Content-Type", "value": "application/json" }],
+            "body": { "mode": "raw", "raw": "{\n  \"status\": \"ACTIVE\"\n}" },
+            "url": "{{baseUrl}}/admin/transit-routes/{{routeId}}"
+          },
+          "event": [{ "listen": "test", "script": { "type": "text/javascript", "exec": ["pm.test('route activated', () => { pm.response.to.have.status(200); pm.expect(pm.response.json().route.status).to.eql('ACTIVE'); });"] } }]
+        },
+        {
+          "name": "Search active transit routes",
+          "request": { "method": "GET", "header": [], "url": "{{baseUrl}}/transit-routes?q=Postman&page=1&pageSize=10" },
+          "event": [{ "listen": "test", "script": { "type": "text/javascript", "exec": ["pm.test('search returns the activated route', () => { pm.response.to.have.status(200); pm.expect(pm.response.json().routes.map((item) => item.id)).to.include(pm.environment.get('routeId')); });"] } }]
+        },
+        {
+          "name": "Get active transit route details",
+          "request": { "method": "GET", "header": [], "url": "{{baseUrl}}/transit-routes/{{routeId}}" },
+          "event": [{ "listen": "test", "script": { "type": "text/javascript", "exec": ["pm.test('route details include canonical geometry', () => { pm.response.to.have.status(200); const route = pm.response.json().route; pm.expect(route.id).to.eql(pm.environment.get('routeId')); pm.expect(route.directions[0].geometry.type).to.eql('LineString'); });"] } }]
+        }
+      ]
+    },
+    {
+      "name": "04 - Assignment, application, and GPS workflow",
+      "item": [
+        {
+          "name": "Assign route to jeepney",
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Authorization", "value": "Bearer {{operatorAccessToken}}" }, { "key": "Content-Type", "value": "application/json" }],
+            "body": { "mode": "raw", "raw": "{\n  \"routeDirectionId\": \"{{routeDirectionId}}\",\n  \"jeepneyId\": \"{{jeepneyId}}\"\n}" },
+            "url": "{{baseUrl}}/route-assignments"
+          },
+          "event": [{ "listen": "test", "script": { "type": "text/javascript", "exec": ["pm.test('route assigned', () => pm.response.to.have.status(201));"] } }]
+        },
+        {
+          "name": "Resolve jeepney effective route",
+          "request": {
+            "method": "GET",
+            "header": [{ "key": "Authorization", "value": "Bearer {{operatorAccessToken}}" }],
+            "url": "{{baseUrl}}/jeepneys/{{jeepneyId}}/effective-route"
+          },
+          "event": [{ "listen": "test", "script": { "type": "text/javascript", "exec": ["pm.test('direct route is the effective route', () => { pm.response.to.have.status(200); const effective = pm.response.json().effectiveRouteDirection; pm.expect(effective.source).to.eql('DIRECT'); pm.expect(effective.direction.id).to.eql(pm.environment.get('routeDirectionId')); });"] } }]
+        },
+        {
+          "name": "Submit vehicle application",
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Authorization", "value": "Bearer {{operatorAccessToken}}" }, { "key": "Content-Type", "value": "application/json" }],
+            "body": { "mode": "raw", "raw": "{\n  \"jeepneyId\": \"{{jeepneyId}}\",\n  \"applicantNotes\": \"Postman Agent A workflow application\"\n}" },
+            "url": "{{baseUrl}}/vehicle-applications"
+          },
+          "event": [{ "listen": "test", "script": { "type": "text/javascript", "exec": [
+            "pm.test('vehicle application submitted', () => pm.response.to.have.status(201));",
+            "if (pm.response.code === 201) pm.environment.set('vehicleApplicationId', pm.response.json().application.id);"
+          ] } }]
+        },
+        {
+          "name": "Approve vehicle application",
+          "request": {
+            "method": "PATCH",
+            "header": [{ "key": "Authorization", "value": "Bearer {{adminAccessToken}}" }, { "key": "Content-Type", "value": "application/json" }],
+            "body": { "mode": "raw", "raw": "{\n  \"decision\": \"APPROVED\",\n  \"reviewNotes\": \"Approved by Postman workflow\"\n}" },
+            "url": "{{baseUrl}}/admin/vehicle-applications/{{vehicleApplicationId}}/review"
+          },
+          "event": [{ "listen": "test", "script": { "type": "text/javascript", "exec": ["pm.test('application approved', () => { pm.response.to.have.status(200); pm.expect(pm.response.json().application.status).to.eql('APPROVED'); });"] } }]
+        },
+        {
+          "name": "Submit GPS setup request",
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Authorization", "value": "Bearer {{operatorAccessToken}}" }, { "key": "Content-Type", "value": "application/json" }],
+            "body": { "mode": "raw", "raw": "{\n  \"vehicleApplicationId\": \"{{vehicleApplicationId}}\"\n}" },
+            "url": "{{baseUrl}}/gps-setup-requests"
+          },
+          "event": [{ "listen": "test", "script": { "type": "text/javascript", "exec": [
+            "pm.test('GPS request submitted', () => pm.response.to.have.status(201));",
+            "if (pm.response.code === 201) pm.environment.set('gpsSetupRequestId', pm.response.json().request.id);"
+          ] } }]
+        },
+        {
+          "name": "Approve GPS request",
+          "request": {
+            "method": "PATCH",
+            "header": [{ "key": "Authorization", "value": "Bearer {{adminAccessToken}}" }, { "key": "Content-Type", "value": "application/json" }],
+            "body": { "mode": "raw", "raw": "{\n  \"status\": \"APPROVED\"\n}" },
+            "url": "{{baseUrl}}/admin/gps-setup-requests/{{gpsSetupRequestId}}/status"
+          },
+          "event": [{ "listen": "test", "script": { "type": "text/javascript", "exec": ["pm.test('GPS request approved', () => pm.response.to.have.status(200));"] } }]
+        },
+        {
+          "name": "Schedule GPS installation",
+          "event": [{ "listen": "prerequest", "script": { "type": "text/javascript", "exec": ["if (pm.environment.get('runPhysicalGpsWorkflow') !== 'true') pm.execution.skipRequest();", "pm.variables.set('scheduledAt', new Date(Date.now() + 86400000).toISOString());"] } }, { "listen": "test", "script": { "type": "text/javascript", "exec": ["pm.test('GPS installation scheduled', () => pm.response.to.have.status(200));"] } }],
+          "request": {
+            "method": "PATCH",
+            "header": [{ "key": "Authorization", "value": "Bearer {{adminAccessToken}}" }, { "key": "Content-Type", "value": "application/json" }],
+            "body": { "mode": "raw", "raw": "{\n  \"status\": \"SCHEDULED\",\n  \"scheduledAt\": \"{{scheduledAt}}\"\n}" },
+            "url": "{{baseUrl}}/admin/gps-setup-requests/{{gpsSetupRequestId}}/status"
+          }
+        },
+        {
+          "name": "Map GPS device",
+          "event": [{ "listen": "prerequest", "script": { "type": "text/javascript", "exec": ["if (pm.environment.get('runPhysicalGpsWorkflow') !== 'true') pm.execution.skipRequest();", "['imei', 'serialNumber', 'traccarUniqueId'].forEach((key) => { if (!pm.environment.get(key)) throw new Error(`Missing unique non-production ${key}`); });"] } }, { "listen": "test", "script": { "type": "text/javascript", "exec": ["pm.test('GPS device mapped', () => pm.response.to.have.status(201));"] } }],
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Authorization", "value": "Bearer {{adminAccessToken}}" }, { "key": "Content-Type", "value": "application/json" }],
+            "body": { "mode": "raw", "raw": "{\n  \"imei\": \"{{imei}}\",\n  \"serialNumber\": \"{{serialNumber}}\",\n  \"traccarUniqueId\": \"{{traccarUniqueId}}\"\n}" },
+            "url": "{{baseUrl}}/admin/gps-setup-requests/{{gpsSetupRequestId}}/device-mapping"
+          }
+        },
+        {
+          "name": "Mark GPS installed",
+          "request": {
+            "method": "PATCH",
+            "header": [{ "key": "Authorization", "value": "Bearer {{adminAccessToken}}" }, { "key": "Content-Type", "value": "application/json" }],
+            "body": { "mode": "raw", "raw": "{\n  \"status\": \"INSTALLED\"\n}" },
+            "url": "{{baseUrl}}/admin/gps-setup-requests/{{gpsSetupRequestId}}/status"
+          },
+          "event": [{ "listen": "prerequest", "script": { "type": "text/javascript", "exec": ["if (pm.environment.get('runPhysicalGpsWorkflow') !== 'true') pm.execution.skipRequest();"] } }, { "listen": "test", "script": { "type": "text/javascript", "exec": ["pm.test('GPS installation marked installed', () => pm.response.to.have.status(200));"] } }]
+        },
+        {
+          "name": "Verify GPS installation and activate jeepney",
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Authorization", "value": "Bearer {{adminAccessToken}}" }, { "key": "Content-Type", "value": "application/json" }],
+            "body": { "mode": "raw", "raw": "{\n  \"powerOk\": true,\n  \"simOk\": true,\n  \"serverOk\": true,\n  \"gpsFixOk\": true,\n  \"notes\": \"Application workflow verification only; physical evidence remains operator-gated\"\n}" },
+            "url": "{{baseUrl}}/admin/gps-setup-requests/{{gpsSetupRequestId}}/verification"
+          },
+          "event": [{ "listen": "prerequest", "script": { "type": "text/javascript", "exec": ["if (pm.environment.get('runPhysicalGpsWorkflow') !== 'true') pm.execution.skipRequest();"] } }, { "listen": "test", "script": { "type": "text/javascript", "exec": ["pm.test('GPS workflow is verified', () => { pm.response.to.have.status(200); pm.expect(pm.response.json().request.verificationStatus).to.eql('VERIFIED'); });"] } }]
+        },
+        {
+          "name": "Confirm jeepney is active",
+          "request": { "method": "GET", "header": [{ "key": "Authorization", "value": "Bearer {{operatorAccessToken}}" }], "url": "{{baseUrl}}/jeepneys" },
+          "event": [{ "listen": "prerequest", "script": { "type": "text/javascript", "exec": ["if (pm.environment.get('runPhysicalGpsWorkflow') !== 'true') pm.execution.skipRequest();"] } }, { "listen": "test", "script": { "type": "text/javascript", "exec": [
+            "pm.test('jeepney listing returns 200', () => pm.response.to.have.status(200));",
+            "const jeepney = pm.response.json().jeepneys.find((item) => item.id === pm.environment.get('jeepneyId'));",
+            "pm.test('verified jeepney is ACTIVE', () => { pm.expect(jeepney).to.exist; pm.expect(jeepney.status).to.eql('ACTIVE'); });"
+          ] } }]
+        }
+      ]
+    },
+    {
+      "name": "05 - Session rotation and logout",
+      "item": [
+        {
+          "name": "Rotate Operator refresh token",
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": { "mode": "raw", "raw": "{\n  \"refreshToken\": \"{{operatorRefreshToken}}\"\n}" },
+            "url": "{{baseUrl}}/auth/refresh"
+          },
+          "event": [{ "listen": "test", "script": { "type": "text/javascript", "exec": [
+            "pm.test('refresh token rotates', () => pm.response.to.have.status(200));",
+            "if (pm.response.code === 200) { const body = pm.response.json(); pm.environment.set('operatorAccessToken', body.accessToken); pm.environment.set('operatorRefreshToken', body.refreshToken); }"
+          ] } }]
+        },
+        {
+          "name": "Logout Operator",
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": { "mode": "raw", "raw": "{\n  \"refreshToken\": \"{{operatorRefreshToken}}\"\n}" },
+            "url": "{{baseUrl}}/auth/logout"
+          },
+          "event": [{ "listen": "test", "script": { "type": "text/javascript", "exec": ["pm.test('logout revokes session', () => pm.response.to.have.status(204));"] } }]
+        }
+      ]
+    },
+    {
+      "name": "90 - Optional manual contracts",
+      "description": "These are skipped unless their required variables are present.",
+      "item": [
+        {
+          "name": "Google sign-in",
+          "event": [{ "listen": "prerequest", "script": { "type": "text/javascript", "exec": ["if (!pm.environment.get('googleIdToken')) pm.execution.skipRequest();"] } }],
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": { "mode": "raw", "raw": "{\n  \"idToken\": \"{{googleIdToken}}\",\n  \"role\": \"OPERATOR\"\n}" },
+            "url": "{{baseUrl}}/auth/google"
+          }
+        },
+        {
+          "name": "Add verified Driver to group",
+          "event": [{ "listen": "prerequest", "script": { "type": "text/javascript", "exec": ["if (!pm.environment.get('driverId')) pm.execution.skipRequest();"] } }],
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Authorization", "value": "Bearer {{operatorAccessToken}}" }, { "key": "Content-Type", "value": "application/json" }],
+            "body": { "mode": "raw", "raw": "{\n  \"driverId\": \"{{driverId}}\"\n}" },
+            "url": "{{baseUrl}}/fleet-groups/{{fleetGroupId}}/drivers"
+          }
+        },
+        {
+          "name": "Assign verified Driver to jeepney",
+          "event": [{ "listen": "prerequest", "script": { "type": "text/javascript", "exec": ["if (!pm.environment.get('driverId')) pm.execution.skipRequest();"] } }],
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Authorization", "value": "Bearer {{operatorAccessToken}}" }, { "key": "Content-Type", "value": "application/json" }],
+            "body": { "mode": "raw", "raw": "{\n  \"driverId\": \"{{driverId}}\"\n}" },
+            "url": "{{baseUrl}}/jeepneys/{{jeepneyId}}/driver-assignment"
+          }
+        }
+      ]
+    }
+  ]
+}
