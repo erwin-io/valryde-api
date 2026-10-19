@@ -57,6 +57,12 @@ describeDatabase('effective jeepney route contract with PostgreSQL', () => {
         [userIds],
       );
       await pool.query(
+        `DELETE FROM driver_jeepney_assignments
+         WHERE assigned_by_user_id = ANY($1::uuid[])
+           OR driver_id IN (SELECT id FROM drivers WHERE user_id = ANY($1::uuid[]))`,
+        [userIds],
+      );
+      await pool.query(
         'DELETE FROM fleet_groups WHERE operator_id IN (SELECT id FROM operators WHERE owner_user_id = ANY($1::uuid[]))',
         [userIds],
       );
@@ -67,6 +73,7 @@ describeDatabase('effective jeepney route contract with PostgreSQL', () => {
          )`,
       );
       await pool.query("DELETE FROM transit_routes WHERE route_code LIKE 'EFFECTIVE-%'");
+      await pool.query('DELETE FROM drivers WHERE user_id = ANY($1::uuid[])', [userIds]);
       await pool.query('DELETE FROM operators WHERE owner_user_id = ANY($1::uuid[])', [userIds]);
       await pool.query('DELETE FROM users WHERE id = ANY($1::uuid[])', [userIds]);
     }
@@ -166,7 +173,46 @@ describeDatabase('effective jeepney route contract with PostgreSQL', () => {
     expect(history.rows.filter((row) => row.active_to === null)).toHaveLength(1);
   });
 
-  async function createUser(role: 'COMMUTER' | 'OPERATOR', displayName: string): Promise<User> {
+  it('allows an authorized Driver when the jeepney belongs to multiple groups and denies an unrelated Driver', async () => {
+    const assignedDriver = await createUser('DRIVER', 'Assigned Effective Route Driver');
+    const unrelatedDriver = await createUser('DRIVER', 'Unrelated Effective Route Driver');
+    const assignedDriverId = await associateDriver(assignedDriver);
+    await associateDriver(unrelatedDriver);
+    const jeepneyId = await createJeepney('DRIVER-MULTI');
+    const firstGroupId = await createGroup('Driver access A');
+    const secondGroupId = await createGroup('Driver access B');
+    await addJeepneyToGroup(firstGroupId, jeepneyId);
+    await addJeepneyToGroup(secondGroupId, jeepneyId);
+
+    const assignment = await app.inject({
+      method: 'POST',
+      url: `/api/jeepneys/${jeepneyId}/driver-assignment`,
+      headers: auth(token(operator)),
+      payload: { driverId: assignedDriverId },
+    });
+    expect(assignment.statusCode).toBe(201);
+
+    const permitted = await app.inject({
+      method: 'GET',
+      url: `/api/jeepneys/${jeepneyId}/effective-route`,
+      headers: auth(token(assignedDriver)),
+    });
+    expect(permitted.statusCode).toBe(200);
+    expect(permitted.json()).toEqual({ effectiveRouteDirection: null });
+
+    const denied = await app.inject({
+      method: 'GET',
+      url: `/api/jeepneys/${jeepneyId}/effective-route`,
+      headers: auth(token(unrelatedDriver)),
+    });
+    expect(denied.statusCode).toBe(403);
+    expect(denied.json()).toMatchObject({ error: { code: 'FORBIDDEN' } });
+  });
+
+  async function createUser(
+    role: 'COMMUTER' | 'DRIVER' | 'OPERATOR',
+    displayName: string,
+  ): Promise<User> {
     const user = await repository.createUser({
       email: `${role.toLowerCase()}-${randomUUID()}@example.com`,
       passwordHash: null,
@@ -176,6 +222,17 @@ describeDatabase('effective jeepney route contract with PostgreSQL', () => {
     });
     userIds.push(user.id);
     return user;
+  }
+
+  async function associateDriver(driver: User): Promise<string> {
+    const response = await app.inject({
+      method: 'POST',
+      url: '/api/driver-associations',
+      headers: auth(token(operator)),
+      payload: { email: driver.email },
+    });
+    expect(response.statusCode).toBe(200);
+    return response.json<{ association: { driverId: string } }>().association.driverId;
   }
 
   async function createDirection(label: string): Promise<string> {

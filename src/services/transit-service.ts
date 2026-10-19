@@ -409,18 +409,23 @@ export class TransitService {
       return;
     }
     if (actor.roles.includes('DRIVER')) {
-      const result = await this.pool.query(
-        `SELECT 1
-         FROM jeepneys j
-         JOIN drivers d ON d.user_id = $2
-         LEFT JOIN driver_jeepney_assignments dja
-           ON dja.jeepney_id = j.id AND dja.driver_id = d.id AND dja.active_to IS NULL
-         LEFT JOIN fleet_group_jeepneys fgj ON fgj.jeepney_id = j.id
-         LEFT JOIN fleet_group_drivers fgd ON fgd.group_id = fgj.group_id AND fgd.driver_id = d.id
-         WHERE j.id = $1 AND (j.created_by_user_id = $2 OR dja.id IS NOT NULL OR fgd.driver_id IS NOT NULL)`,
+      const result = await this.pool.query<{ authorized: boolean }>(
+        `SELECT EXISTS (
+           SELECT 1
+           FROM jeepneys j
+           JOIN drivers d ON d.user_id = $2
+           LEFT JOIN driver_jeepney_assignments dja
+             ON dja.jeepney_id = j.id AND dja.driver_id = d.id AND dja.active_to IS NULL
+           LEFT JOIN fleet_group_jeepneys fgj ON fgj.jeepney_id = j.id
+           LEFT JOIN fleet_group_drivers fgd ON fgd.group_id = fgj.group_id AND fgd.driver_id = d.id
+           WHERE j.id = $1
+             AND (j.created_by_user_id = $2 OR dja.id IS NOT NULL OR fgd.driver_id IS NOT NULL)
+         ) AS authorized`,
         [jeepneyId, actor.id],
       );
-      if (result.rowCount !== 1) throw new ApiError(403, 'FORBIDDEN', 'Jeepney is outside driver scope');
+      if (result.rows[0]?.authorized !== true) {
+        throw new ApiError(403, 'FORBIDDEN', 'Jeepney is outside driver scope');
+      }
       return;
     }
     throw new ApiError(403, 'FORBIDDEN', 'This role cannot view effective route assignments');
