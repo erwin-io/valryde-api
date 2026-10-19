@@ -1,0 +1,53 @@
+{
+  "name": "valryde-api",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Valryde Fastify API and PostgreSQL/PostGIS business service",
+  "type": "module",
+  "engines": {
+    "node": ">=22.12.0"
+  },
+  "scripts": {
+    "dev": "tsx watch src/server.ts",
+    "build": "tsc -p tsconfig.build.json",
+    "start": "node dist/server.js",
+    "lint": "eslint .",
+    "typecheck": "tsc -p tsconfig.json --noEmit",
+    "test": "vitest run",
+    "test:watch": "vitest",
+    "db:migrate": "tsx src/db/migrate.ts",
+    "admin:bootstrap": "tsx src/cli/bootstrap-admin.ts",
+    "postman:smoke": "postman collection run postman/Valryde-Agent-A.postman_collection.json -e postman/Valryde-Local.postman_environment.json -i \"00 - Safe smoke\" --no-report-events",
+    "postman:e2e": "postman collection run postman/Valryde-Agent-A.postman_collection.json -e postman/Valryde-Local.postman_environment.json --no-report-events"
+  },
+  "dependencies": {
+    "@fastify/cors": "11.3.1",
+    "@fastify/helmet": "13.2.0",
+    "@fastify/jwt": "10.2.5",
+    "@fastify/rate-limit": "11.2.1",
+    "@fastify/sensible": "6.0.7",
+    "@fastify/swagger": "9.9.2",
+    "@fastify/swagger-ui": "6.1.2",
+    "@fastify/type-provider-typebox": "6.3.0",
+    "argon2": "0.45.1",
+    "dotenv": "18.0.0",
+    "fastify": "5.12.7",
+    "fastify-plugin": "6.0.1",
+    "google-auth-library": "11.3.1",
+    "nodemailer": "^10.1.7",
+    "pg": "8.23.1",
+    "typebox": "1.4.2"
+  },
+  "devDependencies": {
+    "@eslint/js": "10.0.1",
+    "@types/node": "22.20.5",
+    "@types/nodemailer": "^8.0.2",
+    "@types/pg": "8.23.1",
+    "eslint": "10.13.0",
+    "pino-pretty": "13.2.0",
+    "tsx": "4.23.1",
+    "typescript": "6.0.3",
+    "typescript-eslint": "8.71.2",
+    "vitest": "5.0.5"
+  }
+}
