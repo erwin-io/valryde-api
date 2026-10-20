@@ -1,7 +1,9 @@
 # VALRYDE — Shared AI Agent Status & Activity Reporting Policy
 
-**Version:** 1.1
+**Version:** 1.2
 **Issued:** 2026-10-19
+**Revised:** 2026-10-21
+**Revision scope:** Documentation-only Agent D repository identity/path correction; all other rules and assignments unchanged.
 **Canonical repository path:** `docs/00_SHARED_AGENT_STATUS_REPORTING_POLICY.md`
 **Applies to:** Developer agents A–F and Tech Lead G
 **Scope:** All approved VALRYDE Version 1.0 MVP checklist IDs (1–71)
@@ -22,10 +24,12 @@ Before ending a working session, deliver a human-readable agent status summary i
 | A — Core Platform / Fastify API | 1–11 | `valryde-api` | `docs/agent-status/AGENT_A_STATUS.md` |
 | B — Traccar / Tracking Engine | 12–21 | `valryde-api` | `docs/agent-status/AGENT_B_STATUS.md` |
 | C — Commuter Mobile | 22–37 | `valryde-mobile-commuter` | `docs/agent-status/AGENT_C_STATUS.md` |
-| D — Driver/Operator Mobile | 38–55 | `valryde-mobile-operator` | `docs/agent-status/AGENT_D_STATUS.md` |
+| D — Driver/Operator Mobile | 38–55 | `valryde-mobile-driver-operator` | `docs/agent-status/AGENT_D_STATUS.md` |
 | E — Admin Web | 56–67 | `valryde-web-admin` | `docs/agent-status/AGENT_E_STATUS.md` |
 | F — GPS Setup & Documentation | 68–71 | Relevant owned repo/runbooks; one canonical home chosen with Tech Lead | `docs/agent-status/AGENT_F_STATUS.md` |
 | G — Tech Lead / Integration | 1–71 | Tech Lead's designated canonical home | `docs/agent-status/TECH_LEAD_STATUS.md` |
+
+Agent D canonical GitHub repository: [erwin-io/valryde-mobile-driver-operator](https://github.com/erwin-io/valryde-mobile-driver-operator). Local workspace: `C:\Development\valryde\valryde-mobile-driver-operator`.
 
 If a repository already maintains an equivalent status file, inspect it and **retain/migrate its useful content rather than deleting history or creating a competing tracker**. Document the canonical path in the repository README or agent instructions. Agent A and B must not overwrite each other's status file. For cross-repo work, maintain one canonical per-agent report in the designated home repository and link to affected commits/PRs elsewhere. If a materially changed repository requires local status evidence, add a concise cross-reference there rather than maintaining a conflicting second authoritative history.
 

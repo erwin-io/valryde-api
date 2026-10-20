@@ -15,7 +15,7 @@
 - **Agent A — Core Platform / Fastify API:** IDs 1–11 · `erwin-io/valryde-api`
 - **Agent B — Traccar / Tracking Engine:** IDs 12–21 · `erwin-io/valryde-api + internal Traccar host/config`
 - **Agent C — Commuter Mobile App:** IDs 22–37 · `erwin-io/valryde-mobile-commuter`
-- **Agent D — Driver + Operator Mobile App:** IDs 38–55 · `erwin-io/valryde-mobile-operator`
+- **Agent D — Driver + Operator Mobile App:** IDs 38–55 · `erwin-io/valryde-mobile-driver-operator`
 - **Agent E — Admin Web Application:** IDs 56–67 · `erwin-io/valryde-web-admin`
 - **Agent F — GPS Setup / Documentation:** IDs 68–71 · `Runbooks/README/docs in the relevant Valryde repos + internal Traccar host notes`
 
@@ -36,7 +36,7 @@ The following decisions are already approved for the Version 1.0 MVP baseline an
 
 - **Product/application names:** `Valryde` = commuter app; `Valryde Operator` = shared Driver/Operator mobile app; `Valryde Admin` = Admin web.
 - **Canonical temporary GitHub owner:** `erwin-io`. Ownership may be transferred later; do not hard-code GitHub owner into runtime behavior.
-- **Repositories:** `valryde-api`, `valryde-mobile-commuter`, `valryde-mobile-operator`, `valryde-web-admin`. There is no separate docs repository for MVP.
+- **Repositories:** `valryde-api`, `valryde-mobile-commuter`, `valryde-mobile-driver-operator`, `valryde-web-admin`. There is no separate docs repository for MVP.
 - **Branch model:** `main` is canonical. Developer AI agents work on focused feature/fix branches and open PRs. **Developer agents do not merge their own PRs.**
 - **API stack:** current supported Node.js LTS + current stable Fastify + TypeScript + npm. Exact resolved versions are pinned by each repository's `package-lock.json`.
 - **API validation:** schema-first Fastify JSON Schema with TypeBox/type-provider patterns; avoid untyped ad-hoc request validation.
@@ -143,7 +143,7 @@ The following decisions are already approved for the Version 1.0 MVP baseline an
 
 ## 5. Tech Lead repository authority and safety rules
 
-- Confirm the four canonical repos exist and target `main`: `erwin-io/valryde-api`, `erwin-io/valryde-mobile-commuter`, `erwin-io/valryde-mobile-operator`, `erwin-io/valryde-web-admin`.
+- Confirm the four canonical repos exist and target `main`: `erwin-io/valryde-api`, `erwin-io/valryde-mobile-commuter`, `erwin-io/valryde-mobile-driver-operator`, `erwin-io/valryde-web-admin`.
 - Treat Traccar installation/config and the temporary server-laptop/VPS runtime as internal infrastructure, not a customer-facing fork.
 - Never merge a developer-agent PR without reviewing changed code, tests/checks, checklist/issue linkage, RBAC/ownership impact and cross-repo contract impact.
 - Heightened review is mandatory for auth/session changes, RBAC, migrations, PostGIS geometry, Pusher auth/channel scope, Traccar mapping, route-compliance semantics, device setup states, OAuth and secret/config changes.
