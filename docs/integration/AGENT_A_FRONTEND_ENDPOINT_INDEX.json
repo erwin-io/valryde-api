@@ -1,0 +1,642 @@
+{
+  "sourceCommit": "711f4c45967e192be155e05e72714b99645ecc7d",
+  "operations": [
+    {
+      "method": "GET",
+      "path": "/api/health",
+      "operationId": "getHealth",
+      "consumers": [
+        "C",
+        "D",
+        "E"
+      ],
+      "roles": [
+        "PUBLIC"
+      ],
+      "file": "src/app.ts",
+      "line": 164
+    },
+    {
+      "method": "POST",
+      "path": "/api/auth/register",
+      "operationId": "registerUser",
+      "consumers": [
+        "C",
+        "D"
+      ],
+      "roles": [
+        "PUBLIC"
+      ],
+      "file": "src/routes/auth-routes.ts",
+      "line": 38
+    },
+    {
+      "method": "POST",
+      "path": "/api/auth/verify-email",
+      "operationId": "verifyEmail",
+      "consumers": [
+        "C",
+        "D",
+        "E"
+      ],
+      "roles": [
+        "PUBLIC"
+      ],
+      "file": "src/routes/auth-routes.ts",
+      "line": 72
+    },
+    {
+      "method": "POST",
+      "path": "/api/auth/resend-verification",
+      "operationId": "resendEmailVerification",
+      "consumers": [
+        "C",
+        "D",
+        "E"
+      ],
+      "roles": [
+        "PUBLIC"
+      ],
+      "file": "src/routes/auth-routes.ts",
+      "line": 87
+    },
+    {
+      "method": "POST",
+      "path": "/api/auth/login",
+      "operationId": "loginUser",
+      "consumers": [
+        "C",
+        "D",
+        "E"
+      ],
+      "roles": [
+        "PUBLIC"
+      ],
+      "file": "src/routes/auth-routes.ts",
+      "line": 109
+    },
+    {
+      "method": "POST",
+      "path": "/api/auth/google",
+      "operationId": "signInWithGoogle",
+      "consumers": [
+        "C",
+        "D"
+      ],
+      "roles": [
+        "PUBLIC"
+      ],
+      "file": "src/routes/auth-routes.ts",
+      "line": 133
+    },
+    {
+      "method": "POST",
+      "path": "/api/auth/refresh",
+      "operationId": "refreshSession",
+      "consumers": [
+        "C",
+        "D",
+        "E"
+      ],
+      "roles": [
+        "PUBLIC"
+      ],
+      "file": "src/routes/auth-routes.ts",
+      "line": 157
+    },
+    {
+      "method": "POST",
+      "path": "/api/auth/logout",
+      "operationId": "logoutSession",
+      "consumers": [
+        "C",
+        "D",
+        "E"
+      ],
+      "roles": [
+        "PUBLIC"
+      ],
+      "file": "src/routes/auth-routes.ts",
+      "line": 177
+    },
+    {
+      "method": "POST",
+      "path": "/api/auth/forgot-password",
+      "operationId": "requestPasswordReset",
+      "consumers": [
+        "C",
+        "D",
+        "E"
+      ],
+      "roles": [
+        "PUBLIC"
+      ],
+      "file": "src/routes/auth-routes.ts",
+      "line": 195
+    },
+    {
+      "method": "POST",
+      "path": "/api/auth/reset-password",
+      "operationId": "resetPassword",
+      "consumers": [
+        "C",
+        "D",
+        "E"
+      ],
+      "roles": [
+        "PUBLIC"
+      ],
+      "file": "src/routes/auth-routes.ts",
+      "line": 216
+    },
+    {
+      "method": "GET",
+      "path": "/api/auth/me",
+      "operationId": "getCurrentUser",
+      "consumers": [
+        "C",
+        "D",
+        "E"
+      ],
+      "roles": [
+        "ANY_VERIFIED_ACTIVE_ROLE"
+      ],
+      "file": "src/routes/auth-routes.ts",
+      "line": 237
+    },
+    {
+      "method": "PATCH",
+      "path": "/api/auth/me",
+      "operationId": "updateCurrentUser",
+      "consumers": [
+        "C",
+        "D",
+        "E"
+      ],
+      "roles": [
+        "ANY_VERIFIED_ACTIVE_ROLE"
+      ],
+      "file": "src/routes/auth-routes.ts",
+      "line": 253
+    },
+    {
+      "method": "POST",
+      "path": "/api/auth/me/change-password",
+      "operationId": "changeCurrentUserPassword",
+      "consumers": [
+        "C",
+        "D",
+        "E"
+      ],
+      "roles": [
+        "ANY_VERIFIED_ACTIVE_ROLE"
+      ],
+      "file": "src/routes/auth-routes.ts",
+      "line": 277
+    },
+    {
+      "method": "POST",
+      "path": "/api/auth/me/change-email",
+      "operationId": "requestCurrentUserEmailChange",
+      "consumers": [
+        "C",
+        "D",
+        "E"
+      ],
+      "roles": [
+        "ANY_VERIFIED_ACTIVE_ROLE"
+      ],
+      "file": "src/routes/auth-routes.ts",
+      "line": 304
+    },
+    {
+      "method": "POST",
+      "path": "/api/auth/confirm-email-change",
+      "operationId": "confirmCurrentUserEmailChange",
+      "consumers": [
+        "C",
+        "D",
+        "E"
+      ],
+      "roles": [
+        "PUBLIC"
+      ],
+      "file": "src/routes/auth-routes.ts",
+      "line": 327
+    },
+    {
+      "method": "GET",
+      "path": "/api/admin/users/",
+      "operationId": "listUsersAsAdmin",
+      "consumers": [
+        "E"
+      ],
+      "roles": [
+        "ADMIN"
+      ],
+      "file": "src/routes/admin-user-routes.ts",
+      "line": 21
+    },
+    {
+      "method": "PATCH",
+      "path": "/api/admin/users/{userId}/status",
+      "operationId": "updateUserStatusAsAdmin",
+      "consumers": [
+        "E"
+      ],
+      "roles": [
+        "ADMIN"
+      ],
+      "file": "src/routes/admin-user-routes.ts",
+      "line": 41
+    },
+    {
+      "method": "POST",
+      "path": "/api/driver-associations",
+      "operationId": "associateDriverWithOperator",
+      "consumers": [
+        "D"
+      ],
+      "roles": [
+        "OPERATOR"
+      ],
+      "file": "src/routes/fleet-routes.ts",
+      "line": 87
+    },
+    {
+      "method": "GET",
+      "path": "/api/jeepneys",
+      "operationId": "listJeepneys",
+      "consumers": [
+        "D",
+        "E"
+      ],
+      "roles": [
+        "DRIVER",
+        "OPERATOR",
+        "ADMIN"
+      ],
+      "file": "src/routes/fleet-routes.ts",
+      "line": 116
+    },
+    {
+      "method": "POST",
+      "path": "/api/jeepneys",
+      "operationId": "createJeepney",
+      "consumers": [
+        "D",
+        "E"
+      ],
+      "roles": [
+        "DRIVER",
+        "OPERATOR",
+        "ADMIN"
+      ],
+      "file": "src/routes/fleet-routes.ts",
+      "line": 138
+    },
+    {
+      "method": "PATCH",
+      "path": "/api/jeepneys/{jeepneyId}",
+      "operationId": "updateJeepney",
+      "consumers": [
+        "D",
+        "E"
+      ],
+      "roles": [
+        "DRIVER",
+        "OPERATOR",
+        "ADMIN"
+      ],
+      "file": "src/routes/fleet-routes.ts",
+      "line": 172
+    },
+    {
+      "method": "POST",
+      "path": "/api/jeepneys/{jeepneyId}/driver-assignment",
+      "operationId": "assignDriverToJeepney",
+      "consumers": [
+        "D",
+        "E"
+      ],
+      "roles": [
+        "OPERATOR",
+        "ADMIN"
+      ],
+      "file": "src/routes/fleet-routes.ts",
+      "line": 211
+    },
+    {
+      "method": "GET",
+      "path": "/api/fleet-groups",
+      "operationId": "listFleetGroups",
+      "consumers": [
+        "D",
+        "E"
+      ],
+      "roles": [
+        "DRIVER",
+        "OPERATOR",
+        "ADMIN"
+      ],
+      "file": "src/routes/fleet-routes.ts",
+      "line": 243
+    },
+    {
+      "method": "POST",
+      "path": "/api/fleet-groups",
+      "operationId": "createFleetGroup",
+      "consumers": [
+        "D",
+        "E"
+      ],
+      "roles": [
+        "OPERATOR",
+        "ADMIN"
+      ],
+      "file": "src/routes/fleet-routes.ts",
+      "line": 265
+    },
+    {
+      "method": "PATCH",
+      "path": "/api/fleet-groups/{groupId}",
+      "operationId": "updateFleetGroup",
+      "consumers": [
+        "D",
+        "E"
+      ],
+      "roles": [
+        "OPERATOR",
+        "ADMIN"
+      ],
+      "file": "src/routes/fleet-routes.ts",
+      "line": 297
+    },
+    {
+      "method": "POST",
+      "path": "/api/fleet-groups/{groupId}/drivers",
+      "operationId": "addDriverToFleetGroup",
+      "consumers": [
+        "D",
+        "E"
+      ],
+      "roles": [
+        "OPERATOR",
+        "ADMIN"
+      ],
+      "file": "src/routes/fleet-routes.ts",
+      "line": 336
+    },
+    {
+      "method": "POST",
+      "path": "/api/fleet-groups/{groupId}/jeepneys",
+      "operationId": "addJeepneyToFleetGroup",
+      "consumers": [
+        "D",
+        "E"
+      ],
+      "roles": [
+        "OPERATOR",
+        "ADMIN"
+      ],
+      "file": "src/routes/fleet-routes.ts",
+      "line": 368
+    },
+    {
+      "method": "GET",
+      "path": "/api/transit-routes",
+      "operationId": "listPublicTransitRoutes",
+      "consumers": [
+        "C",
+        "D",
+        "E"
+      ],
+      "roles": [
+        "PUBLIC"
+      ],
+      "file": "src/routes/transit-routes.ts",
+      "line": 95
+    },
+    {
+      "method": "GET",
+      "path": "/api/transit-routes/{routeId}",
+      "operationId": "getPublicTransitRoute",
+      "consumers": [
+        "C",
+        "D",
+        "E"
+      ],
+      "roles": [
+        "PUBLIC"
+      ],
+      "file": "src/routes/transit-routes.ts",
+      "line": 132
+    },
+    {
+      "method": "GET",
+      "path": "/api/admin/transit-routes",
+      "operationId": "listTransitRoutesAsAdmin",
+      "consumers": [
+        "E"
+      ],
+      "roles": [
+        "ADMIN"
+      ],
+      "file": "src/routes/transit-routes.ts",
+      "line": 155
+    },
+    {
+      "method": "POST",
+      "path": "/api/admin/transit-routes",
+      "operationId": "createTransitRoute",
+      "consumers": [
+        "E"
+      ],
+      "roles": [
+        "ADMIN"
+      ],
+      "file": "src/routes/transit-routes.ts",
+      "line": 180
+    },
+    {
+      "method": "PATCH",
+      "path": "/api/admin/transit-routes/{routeId}",
+      "operationId": "updateTransitRoute",
+      "consumers": [
+        "E"
+      ],
+      "roles": [
+        "ADMIN"
+      ],
+      "file": "src/routes/transit-routes.ts",
+      "line": 214
+    },
+    {
+      "method": "POST",
+      "path": "/api/admin/transit-routes/{routeId}/directions",
+      "operationId": "createRouteDirection",
+      "consumers": [
+        "E"
+      ],
+      "roles": [
+        "ADMIN"
+      ],
+      "file": "src/routes/transit-routes.ts",
+      "line": 254
+    },
+    {
+      "method": "PATCH",
+      "path": "/api/admin/route-directions/{directionId}",
+      "operationId": "updateRouteDirection",
+      "consumers": [
+        "E"
+      ],
+      "roles": [
+        "ADMIN"
+      ],
+      "file": "src/routes/transit-routes.ts",
+      "line": 295
+    },
+    {
+      "method": "POST",
+      "path": "/api/route-assignments",
+      "operationId": "assignTransitRoute",
+      "consumers": [
+        "D"
+      ],
+      "roles": [
+        "OPERATOR"
+      ],
+      "file": "src/routes/transit-routes.ts",
+      "line": 338
+    },
+    {
+      "method": "GET",
+      "path": "/api/jeepneys/{jeepneyId}/effective-route",
+      "operationId": "getJeepneyEffectiveRoute",
+      "consumers": [
+        "D",
+        "E"
+      ],
+      "roles": [
+        "DRIVER",
+        "OPERATOR",
+        "ADMIN"
+      ],
+      "file": "src/routes/transit-routes.ts",
+      "line": 374
+    },
+    {
+      "method": "GET",
+      "path": "/api/vehicle-applications",
+      "operationId": "listVehicleApplications",
+      "consumers": [
+        "D",
+        "E"
+      ],
+      "roles": [
+        "DRIVER",
+        "OPERATOR",
+        "ADMIN"
+      ],
+      "file": "src/routes/vehicle-workflow-routes.ts",
+      "line": 88
+    },
+    {
+      "method": "POST",
+      "path": "/api/vehicle-applications",
+      "operationId": "submitVehicleApplication",
+      "consumers": [
+        "D"
+      ],
+      "roles": [
+        "DRIVER",
+        "OPERATOR"
+      ],
+      "file": "src/routes/vehicle-workflow-routes.ts",
+      "line": 112
+    },
+    {
+      "method": "PATCH",
+      "path": "/api/admin/vehicle-applications/{applicationId}/review",
+      "operationId": "reviewVehicleApplication",
+      "consumers": [
+        "E"
+      ],
+      "roles": [
+        "ADMIN"
+      ],
+      "file": "src/routes/vehicle-workflow-routes.ts",
+      "line": 148
+    },
+    {
+      "method": "GET",
+      "path": "/api/gps-setup-requests",
+      "operationId": "listGpsSetupRequests",
+      "consumers": [
+        "D",
+        "E"
+      ],
+      "roles": [
+        "DRIVER",
+        "OPERATOR",
+        "ADMIN"
+      ],
+      "file": "src/routes/vehicle-workflow-routes.ts",
+      "line": 188
+    },
+    {
+      "method": "POST",
+      "path": "/api/gps-setup-requests",
+      "operationId": "submitGpsSetupRequest",
+      "consumers": [
+        "D"
+      ],
+      "roles": [
+        "DRIVER",
+        "OPERATOR"
+      ],
+      "file": "src/routes/vehicle-workflow-routes.ts",
+      "line": 212
+    },
+    {
+      "method": "PATCH",
+      "path": "/api/admin/gps-setup-requests/{requestId}/status",
+      "operationId": "transitionGpsSetupStatus",
+      "consumers": [
+        "E"
+      ],
+      "roles": [
+        "ADMIN"
+      ],
+      "file": "src/routes/vehicle-workflow-routes.ts",
+      "line": 242
+    },
+    {
+      "method": "POST",
+      "path": "/api/admin/gps-setup-requests/{requestId}/device-mapping",
+      "operationId": "mapGpsDevice",
+      "consumers": [
+        "E"
+      ],
+      "roles": [
+        "ADMIN"
+      ],
+      "file": "src/routes/vehicle-workflow-routes.ts",
+      "line": 288
+    },
+    {
+      "method": "POST",
+      "path": "/api/admin/gps-setup-requests/{requestId}/verification",
+      "operationId": "verifyGpsInstallation",
+      "consumers": [
+        "E"
+      ],
+      "roles": [
+        "ADMIN"
+      ],
+      "file": "src/routes/vehicle-workflow-routes.ts",
+      "line": 331
+    }
+  ]
+}

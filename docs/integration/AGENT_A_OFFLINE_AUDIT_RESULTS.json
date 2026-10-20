@@ -1,0 +1,84 @@
+{
+  "sourceCommit": "711f4c45967e192be155e05e72714b99645ecc7d",
+  "mode": "OFFLINE_FASTIFY_INJECT",
+  "databaseCalls": 0,
+  "listenerStarted": false,
+  "probes": [
+    {
+      "method": "GET",
+      "url": "/api/admin/users/",
+      "status": 401,
+      "errorCode": "AUTH_REQUIRED"
+    },
+    {
+      "method": "GET",
+      "url": "/api/admin/users",
+      "status": 401,
+      "errorCode": "AUTH_REQUIRED"
+    },
+    {
+      "method": "GET",
+      "url": "/api/jeepneys",
+      "status": 401,
+      "errorCode": "AUTH_REQUIRED"
+    },
+    {
+      "method": "GET",
+      "url": "/api/not-a-route",
+      "status": 404,
+      "errorCode": null
+    },
+    {
+      "method": "GET",
+      "url": "/documentation/json",
+      "status": 200,
+      "errorCode": null
+    }
+  ],
+  "invalidLoginRateLimitProbe": [
+    {
+      "status": 400,
+      "code": "VALIDATION_ERROR"
+    },
+    {
+      "status": 400,
+      "code": "VALIDATION_ERROR"
+    },
+    {
+      "status": 400,
+      "code": "VALIDATION_ERROR"
+    },
+    {
+      "status": 400,
+      "code": "VALIDATION_ERROR"
+    },
+    {
+      "status": 400,
+      "code": "VALIDATION_ERROR"
+    },
+    {
+      "status": 400,
+      "code": "VALIDATION_ERROR"
+    },
+    {
+      "status": 400,
+      "code": "VALIDATION_ERROR"
+    },
+    {
+      "status": 400,
+      "code": "VALIDATION_ERROR"
+    },
+    {
+      "status": 400,
+      "code": "VALIDATION_ERROR"
+    },
+    {
+      "status": 400,
+      "code": "VALIDATION_ERROR"
+    },
+    {
+      "status": 500,
+      "code": "INTERNAL_ERROR"
+    }
+  ]
+}
