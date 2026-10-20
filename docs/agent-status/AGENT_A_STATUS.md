@@ -2,17 +2,17 @@
 
 ## Current snapshot
 
-- Updated at (ISO 8601, Asia/Manila): 2026-10-21T06:10:00+08:00
+- Updated at (ISO 8601, Asia/Manila): 2026-10-21T06:30:00+08:00
 - Agent / module: A — Core Platform / Fastify API
 - Repository: `erwin-io/valryde-api`
 - Branch / head: canonical `main` / `4a9a152` (PRs #2, #4, #6 merged); D1/D2 fix branch `fix/1-2-error-status-and-capacitor-cors`
 - Checklist IDs: 1–11
-- GitHub issues / PRs: [PR #1](https://github.com/erwin-io/valryde-api/pull/1), [#2](https://github.com/erwin-io/valryde-api/pull/2), [#6](https://github.com/erwin-io/valryde-api/pull/6) merged; [PR #5](https://github.com/erwin-io/valryde-api/pull/5) governance open (no conflicts); D1/D2 fix PR (this branch)
+- GitHub issues / PRs: [PR #1](https://github.com/erwin-io/valryde-api/pull/1), [#2](https://github.com/erwin-io/valryde-api/pull/2), [#6](https://github.com/erwin-io/valryde-api/pull/6) merged; [PR #5](https://github.com/erwin-io/valryde-api/pull/5) governance open (no conflicts); D1/D2 fix [PR #7](https://github.com/erwin-io/valryde-api/pull/7) (this branch); G1 proposal [PR #8](https://github.com/erwin-io/valryde-api/pull/8)
 - Implementation progress: DONE_AFTER_ACCEPTANCE
 - Tech Lead review decision (if actually issued): ACCEPTED — PR #1 merged to `main`
 - Current objective: Tech Lead post-merge release: (1) PR #5 conflict check, (2) D1/D2 fix PR, (3) G1 directory contract proposal (no implementation before approval).
 - Last confirmed result: 2026-10-21 D1/D2 branch on `main` `4a9a152`: lint, typecheck, build, audit PASSED; DB-enabled `npm test` 17 files / 88 tests PASSED (includes Agent B suites).
-- Next concrete action: Tech Lead reviews the D1/D2 PR (new public error code `RATE_LIMITED`) and the G1 proposal. Agent A does not merge.
+- Next concrete action: Tech Lead reviews PR #7 (new public error code `RATE_LIMITED`) and the G1 contract in PR #8, and decides on Agent B's requested optional transaction executor for `resolveEffectiveRouteDirection`. Agent A does not merge or implement G1 before approval.
 - Blocked by / decision owner: No remaining Agent A source blocker. Real Google-client smoke test, production SMTP credentials/from-domain, permanent Admin credentials, and physical GPS/Traccar activation remain owner/operator-gated and do not invalidate acceptance.
 - Dependencies / affected agents: B (tracking/latest state/realtime), C (public route/live APIs), D (driver invitation and operator APIs), E (Admin APIs), F (device runbooks), G (shared-contract review).
 
@@ -70,6 +70,17 @@
 
 ## Activity log (newest first; preserve prior entries)
 
+### 2026-10-21 06:30 +08:00 — G1 contract proposal; Agent B resolver coordination
+
+- Action / reason: Tech Lead Priority 3. Drafted the read-only directory contract (`GET /api/drivers` for OPERATOR own fleet and ADMIN; `GET /api/operators` for ADMIN) with RBAC, DTOs, pagination, errors and a PostgreSQL test plan. No implementation.
+- Checklist/issue: Agent A IDs 3, 5, 7; gap G1.
+- Files/config/services affected: `docs/integration/AGENT_A_G1_DIRECTORY_CONTRACT_PROPOSAL.md` on branch `docs/1-g1-directory-contract-proposal`.
+- Observed result (success/failure/rollback): PR #8 opened for contract review. No source change.
+- Validation and evidence: Proposal checked against `migrations/001`, `003` and `FleetService` scoping helpers; no migration or new error code needed.
+- Contracts / risks / dependencies: Agent B's local Tracking Bridge proposal (stage 13) requests an optional query-executor parameter on `TransitService.resolveEffectiveRouteDirection()` so the resolver can run inside B's transaction. The current resolver issues two separate pool queries. Agent A position: an optional `executor` argument defaulting to the pool is backward-compatible, keeps precedence in one place and changes no public API; it will not be implemented until the Tech Lead approves it.
+- Commit/PR link or SHA (if available): [PR #8](https://github.com/erwin-io/valryde-api/pull/8).
+- Next action / owner gate: Tech Lead decisions on PR #8 section 6 and the resolver executor.
+
 ### 2026-10-21 06:10 +08:00 — Post-merge release: PR #5 check and D1/D2 fixes
 
 - Action / reason: Tech Lead approved continued development after PRs #2, #4, #6 merged. Priority 1: PR #5 has no conflicts with `main` (trial merge clean, no file overlap, CI passing), so its branch was not changed and remains at `5baade4`; no empty merge commit was pushed. Priority 2: fixed D1 and D2 on `fix/1-2-error-status-and-capacitor-cors`.
@@ -78,7 +89,7 @@
 - Observed result (success/failure/rollback): Malformed JSON → 400 `VALIDATION_ERROR`; 6th forgot-password in window → 429 `RATE_LIMITED` with `retry-after`; `https://localhost` preflight allowed only when configured; `*`, trailing slash and path origins rejected at startup.
 - Validation and evidence: See Latest verification (06:05 rows).
 - Contracts / risks / dependencies: New public error code `RATE_LIMITED` (documented in the frontend handoff, requires Tech Lead review). Startup now fails on inexact `CORS_ORIGINS` entries. Frozen API paths, RBAC and effective-route behavior unchanged.
-- Commit/PR link or SHA (if available): D1/D2 PR (see GitHub).
+- Commit/PR link or SHA (if available): `34cc664`, [PR #7](https://github.com/erwin-io/valryde-api/pull/7).
 - Next action / owner gate: Tech Lead review. Developers running native C/D builds add `https://localhost` to their own `.env`.
 
 ### 2026-10-21 04:55 +08:00 — Claude takeover; frontend API-consumer readiness audit
