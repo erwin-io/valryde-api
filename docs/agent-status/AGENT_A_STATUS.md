@@ -2,17 +2,17 @@
 
 ## Current snapshot
 
-- Updated at (ISO 8601, Asia/Manila): 2026-10-19T17:55:47+08:00
+- Updated at (ISO 8601, Asia/Manila): 2026-10-21T04:55:00+08:00
 - Agent / module: A — Core Platform / Fastify API
 - Repository: `erwin-io/valryde-api`
-- Branch / head: canonical `main` / merge `711f4c45967e192be155e05e72714b99645ecc7d`; post-merge documentation branch `docs/agent-a-post-merge-handoff`
+- Branch / head: canonical `main` / merge `711f4c45967e192be155e05e72714b99645ecc7d`; frontend audit branch `docs/frontend-api-integration-readiness` stacked on `docs/agent-a-post-merge-handoff` (`b48997f`)
 - Checklist IDs: 1–11
-- GitHub issues / PRs: [PR #1 — Agent A: Core Platform / Fastify API (IDs 1–11)](https://github.com/erwin-io/valryde-api/pull/1)
+- GitHub issues / PRs: [PR #1](https://github.com/erwin-io/valryde-api/pull/1) merged; [PR #2](https://github.com/erwin-io/valryde-api/pull/2) open (Tech Lead ACCEPTED, unmerged); frontend readiness PR (this branch)
 - Implementation progress: DONE_AFTER_ACCEPTANCE
 - Tech Lead review decision (if actually issued): ACCEPTED — PR #1 merged to `main`
-- Current objective: Provide the frozen Agent A contracts to Agents B–E and remain available for clarification.
-- Last confirmed result: Canonical `main` synchronized to merge SHA `711f4c45967e192be155e05e72714b99645ecc7d`; migrations, contracts, 12 test files / 40 tests, build, Postman smoke, audit, and diff checks passed post-merge.
-- Next concrete action: Agents B–E integrate against `docs/AGENT_A_DOWNSTREAM_INTEGRATION_HANDOFF.md`; Agent A makes no new feature changes without Tech Lead authorization.
+- Current objective: Executor transferred from Codex to Claude (Tech Lead approved). Deliver the verified frontend API-consumer handoff for Agents C, D and E.
+- Last confirmed result: 2026-10-21 audit at `711f4c4`: lint, typecheck, build PASSED; DB-enabled `npm test` 12 files / 40 tests PASSED, 0 skipped. Two client-facing defects confirmed (D1 error mapping, D2 CORS defaults); nine approved-MVP API gaps recorded (G1–G9).
+- Next concrete action: Tech Lead reviews the frontend readiness PR and decides D1/D2 and the G1–G9 priority order. Agent A implements nothing new until authorized.
 - Blocked by / decision owner: No remaining Agent A source blocker. Real Google-client smoke test, production SMTP credentials/from-domain, permanent Admin credentials, and physical GPS/Traccar activation remain owner/operator-gated and do not invalidate acceptance.
 - Dependencies / affected agents: B (tracking/latest state/realtime), C (public route/live APIs), D (driver invitation and operator APIs), E (Admin APIs), F (device runbooks), G (shared-contract review).
 
@@ -36,6 +36,9 @@
 
 | Command / check | Environment | Result | Date/time | Evidence / notes |
 |---|---|---|---|---|
+| `npm run lint`, `npm run typecheck`, `npm run build` | Source identical to `main` `711f4c4`; local Node.js | PASSED | 2026-10-21 04:38 +08:00 | Claude takeover baseline. |
+| `npm test` (DB-enabled, `TEST_DATABASE_URL` set) | Local PostgreSQL/PostGIS, `dbo` | PASSED | 2026-10-21 04:50 +08:00 | 12 files / 40 tests, 0 skipped. Tests clean up only rows they create. |
+| Fastify `inject()` error/CORS probe | Offline, in-memory repository, no listener | FAILED (expected findings) | 2026-10-21 04:45 +08:00 | Malformed JSON → 500; 11th login/min → 500 with `retry-after: 60`; `https://localhost`, `http://localhost`, `capacitor://localhost` preflights not allowed. Temporary probe file removed. |
 | `npm run db:migrate` | Canonical merged `main`; local PostgreSQL 16 / `valrydedb` / `dbo,public` | PASSED | 2026-10-19 17:55 +08:00 | Migrations 001–005 idempotent on merge SHA `711f4c4`. |
 | `npm run lint` | Canonical merged `main`; local Node.js | PASSED | 2026-10-19 17:55 +08:00 | ESLint clean. |
 | `npm run typecheck` | Canonical merged `main`; local Node.js | PASSED | 2026-10-19 17:55 +08:00 | TypeScript clean. |
@@ -63,6 +66,17 @@
 - Gate: Physical GPS/Traccar mapping and activation. Required actor: operator/Agent F/Agent B. Requested evidence: power, SIM/APN, server connectivity, GPS fix, correct IMEI/uniqueId mapping. State: OWNER_VERIFICATION_PENDING.
 
 ## Activity log (newest first; preserve prior entries)
+
+### 2026-10-21 04:55 +08:00 — Claude takeover; frontend API-consumer readiness audit
+
+- Action / reason: Tech Lead approved a temporary executor transfer of Agent A from Codex to Claude. Recovered state: `main` = `711f4c4`; PR #2 (`b48997f`) and PR #4 (`a4062c8`) open with Tech Lead ACCEPTED comments; PR #5 (`5baade4`) open, unreviewed. Found Codex's uncommitted audit (`docs/integration/` endpoint matrix, JSON index, OpenAPI snapshot, offline probe) in worktree `.worktrees/frontend-api-handoff`; continued it instead of duplicating. Wrote the missing `docs/integration/AGENT_A_FRONTEND_API_INTEGRATION_HANDOFF.md` (session lifecycle, error codes, rate limits, connectivity guide, C/D/E matrix with 1–6 classification, gap assessment, ownership matrix, priorities, evidence). Branch fast-forwarded onto PR #2's branch so this status history and the downstream handoff link stay consistent.
+- Checklist/issue: Agent A IDs 1–11 (consumer readiness only; no implementation change).
+- Files/config/services affected: `docs/integration/*` (new), this status file. No source, migration, contract, or other-repository change. Agent B's untracked files in the main checkout were left untouched.
+- Observed result (success/failure/rollback): Defects D1 (`src/app.ts` error handler returns 500 for 429 rate limits and malformed JSON) and D2 (default `CORS_ORIGINS` excludes Capacitor WebView origins) confirmed. Approved-MVP gaps G1–G9 recorded (driver/operator directory, group membership read/remove, Driver active-assignment marker, driver unassign, mobile email deep links, ID 37 geocoding/discovery backend ownership, route change requests, audit read, Admin pagination). PR #4 adds no HTTP routes, so no frontend capability is class 3.
+- Validation and evidence: See Latest verification (2026-10-21 rows). Frontend inventories read-only at C `dcbe8ce`, D `194aa8d`, E `4778b49`.
+- Contracts / risks / dependencies: None changed. D1 fix would add an error code (`RATE_LIMITED`) and G1–G9 add endpoints/DTO fields; all require Tech Lead approval.
+- Commit/PR link or SHA (if available): Branch `docs/frontend-api-integration-readiness`, stacked on PR #2.
+- Next action / owner gate: Tech Lead review; decide D1/D2 and gap priorities. LAN binding for physical devices requires owner authorization.
 
 ### 2026-10-19 17:55 +08:00 — PR #1 accepted, merged, and handed downstream
 
