@@ -47,6 +47,23 @@ function integer(name: string, value: string | undefined, fallback: number): num
   return parsed;
 }
 
+// Exact origins only: wildcards, paths and trailing slashes are rejected.
+function corsOrigins(value: string | undefined): string[] {
+  const origins = (value ?? '').split(',').map((origin) => origin.trim()).filter(Boolean);
+  for (const origin of origins) {
+    let parsed: URL | undefined;
+    try {
+      parsed = new URL(origin);
+    } catch {
+      parsed = undefined;
+    }
+    if (parsed === undefined || parsed.origin !== origin) {
+      throw new Error(`CORS_ORIGINS entry is not an exact origin: ${origin}`);
+    }
+  }
+  return origins;
+}
+
 function environment(value: string | undefined): Environment {
   if (value === undefined) return 'development';
   if (value === 'development' || value === 'test' || value === 'production') return value;
@@ -72,10 +89,7 @@ export function loadConfig(source: NodeJS.ProcessEnv = process.env): AppConfig {
     host: source.HOST ?? '127.0.0.1',
     port: integer('PORT', source.PORT, 3000),
     logLevel: source.LOG_LEVEL ?? 'info',
-    corsOrigins: (source.CORS_ORIGINS ?? '')
-      .split(',')
-      .map((origin) => origin.trim())
-      .filter(Boolean),
+    corsOrigins: corsOrigins(source.CORS_ORIGINS),
     databaseUrl,
     databaseSsl: source.DATABASE_SSL === 'true',
     databaseSchema,

@@ -145,6 +145,17 @@ export async function buildApp(options: BuildAppOptions) {
         },
       });
     }
+    // Framework client errors (rate limit, malformed or oversized body) keep their 4xx status.
+    if (error.statusCode === 429) {
+      return reply.code(429).send({
+        error: { code: 'RATE_LIMITED', message: 'Too many requests', requestId: request.id },
+      });
+    }
+    if (error.statusCode !== undefined && error.statusCode >= 400 && error.statusCode < 500) {
+      return reply.code(error.statusCode).send({
+        error: { code: 'VALIDATION_ERROR', message: 'Request is malformed', requestId: request.id },
+      });
+    }
     request.log.error({ err: error }, 'Unhandled request error');
     return reply.code(500).send({
       error: {
