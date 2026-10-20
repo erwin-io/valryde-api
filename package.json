@@ -16,6 +16,8 @@
     "test": "vitest run",
     "test:watch": "vitest",
     "db:migrate": "tsx src/db/migrate.ts",
+    "bridge:dev": "tsx src/bridge.ts",
+    "bridge:start": "node dist/bridge.js",
     "admin:bootstrap": "tsx src/cli/bootstrap-admin.ts",
     "postman:smoke": "postman collection run postman/Valryde-Agent-A.postman_collection.json -e postman/Valryde-Local.postman_environment.json -i \"00 - Safe smoke\" --no-report-events",
     "postman:e2e": "postman collection run postman/Valryde-Agent-A.postman_collection.json -e postman/Valryde-Local.postman_environment.json --no-report-events"

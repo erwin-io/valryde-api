@@ -34,7 +34,7 @@ export function loadTraccarConfig(source: NodeJS.ProcessEnv = process.env): Trac
   return config;
 }
 
-function bounded(source: NodeJS.ProcessEnv, key: string, fallback: number, min: number, max: number): number {
+export function bounded(source: NodeJS.ProcessEnv, key: string, fallback: number, min: number, max: number): number {
   const value = Number(source[key] ?? fallback);
   if (!Number.isInteger(value) || value < min || value > max) throw new Error(`${key} is outside allowed bounds`);
   return value;

@@ -40,23 +40,33 @@ export class TraccarClient {
 
   async devices(uniqueId?: string): Promise<TraccarDevice[]> {
     const query = uniqueId === undefined ? {} : { uniqueId };
-    return this.records(await this.get('/api/devices', query), device);
+    return this.records(await this.get('/api/devices', query), parseDevice);
   }
 
   async positions(): Promise<TraccarPosition[]> {
-    return this.records(await this.get('/api/positions'), position);
+    return this.records(await this.get('/api/positions'), parsePosition);
   }
 
   async history(deviceId: number, range: HistoryRange): Promise<TraccarPosition[]> {
     validateDeviceId(deviceId);
     validateHistoryRange(range);
-    return this.records(await this.get('/api/positions', { deviceId: String(deviceId), ...range }), position);
+    return this.records(await this.get('/api/positions', { deviceId: String(deviceId), ...range }), parsePosition);
   }
 
   async events(deviceId: number, range: HistoryRange): Promise<TraccarEvent[]> {
     validateDeviceId(deviceId);
     validateHistoryRange(range);
-    return this.records(await this.get('/api/reports/events', { deviceId: String(deviceId), ...range }), event);
+    return this.records(await this.get('/api/reports/events', { deviceId: String(deviceId), ...range }), parseEvent);
+  }
+
+  // Server-only session lease for the Tracking Bridge socket upgrade; never expose the cookie.
+  async sessionCookie(): Promise<string> {
+    return this.session();
+  }
+
+  // Drops only the given cookie so a stale failure cannot discard a newer login.
+  invalidateSession(cookie: string): void {
+    if (this.#cookie === cookie) this.#cookie = undefined;
   }
 
   private records<T>(value: unknown, parse: (row: unknown) => T): T[] {
@@ -185,11 +195,11 @@ function timestamp(value: unknown): string {
   if (!Number.isFinite(Date.parse(text))) throw new TraccarError('INVALID_RESPONSE');
   return new Date(text).toISOString();
 }
-function device(value: unknown): TraccarDevice {
+export function parseDevice(value: unknown): TraccarDevice {
   const row = object(value);
   return { id: id(row.id), uniqueId: string(row.uniqueId), status: string(row.status) };
 }
-function position(value: unknown): TraccarPosition {
+export function parsePosition(value: unknown): TraccarPosition {
   const row = object(value);
   if (typeof row.valid !== 'boolean') throw new TraccarError('INVALID_RESPONSE');
   return {
@@ -199,7 +209,7 @@ function position(value: unknown): TraccarPosition {
     speed: number(row.speed, 0, Number.MAX_VALUE), course: number(row.course, 0, 360),
   };
 }
-function event(value: unknown): TraccarEvent {
+export function parseEvent(value: unknown): TraccarEvent {
   const row = object(value);
   return { id: id(row.id), deviceId: id(row.deviceId), type: string(row.type), eventTime: timestamp(row.eventTime) };
 }
