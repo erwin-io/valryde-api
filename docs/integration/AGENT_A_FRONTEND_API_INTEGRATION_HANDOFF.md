@@ -44,7 +44,7 @@ Email links: verification, password-reset and email-change emails link to `APP_V
 
 | HTTP | `code` | Meaning for the UI |
 |---|---|---|
-| 400 | `VALIDATION_ERROR` | Field-level problem; `details` holds AJV errors. |
+| 400 (or other 4xx such as 413/415) | `VALIDATION_ERROR` | Field-level problem; `details` holds AJV errors. Malformed/oversized/unsupported bodies return the same code without `details`. |
 | 401 | `AUTH_REQUIRED` | Missing/invalid/expired access token → refresh once, then sign in. |
 | 401 | `SESSION_REVOKED` | Refresh token dead → sign out locally. |
 | 401 | `INVALID_CREDENTIALS` | Wrong email/password (generic by design). |
@@ -57,14 +57,15 @@ Email links: verification, password-reset and email-change emails link to `APP_V
 | 409 | `ROUTE_NOT_APPROVED` | Direction is not `ACTIVE`. |
 | 409 | `ROUTE_ASSIGNMENT_CONFLICT` | More than one inherited group route (see effective route). |
 | 409 | `VEHICLE_NOT_APPROVED` / `GPS_NOT_INSTALLED` / `DEVICE_MAPPING_CONFLICT` | GPS workflow ordering. |
+| 429 | `RATE_LIMITED` | Too many requests. Honor the `retry-after` header (seconds); do not retry in a loop. |
 | 503 | `GOOGLE_SIGN_IN_UNAVAILABLE` / `EMAIL_DELIVERY_UNAVAILABLE` | Provider not configured or down. Show "try later". |
-| 500 | `INTERNAL_ERROR` | Unexpected. **Also currently returned for rate limits and malformed JSON — see defect D1.** |
+| 500 | `INTERNAL_ERROR` | Unexpected server failure. |
 
 `STALE_POSITION` and `TRACCAR_UNAVAILABLE` are named in the Agent A handoff but are **not emitted** by merged code; they belong to Agent B's future contracts.
 
 ### 1.3 Rate limits (per client IP)
 
-Global 100 req/min. Auth overrides: register 10/min, resend-verification 5/15 min, login 10/min, Google 10/min, refresh 30/min, forgot-password 5/15 min. Responses include `retry-after`. Because of defect D1 the status is `500 INTERNAL_ERROR`, not `429`; until fixed, treat a `500` that carries a `retry-after` header as "rate limited".
+Global 100 req/min. Auth overrides: register 10/min, resend-verification 5/15 min, login 10/min, Google 10/min, refresh 30/min, forgot-password 5/15 min. A rejected request returns `429 RATE_LIMITED` with a `retry-after` header (since D1 fix; before it, `500 INTERNAL_ERROR`). The `429` response is declared in OpenAPI for the auth routes; the global limit applies to every route.
 
 ### 1.4 Effective route (frozen — do not re-implement)
 
@@ -77,10 +78,10 @@ Precedence: direct active assignment wins → zero inherited = none → exactly 
 
 ## 2. Verified backend defects that affect clients
 
-| ID | Defect | Evidence | Client impact | Proposed fix (not applied) |
+| ID | Defect | Evidence | Client impact | Resolution |
 |---|---|---|---|---|
-| D1 | Global error handler maps every non-`ApiError`, non-validation error to `500 INTERNAL_ERROR`. Rate-limit rejections (should be `429`) and malformed JSON bodies (should be `400`) are returned as `500`. | `src/app.ts:123-152`. Offline inject on 2026-10-21: 11th login in a minute → `500 INTERNAL_ERROR`, `retry-after: 60`; body `{bad` → `500 INTERNAL_ERROR`. Codex probe in `AGENT_A_OFFLINE_AUDIT_RESULTS.json` shows the same. | Clients cannot distinguish throttling or client bugs from server failure; error telemetry is polluted. | In the handler, pass through Fastify errors with `statusCode < 500` using a mapped code (`429` → new `RATE_LIMITED`, `400` → `VALIDATION_ERROR`). Adding `RATE_LIMITED` is an error-code contract addition → needs Tech Lead approval. Small fix + inject test. |
-| D2 | Default `CORS_ORIGINS` (`http://localhost:4200,http://localhost:8100`) does not include Capacitor WebView origins. | Inject preflight 2026-10-21: `http://localhost`, `https://localhost`, `capacitor://localhost` get no `access-control-allow-origin`. Agent D's `capacitor.config.ts` sets `androidScheme: 'https'` → origin `https://localhost`. | Native Android builds of C and D fail every API call with a CORS error even when the network path works. | Configuration only: add `https://localhost` (and `http://localhost` if a client uses the `http` scheme) to the developer's `.env` `CORS_ORIGINS`. Updating `.env.example` is a one-line doc/config PR. No code change. |
+| D1 | Global error handler maps every non-`ApiError`, non-validation error to `500 INTERNAL_ERROR`. Rate-limit rejections (should be `429`) and malformed JSON bodies (should be `400`) are returned as `500`. | `src/app.ts:123-152`. Offline inject on 2026-10-21: 11th login in a minute → `500 INTERNAL_ERROR`, `retry-after: 60`; body `{bad` → `500 INTERNAL_ERROR`. Codex probe in `AGENT_A_OFFLINE_AUDIT_RESULTS.json` shows the same. | Clients cannot distinguish throttling or client bugs from server failure; error telemetry is polluted. | In the handler, pass through Fastify errors with `statusCode < 500` using a mapped code (`429` → new `RATE_LIMITED`, `400` → `VALIDATION_ERROR`). Adding `RATE_LIMITED` is an error-code contract addition → needs Tech Lead approval. **Fixed** in branch `fix/1-2-error-status-and-capacitor-cors` (Tech Lead release 2026-10-21): 429 → `RATE_LIMITED`, other framework 4xx → `VALIDATION_ERROR`, regression tests in `test/http-errors.test.ts`. |
+| D2 | Default `CORS_ORIGINS` (`http://localhost:4200,http://localhost:8100`) does not include Capacitor WebView origins. | Inject preflight 2026-10-21: `http://localhost`, `https://localhost`, `capacitor://localhost` get no `access-control-allow-origin`. Agent D's `capacitor.config.ts` sets `androidScheme: 'https'` → origin `https://localhost`. | Native Android builds of C and D fail every API call with a CORS error even when the network path works. | Configuration only: add `https://localhost` (and `http://localhost` if a client uses the `http` scheme) to the developer's `.env` `CORS_ORIGINS`. **Fixed** in the same branch: `.env.example` adds `https://localhost` only, and `CORS_ORIGINS` entries must now be exact origins (wildcards, paths and trailing slashes fail startup). Existing developers must add `https://localhost` to their own `.env`. |
 
 ## 3. Development connectivity
 
@@ -141,7 +142,8 @@ A relative `apiBaseUrl: '/api'` (Agent D's current `environment.ts`) works only 
 | `net::ERR_CONNECTION_REFUSED` from emulator/device | Using `localhost` without `adb reverse`, or API bound to `127.0.0.1` while using a LAN IP. |
 | `net::ERR_CLEARTEXT_NOT_PERMITTED` | Android cleartext policy in the client; not an API issue. |
 | `/api/health` → `503 degraded` | PostgreSQL unreachable or wrong `DATABASE_URL`. |
-| `500 INTERNAL_ERROR` with `retry-after` header | Rate limited (D1). Wait, do not retry in a loop. |
+| `429 RATE_LIMITED` (or `500` with `retry-after` on builds before the D1 fix) | Rate limited. Wait `retry-after` seconds. |
+| API exits at startup: `CORS_ORIGINS entry is not an exact origin` | Remove `*`, paths or trailing slashes from `CORS_ORIGINS`. |
 | `403 EMAIL_NOT_VERIFIED` on login | Verify via Mailpit first. |
 | Every protected call `401` right after password change | Expected: credential version changed. |
 

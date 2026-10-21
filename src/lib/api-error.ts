@@ -3,6 +3,7 @@ export type ErrorCode =
   | 'SESSION_REVOKED'
   | 'FORBIDDEN'
   | 'VALIDATION_ERROR'
+  | 'RATE_LIMITED'
   | 'CONFLICT'
   | 'NOT_FOUND'
   | 'EMAIL_NOT_VERIFIED'

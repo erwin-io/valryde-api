@@ -30,7 +30,13 @@ const AuthTokensSchema = Type.Object({
   user: UserSchema,
 });
 
-const errorResponses = { 400: ErrorSchema, 401: ErrorSchema, 403: ErrorSchema, 409: ErrorSchema };
+const errorResponses = {
+  400: ErrorSchema,
+  401: ErrorSchema,
+  403: ErrorSchema,
+  409: ErrorSchema,
+  429: ErrorSchema,
+};
 
 export const authRoutes: FastifyPluginAsync<AuthRoutesOptions> = async (instance, options) => {
   const fastify = instance.withTypeProvider<TypeBoxTypeProvider>();
