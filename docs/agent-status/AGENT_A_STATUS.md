@@ -2,18 +2,18 @@
 
 ## Current snapshot
 
-- Updated at (ISO 8601, Asia/Manila): 2026-10-21T16:55:00+08:00
+- Updated at (ISO 8601, Asia/Manila): 2026-10-22T03:19:57+08:00
 - Agent / module: A — Core Platform / Fastify API
 - Repository: `erwin-io/valryde-api`
-- Branch / head: `docs/1-unified-real-email` / base `2e8cc4d36fe1066534e07863c3112ec95688f905`
+- Branch / head: `docs/mobile-testing-policy-001` / base `827738c0f2c33ad3082f6a4a38a8e35669d4b0ea`
 - Checklist IDs: 1–11
-- GitHub issues / PRs: PRs [#1](https://github.com/erwin-io/valryde-api/pull/1), [#2](https://github.com/erwin-io/valryde-api/pull/2), [#4](https://github.com/erwin-io/valryde-api/pull/4), [#5](https://github.com/erwin-io/valryde-api/pull/5), [#6](https://github.com/erwin-io/valryde-api/pull/6), [#7](https://github.com/erwin-io/valryde-api/pull/7), and [#8](https://github.com/erwin-io/valryde-api/pull/8) merged; unified-email [PR #11](https://github.com/erwin-io/valryde-api/pull/11) open.
+- GitHub issues / PRs: PRs [#1](https://github.com/erwin-io/valryde-api/pull/1), [#2](https://github.com/erwin-io/valryde-api/pull/2), [#4](https://github.com/erwin-io/valryde-api/pull/4), [#5](https://github.com/erwin-io/valryde-api/pull/5), [#6](https://github.com/erwin-io/valryde-api/pull/6), [#7](https://github.com/erwin-io/valryde-api/pull/7), [#8](https://github.com/erwin-io/valryde-api/pull/8), [#10](https://github.com/erwin-io/valryde-api/pull/10), and [#11](https://github.com/erwin-io/valryde-api/pull/11) merged; G1 [PR #12](https://github.com/erwin-io/valryde-api/pull/12) and development-fixtures [PR #15](https://github.com/erwin-io/valryde-api/pull/15) remain open on separate branches; mobile-testing-policy PR pending.
 - Implementation progress: IN_PROGRESS
 - Tech Lead review decision (if actually issued): Existing IDs 1–11 baseline ACCEPTED; unified real-email release authorized for implementation, not yet reviewed.
-- Current objective: Standardize real authenticated SMTP for all interactive environments, preserve Mailpit as a test override, verify seed-no-email behavior, and publish the Agent D readiness contract.
-- Last confirmed result: Existing provider-neutral SMTP source supports authenticated implicit TLS without modification. Gmail TCP/TLS certificate validation passed; full Mailpit registration/verification/recovery passed and cleaned all test rows; real provider authentication/delivery remains owner-gated.
-- Next concrete action: Complete the focused documentation/test gate, open the unified-email PR, then run controlled real-email validation after the owner privately configures SMTP credentials and a reachable callback.
-- Blocked by / decision owner: Owner must configure the authorized sender/SMTP secret and approve a reachable HTTPS callback/test inbox. Real Gmail authentication, external delivery, and Agent D credential handoff cannot be claimed before that evidence exists.
+- Current objective: Register the owner-approved permanent mobile testing policy without altering runtime code or the independently active G1 and development-fixture branches.
+- Last confirmed result: Canonical `origin/main` includes merged PR #11 at `827738c0f2c33ad3082f6a4a38a8e35669d4b0ea`; G1 PR #12 and development-fixtures PR #15 remain isolated and open.
+- Next concrete action: Publish the documentation-only policy PR for Tech Lead review and communicate its canonical path and full head SHA to Agents C and D.
+- Blocked by / decision owner: No implementation blocker. Only the owner may later declare `OWNER_DEVICE_ACCEPTED` for an identified mobile build or commit.
 - Dependencies / affected agents: B (tracking/latest state/realtime), C (public route/live APIs), D (driver invitation and operator APIs), E (Admin APIs), F (device runbooks), G (shared-contract review).
 
 ## Checklist coverage
@@ -74,6 +74,17 @@
 - Gate: Physical GPS/Traccar mapping and activation. Required actor: operator/Agent F/Agent B. Requested evidence: power, SIM/APN, server connectivity, GPS fix, correct IMEI/uniqueId mapping. State: OWNER_VERIFICATION_PENDING.
 
 ## Activity log (newest first; preserve prior entries)
+
+### 2026-10-22 03:19 +08:00 — Permanent mobile testing policy registration
+
+- Action / reason: Implemented the owner/Tech Lead directive to register `VALRYDE-MOBILE-TESTING-POLICY-001` as authoritative project governance while preserving the independently active G1 and development-fixture assignments.
+- Checklist/issue: Cross-project mobile governance supporting Agent C IDs 22–37 and Agent D IDs 38–55; no runtime checklist implementation changed.
+- Files/config/services affected: New mobile testing policy, `AGENTS.md`, Tech Lead repository-management handoff, and this Agent A status record. No application source, migration, database, security control, API contract, or infrastructure changed.
+- Observed result (success/failure/rollback): Policy now separates development acceptance from exclusively owner-managed physical Android-device acceptance; defines mandatory automated/native/API/security evidence; and registers the four required reporting classifications.
+- Validation and evidence: Documentation reference/path checks and `git diff --check` planned before commit. CI status will be recorded on the PR.
+- Contracts / risks / dependencies: Agents C and D must use the canonical policy path and an identified accepted commit. No agent or Tech Lead may use `OWNER_DEVICE_ACCEPTED` without explicit owner confirmation. Owner-discovered device defects require tracked hotfix work and regression coverage.
+- Commit/PR link or SHA (if available): Pending documentation commit and PR.
+- Next action / owner gate: Commit, push, open a reviewable documentation-only PR, provide its full head SHA to Agents C and D, and await Tech Lead review without self-merging.
 
 ### 2026-10-21 16:55 +08:00 — Unified real-email environment release started
 
