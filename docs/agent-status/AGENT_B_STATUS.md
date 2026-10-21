@@ -1,34 +1,38 @@
 # VALRYDE — Agent B Status
 
 ## Current snapshot
-- Updated at: 2026-10-21T17:20:43+08:00 (Asia/Singapore; same offset as Asia/Manila).
-- Agent / module: B — Traccar / Tracking Engine. Executor: Codex, explicitly reassigned from Claude by the owner/Tech Lead Stage13a validation release; Claude and Codex history preserved below.
-- Repository: erwin-io/valryde-api.
-- Current implementation branch / HEAD: feat/13-tracking-bridge / f8722b12e3509b83359388370b99ceed52bd1f47 (worktree C:/Development/valryde/.worktrees/agent-b-bridge), originally based on4a9a152. Canonical origin/main now2e8cc4d36fe1066534e07863c3112ec95688f905 after independent A/governance merges; no branch sync/rebase performed for this credential-gated recheck. Preparation branch docs/13-tracking-bridge-contract remains preserved.
-- Accepted REST foundation: PR #4 MERGED into main as 068da0c (2026-10-20T20:49:10Z).
-- Checklist IDs: 12–21. Stage 13a: 13, 14 (15/16 normalization groundwork). Earlier slice: 12, 14, 17, 18 (merged).
-- GitHub issues / PRs: [Issue #9](https://github.com/erwin-io/valryde-api/issues/9), [PR #10](https://github.com/erwin-io/valryde-api/pull/10) Stage13a OPEN at f8722b12e3509b83359388370b99ceed52bd1f47; verify/GitGuardian SUCCESS. Recovered original head dee206d remains historical. Earlier: [Issue #3](https://github.com/erwin-io/valryde-api/issues/3), [PR #4](https://github.com/erwin-io/valryde-api/pull/4) MERGED.
-- Implementation progress: Stage 13a READY_FOR_REVIEW; overall IDs 12–21 IN_PROGRESS.
-- Tech Lead decision: PR #4 ACCEPTED and merged. Stage 13a released (APPROVED to begin); 13a PR Not reviewed.
-- Objective: LIVE_BRIDGE_TEST_PASSED; attach actual Stage13a authenticated evidence for G review. No schema/public API/Pusher/permanent service.
-- Last confirmed result: PROVISIONED, CREDENTIAL_CONSUMPTION_VERIFIED and LIVE_BRIDGE_TEST_PASSED separately verified. Existing live test1pass/61.30s; expanded actual-provider harness passed2-device scope/history6+6/events0+0/realkeepalive/1client-onlyreconnect/RESTcatchup/loopbackhealth/watchdog/shutdown/logprivacy. Both children exit0;0matching processes and8091 released. Services/PIDs unchanged; artifact retained/protected.
-- Next concrete action: final G source/evidence/CI review on PR10; no self-merge. Stage13b remains proposal-only; default120s outage/hardware/freshGPS/new native-event generation and cross-user execution not claimed.
-- Implementation gates: prior credential-delivery gate resolved by explicit owner provisioning release; final live acceptance/evidence and PR10 merge remain G/owner decisions.13b schema/semantics/resolver approvals and physical GPS/F stationary-reporting gates remain separate.
-- Dependencies: Agent A identity/fleet authorization, GPS mapping, effective-route resolver; later C/D/E realtime consumers and F host/hardware evidence.
-- Missing references: complete Version 1.0 DOCX and standalone checklist not found in workspace; assigned IDs and locked rules are embedded in B/G handoffs and owner directive.
+- Updated at: 2026-10-22T02:50:00+08:00 (Asia/Singapore; same offset as Asia/Manila).
+- Agent / module: B — Traccar / Tracking Engine. Codex executor; prior Claude/Codex evidence and history preserved below.
+- Repository: erwin-io/valryde-api. Overall checklist IDs12–21 remain IN_PROGRESS.
+- Branch / baseline HEAD: docs/13b-durable-tracking-design, based on canonical origin/main **827738c0f2c33ad3082f6a4a38a8e35669d4b0ea** in C:/Development/valryde/.worktrees/agent-b-bridge. Documentation commit HEAD is recorded in Git/PR metadata, avoiding a self-referential SHA.
+- Accepted REST foundation: PR #4 MERGED as 068da0c7cbb3bd5759d90c26ac96026eb706b999; accepted source a4062c800944457f11f6f8e97848b15c18d507b4, Tech Lead review comment6267265303. No change to accepted PR4.
+- Accepted Stage13a: [PR #10](https://github.com/erwin-io/valryde-api/pull/10) ACCEPTED per Tech Lead release and MERGED; final head9d009d5a9467c498125d54c8f844dabacd3cc6c3, merge69deb572a9e323ce5cb2f0fb0f163dafe8df2bbd. Scoped progress DONE_AFTER_ACCEPTANCE; prior runtime/live evidence preserved, not rerun for design.
+- Current objective: **AGENT_B_STAGE13B_DESIGN_READY_FOR_REVIEW**, design approval only. Stage13b schema/runtime NOT_IMPLEMENTED; no migration or client contract authorized.
+- Current review: Stage13b package not yet reviewed. [Design issue #13](https://github.com/erwin-io/valryde-api/issues/13) created; documentation PR publication pending; earlier [Issue #9](https://github.com/erwin-io/valryde-api/issues/9) / PR10 and [Issue #3](https://github.com/erwin-io/valryde-api/issues/3) / [PR #4](https://github.com/erwin-io/valryde-api/pull/4) retained as historical slices.
+- Last confirmed result: fetched merged main; read current A/B contracts/source and infrastructure evidence; actual app metadata inspected in explicit READ ONLY transaction then ROLLBACK (001–005, PostGIS3.6.2, no latest/compliance tables). Five design documents plus successor link prepared. No business rows queried or credentials decrypted.
+- Next concrete action: publish focused documentation package and obtain G decisions D01–D12, then await explicit Stage13b implementation release. Design merge alone does not authorize SQL/runtime.
+- Shared blockers: A transaction-aware resolver/auth and shared mutation lock-order integration (existing request/application-first workflows conflict with naive B jeepney-first locks); immutable remap protocol; invalid-observation adapter; timing/retention/temporal-history and gateway decisions.
+- Dependencies: A business eligibility/authorization/route precedence; C/D/E versioned DTOs and REST/Pusher reconciliation; Infrastructure/owner approved app test writer and later rollout; F stationary-reporting/physical GPS evidence.
+- Missing references: complete Version1.0 DOCX and standalone checklist unavailable in workspace; frozen handoffs/owner directives used, no requirements invented.
 
 ## Checklist coverage
 | IDs | Slice | Progress | Next action |
 |---|---|---|---|
 | 12, 14 | REST/session foundation | ACCEPTED and MERGED | PR4, merge068da0c |
 | 17, 18 | Native events/history, mapping/RBAC | Internal foundation ACCEPTED and MERGED | PR4; public contract review follows |
-| 13, 14 | Stage13a lifecycle/recovery | READY_FOR_REVIEW, live evidence gated | PR10; Codex validation recovery in progress |
-| 15, 16 | Normalization groundwork / latest state | IN_PROGRESS; Stage13b persistence NOT_IMPLEMENTED | In-memory gate is not authoritative DB state; proposal approval pending |
-| 19–21 | Realtime/compliance/geospatial | NOT_STARTED | Separate reviewed slices |
+| 13, 14 | Stage13a lifecycle/recovery | DONE_AFTER_ACCEPTANCE | PR10 ACCEPTED and MERGED; authenticated live evidence historical |
+| 15, 16 | Normalization / durable latest state | IN_PROGRESS; Stage13b design READY_FOR_REVIEW, persistence NOT_IMPLEMENTED | docs/design/stage13b; D01–D07/D12 + explicit release |
+| 19–21 | Realtime/compliance/geospatial | Design proposed; runtime NOT_STARTED | Stage13b compliance review; gateway remains separate ID19 release |
 
 ## Latest verification
+Current design verification is separate from historical implementation results below. Earlier dated entries retain what was known at that time; current snapshot supersedes their stale merge/credential gates.
+
 | Command/check | Result | Evidence |
 |---|---|---|
+| 2026-10-22 Stage13b preflight | VERIFIED | main827738c; PR10 MERGED69deb572; current A/B source/contracts and Infrastructure evidence read |
+| 2026-10-22 app schema metadata | PASSED, READ ONLY | Explicit BEGIN READ ONLY / SHOW transaction_read_only=on / ROLLBACK;001–005/PostGIS3.6.2; no business data reads/writes |
+| Stage13b documentation static checks | PASSED | Seven documents: local links/fences/table widths, D01–D12,42 unique contiguous cases, exact documentation-only allowlist; git diff --check |
+| Stage13b runtime/concurrency/PostGIS acceptance | NOT_RUN | Design-only release;42 concrete planned cases, no fixtures/migrations/live sessions/Pusher/services |
 | npm run db:migrate | PASSED | Existing migrations already applied; no SQL changes |
 | npm run lint | PASSED | Initial lint findings corrected |
 | npm run typecheck | PASSED | Strict TypeScript |
@@ -51,6 +55,10 @@
 | Codex takeover: documentation/diff | PASSED | New validation report, bounded13b proposal and canonical status fences/links; git diff --check |
 
 ## Shared contract / risk changes
+- Current2026-10-22: [Stage13b design](../design/stage13b/README.md) supersedes prior proposal alternatives for review only. Three core tables and later optional pointer-intent table, observation/writer interface, 30s eligibility projection, transition-only history and invalidation-only Pusher proposed; no approved contract/runtime/schema changed.
+- D05 is a hard A/G gate: transaction executor alone is insufficient; reconcile current review/verification lock inversion and authorize transaction-consistent scopes before implementing the writer. D06/D07 remap/context changes also need A integration.
+- D02/D03 confirm bootstrap/re-entry continuity, invalid watermark and clock/freshness treatment; D08 compliance retention, D09 temporal history/DTO/path limits, D10/D11 gateway delivery and D12 operational limits need explicit decisions. See design decision registry for exact scope.
+- Historical observations below remain unchanged; main now contains accepted13a and proposal history. No new status-only acceptance cycle on PR4/PR10.
 - 2026-10-21 checkpoint: no approved contract changed. New report proposes public/private tracking API capability/DTO/auth boundaries for C/D/E review; no endpoint or client contract implemented. Versioned provider source clarifies keepalive/cached frames/Origin/token-query behavior; Valryde keeps private cookie auth.
 - New bridge proposal is unapproved documentation only: vehicle_latest_states, transactional route-resolver executor, session lease/cancellation and explicit ordering/freshness/mapping semantics. No runtime/schema/shared interface change made.
 - Schema, 30 s ingestion freshness versus ~60 s stationary reporting, 5 s future tolerance, mapping generation and transactional resolver require Tech Lead decisions before implementation.
@@ -62,6 +70,8 @@
 - Preserve Agent A status edits observed during branch creation and untracked filestructure.txt; exclude from Agent B delivery.
 
 ## Operator / hardware / external gates
+- Current2026-10-22: Stage13a dedicated-account/DPAPI/live evidence accepted and merged. No credential consumption or new provider session in this design release. Historical credential-delivery gates below are resolved for13a, not permission for a permanent process or new database writes.
+- Stage13b app test-write/migration authorization, isolated DB identity/grants, Windows bounded proof, permanent service, Pusher credentials and production rollout remain separate owner/G/Infrastructure gates. Hardware stationary interval versus frozen30s freshness remains F/operator work; no physical GPS proof claimed.
 - Updated2026-10-21: installed Windows Traccar6.16.0 local development server is ready per infrastructure evidence; dedicated readonly account exists but only its runtime credentials must be separately delivered. Do not decrypt/copy the whole admin-containing DPAPI bundle. Runtime Bridge identity/provisioning remains unconfirmed.
 - Infrastructure source reorganization has offline evidence, but handoff explicitly gates B next implementation on cross-platform checkpoint acceptance; no acceptance evidence found. Linux fresh install, remote TLS and Vultr remain unverified/not provisioned; no change authorized.
 - Prior statements below preserve historical gates; current observed development version/loopback reachability are now verified, while physical GPS/production Pusher remain operator-gated.
@@ -69,6 +79,15 @@
 - Pusher configuration/hardware evidence are pending later slices. No physical verification claimed.
 
 ## Activity log (newest first; preserve prior entries)
+### 2026-10-22 02:50 +08:00 — Stage13b durable tracking design prepared
+- Release: Tech Lead approves design only; fetched main827738c, confirmed PR10 accepted/merged69deb572, reused clean B worktree on docs/13b-durable-tracking-design. Shared primary checkout/untracked docs and A worktrees preserved; no reset/rebase/main push.
+- Preflight: current migrations/source, A frozen resolver/scope, proposals/handoffs/status and canonical Infrastructure evidence reviewed. Actual application schema metadata inspected with explicit READ ONLY transaction then rollback:001–005/PostGIS3.6.2, no latest-state/compliance tables. No business rows queried, Traccar sessions, credentials/DPAPI, infrastructure changes or runtime tests.
+- Files: five documents under docs/design/stage13b (architecture/gates, schema/migration, persistence/state machine, gateway DTO/Pusher, tests/security/rollout); prior proposal gets successor link; this persistent status reconciles merged acceptance while retaining history.
+- Proposed core tables vehicle_latest_states/tracking_bridge_leases/route_compliance_events; candidate006/007 and separate later008publication intents are names only, no .sql created. No raw GPS archive. Invalid-observation adapter and A executor/locking integration explicitly gated; A resolver remains sole precedence authority.
+- Concrete42 planned acceptance cases include real PostGIS and two-connection SQL barrier tests; all13b runtime tests NOT_RUN. Gateway proposes public/private allowlists, no provider IDs, invalidation-only Pusher and complete REST reconciliation; client contracts require freeze first.
+- Publication/preflight: created design issue13; re-fetch confirms main still827738c. Concurrent A G1 implementation PR12 is unmerged and excluded from assumed baseline. Static checks PASSED for seven docs, D01–D12 and42 cases; no source change. D12 additionally requires an explicit least-privilege locking-grant/helper decision; SELECT alone is insufficient for A row locks.
+- Blockers/next: D01–D12 review, especially A lock-order inversion, invalid/status observation capture, remap generation, compliance continuity, retention and temporal-history authorization. Explicit Stage13b implementation release required before any schema/runtime work, even after design PR merge. Overall IDs12–21 IN_PROGRESS.
+
 ### 2026-10-21 17:20 +08:00 — LIVE_BRIDGE_TEST_PASSED and cleanup verified
 - Existing opt-in real Traccar native socket/keepalive test PASSED1test/61.30s. Separate bounded real-provider harness PASSED: restricted nonadmin service flags; exactly2approved fixtures/2latest; device-specific histories6/6 andevents0/0; realkeepalive1; no unintended reconnect before loss; closed only our client socket, exactly1reconnect with2devices+2positions reconciliation reads andRUNNING restored.
 - Actual health statuses503→200→503→200→503 on127.0.0.1:8091; listener closed. Controlled1000ms client silence watchdog passed, not a forced provider outage/default120s claim. Stop<10s and20captured log lines passed private-value/token/identity/coordinate checks. No telemetry injected or server config/service restart.
