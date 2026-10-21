@@ -34,7 +34,7 @@ The following decisions are already approved for the Version 1.0 MVP baseline an
 
 - **Product/application names:** `Valryde` = commuter app; `Valryde Operator` = shared Driver/Operator mobile app; `Valryde Admin` = Admin web.
 - **Canonical temporary GitHub owner:** `erwin-io`. Ownership may be transferred later; do not hard-code GitHub owner into runtime behavior.
-- **Repositories:** `valryde-api`, `valryde-mobile-commuter`, `valryde-mobile-operator`, `valryde-web-admin`. There is no separate docs repository for MVP.
+- **Repositories:** `valryde-api`, `valryde-mobile-commuter`, `valryde-mobile-driver-operator`, `valryde-web-admin`. There is no separate docs repository for MVP.
 - **Branch model:** `main` is canonical. Developer AI agents work on focused feature/fix branches and open PRs. **Developer agents do not merge their own PRs.**
 - **API stack:** current supported Node.js LTS + current stable Fastify + TypeScript + npm. Exact resolved versions are pinned by each repository's `package-lock.json`.
 - **API validation:** schema-first Fastify JSON Schema with TypeBox/type-provider patterns; avoid untyped ad-hoc request validation.
