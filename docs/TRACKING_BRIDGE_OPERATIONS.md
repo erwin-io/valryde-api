@@ -39,6 +39,8 @@ These are operational settings. They do not change the locked 30 s commuter avai
 
 ### Credential provisioning
 
+2026-10-21 owner-approved Windows test delivery now exists: `%LOCALAPPDATA%/VALRYDE/Bridge/.env.bridge.dpapi`, outside Git, contains CurrentUser-DPAPI encrypted UTF8 JSON with only TRACCAR_EMAIL/TRACCAR_PASSWORD. This binary artifact is **not** a dotenv file. Use only an authorized same-user bounded launcher that validates identity/ACL, decrypts that service-only artifact, injects the temporary child environment and clears it afterward. Never decrypt the infrastructure bootstrap bundle. Directory/file ACLs allow only Erwin and SYSTEM; the tested identity is ERWIN/Erwin. A new identity/protection scope requires separate review. Keep the encrypted artifact protected after testing; Infrastructure owns authorized manual removal/rotation. Actual consumption/live evidence: [Codex takeover validation](TRACKING_BRIDGE_CODEX_TAKEOVER_VALIDATION.md).
+
 The owner provisions only the read-only service account's email and password into the bridge's private runtime environment: user environment variables for the Windows account that runs the bridge, or a `.env` readable only by that account. Do not grant the bridge access to `C:\ProgramData\VALRYDE\secrets\development.dpapi`, because it also contains admin material. Do not paste credentials into chat, Git, CLI arguments or logs.
 
 ## Running
