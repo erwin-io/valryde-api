@@ -7,12 +7,12 @@
 - Repository: `erwin-io/valryde-api`
 - Branch / head: `docs/mobile-testing-policy-001` / base `827738c0f2c33ad3082f6a4a38a8e35669d4b0ea`
 - Checklist IDs: 1–11
-- GitHub issues / PRs: PRs [#1](https://github.com/erwin-io/valryde-api/pull/1), [#2](https://github.com/erwin-io/valryde-api/pull/2), [#4](https://github.com/erwin-io/valryde-api/pull/4), [#5](https://github.com/erwin-io/valryde-api/pull/5), [#6](https://github.com/erwin-io/valryde-api/pull/6), [#7](https://github.com/erwin-io/valryde-api/pull/7), [#8](https://github.com/erwin-io/valryde-api/pull/8), [#10](https://github.com/erwin-io/valryde-api/pull/10), and [#11](https://github.com/erwin-io/valryde-api/pull/11) merged; G1 [PR #12](https://github.com/erwin-io/valryde-api/pull/12) and development-fixtures [PR #15](https://github.com/erwin-io/valryde-api/pull/15) remain open on separate branches; mobile-testing-policy PR pending.
+- GitHub issues / PRs: PRs [#1](https://github.com/erwin-io/valryde-api/pull/1), [#2](https://github.com/erwin-io/valryde-api/pull/2), [#4](https://github.com/erwin-io/valryde-api/pull/4), [#5](https://github.com/erwin-io/valryde-api/pull/5), [#6](https://github.com/erwin-io/valryde-api/pull/6), [#7](https://github.com/erwin-io/valryde-api/pull/7), [#8](https://github.com/erwin-io/valryde-api/pull/8), [#10](https://github.com/erwin-io/valryde-api/pull/10), and [#11](https://github.com/erwin-io/valryde-api/pull/11) merged; G1 [PR #12](https://github.com/erwin-io/valryde-api/pull/12), development-fixtures [PR #15](https://github.com/erwin-io/valryde-api/pull/15), and mobile-testing-policy [PR #16](https://github.com/erwin-io/valryde-api/pull/16) remain open on separate branches.
 - Implementation progress: IN_PROGRESS
 - Tech Lead review decision (if actually issued): Existing IDs 1–11 baseline ACCEPTED; unified real-email release authorized for implementation, not yet reviewed.
 - Current objective: Register the owner-approved permanent mobile testing policy without altering runtime code or the independently active G1 and development-fixture branches.
 - Last confirmed result: Canonical `origin/main` includes merged PR #11 at `827738c0f2c33ad3082f6a4a38a8e35669d4b0ea`; G1 PR #12 and development-fixtures PR #15 remain isolated and open.
-- Next concrete action: Publish the documentation-only policy PR for Tech Lead review and communicate its canonical path and full head SHA to Agents C and D.
+- Next concrete action: Tech Lead reviews PR #16; after acceptance, Agents C and D consume the canonical policy path from the accepted full head or merge SHA.
 - Blocked by / decision owner: No implementation blocker. Only the owner may later declare `OWNER_DEVICE_ACCEPTED` for an identified mobile build or commit.
 - Dependencies / affected agents: B (tracking/latest state/realtime), C (public route/live APIs), D (driver invitation and operator APIs), E (Admin APIs), F (device runbooks), G (shared-contract review).
 
@@ -81,10 +81,10 @@
 - Checklist/issue: Cross-project mobile governance supporting Agent C IDs 22–37 and Agent D IDs 38–55; no runtime checklist implementation changed.
 - Files/config/services affected: New mobile testing policy, `AGENTS.md`, Tech Lead repository-management handoff, and this Agent A status record. No application source, migration, database, security control, API contract, or infrastructure changed.
 - Observed result (success/failure/rollback): Policy now separates development acceptance from exclusively owner-managed physical Android-device acceptance; defines mandatory automated/native/API/security evidence; and registers the four required reporting classifications.
-- Validation and evidence: Documentation reference/path checks and `git diff --check` planned before commit. CI status will be recorded on the PR.
+- Validation and evidence: Required policy marker/reference checks passed; `git diff --check` passed after correcting Markdown whitespace; changed-path audit confirms documentation-only scope. GitHub CI status is recorded on PR #16.
 - Contracts / risks / dependencies: Agents C and D must use the canonical policy path and an identified accepted commit. No agent or Tech Lead may use `OWNER_DEVICE_ACCEPTED` without explicit owner confirmation. Owner-discovered device defects require tracked hotfix work and regression coverage.
-- Commit/PR link or SHA (if available): Pending documentation commit and PR.
-- Next action / owner gate: Commit, push, open a reviewable documentation-only PR, provide its full head SHA to Agents C and D, and await Tech Lead review without self-merging.
+- Commit/PR link or SHA (if available): Policy commit `89ef973162096c959d6ad6fa4eec1da04ab4ea74`; [PR #16](https://github.com/erwin-io/valryde-api/pull/16), open and not merged.
+- Next action / owner gate: Provide the final PR head SHA and canonical policy path to Agents C and D, then await Tech Lead review without self-merging.
 
 ### 2026-10-21 16:55 +08:00 — Unified real-email environment release started
 
