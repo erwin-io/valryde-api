@@ -12,7 +12,7 @@
 - Tech Lead decision: PR #4 ACCEPTED and merged. Stage 13a released (APPROVED to begin); 13a PR Not reviewed.
 - Objective: CODEX_AGENT_B_TAKEOVER_READY; recover Stage13a and complete available validation, stopping at secure service-only credential gate. No schema, public API, Pusher or permanent service.
 - Last confirmed result: lint/typecheck/build PASS, audit0; low-concurrency full DB-enabled suite101 passed/1 skipped (17 files passed/1 skipped) after test-only portability correction. Initial parallel failures preserved in activity history. Authenticated live Bridge NOT_RUN: Infrastructure confirmed no service-only file/launcher and inherited credentials absent.
-- Next concrete action: publish test/docs takeover evidence to PR10; owner/Infrastructure securely injects only existing integration-account credentials into bounded child runtime, then authorized authenticated keepalive/reconnect/health validation. Stage13b remains proposal-only.
+- Next concrete action: owner/Infrastructure securely injects only existing integration-account credentials into bounded child runtime, then authorized authenticated keepalive/reconnect/health validation. PR10 has published takeover evidence and requests final G review; live evidence remains blocked. Stage13b remains proposal-only.
 - Implementation gates: authenticated live validation pending credential delivery (owner). 13b needs G schema/semantics approval and Agent A resolver executor coordination. Physical GPS and stationary-interval compatibility (M1) are Agent F/hardware.
 - Dependencies: Agent A identity/fleet authorization, GPS mapping, effective-route resolver; later C/D/E realtime consumers and F host/hardware evidence.
 - Missing references: complete Version 1.0 DOCX and standalone checklist not found in workspace; assigned IDs and locked rules are embedded in B/G handoffs and owner directive.
@@ -69,6 +69,13 @@
 - Pusher configuration/hardware evidence are pending later slices. No physical verification claimed.
 
 ## Activity log (newest first; preserve prior entries)
+### 2026-10-21 10:45 +08:00 — PR10 evidence published; credential gate retained
+- Ordinary commit53eff6562c45a2eda54078e510453762d241bcec pushed to feat/13-tracking-bridge/PR10 with test-only portability fix, takeover report,13b proposal and persistent status. Branch clean after push; no other worktree changed.
+- Updated PR10 description with actual passing/failed/skipped results, secure-delivery blocker and final G review request. gh pr edit failed on deprecated Projects(classic) GraphQL projectCards lookup; no PR body update from that attempt. Used REST PATCH with exact body file instead; update succeeded. No credentials exposed/account setting changed.
+- GitGuardian SUCCESS on53eff65; API CI IN_PROGRESS at observed check. Subsequent documentation-only commit updates operations with resource-bounded test invocation and live-test coverage limits; final HEAD/CI are reported in Git/PR metadata. No acceptance or merge claimed.
+- Owner-authorized Infrastructure coordination completed without secret values. No service-only launcher/file exists; no authenticated Bridge run attempted. Exact required input remains approved service-only environment injection into the temporary child, without bundle/admin/JDBC access.
+- Primary/shared preparation checkout and A worktrees preserved. Overall B IN_PROGRESS; Stage13a READY_FOR_REVIEW with live credential evidence pending. Stage13b remains unapproved design only.
+
 ### 2026-10-21 10:43 +08:00 — Takeover verification complete, live credential gate
 - Rerun result: lint/typecheck/build PASSED; audit0 vulnerabilities. Full DB-enabled Vitest with maxWorkers1/no-file-parallelism PASSED101 tests/1 skipped,17 files/1 skipped,49.91s. Live test skipped deliberately; no authenticated Bridge result claimed.
 - Added docs/TRACKING_BRIDGE_CODEX_TAKEOVER_VALIDATION.md with recovery/worktree safety, actual failure/fix/results, exact secure-delivery blocker and future bounded live acceptance procedure. Stage13b proposal now includes a bounded approval packet covering all requested state/event/locking/visibility/API boundaries. No runtime source or schema changed.

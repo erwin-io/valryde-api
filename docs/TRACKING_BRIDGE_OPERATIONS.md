@@ -80,6 +80,10 @@ Installing it as a Windows service (for example with a third-party wrapper) is a
 
 ## Verification
 
+On a resource-constrained Windows host, run the full suite with `npx vitest run --maxWorkers=1 --no-file-parallelism`, supplying the approved application test DB settings privately. This limits concurrent workers; it does not increase test/hook timeouts or change production settings. During Codex takeover on Node24.19.0, this run passed101 tests with only the credential-gated live test skipped after a test-only socket-loss diagnostic correction. Keep the initial failed parallel run in evidence.
+
+For live tests, provision only service-account credentials in the child environment first. The Vitest test does not import the Bridge entrypoint's dotenv initialization; inherit the private variables or use `node --import dotenv/config node_modules/vitest/vitest.mjs run test/traccar-live.integration.test.ts`. Do not write secrets into tracked files. The existing live test does not open the health listener or test live reconnect/history/events; these require separate bounded assertions under the same explicit authorization. Current secure-delivery gate and full procedure: [Codex takeover evidence](TRACKING_BRIDGE_CODEX_TAKEOVER_VALIDATION.md).
+
 - `npm test`: deterministic lifecycle and synthetic telemetry scenarios (`test/tracking-bridge.test.ts`), plus real HTTP/WebSocket transport against a local Traccar stand-in (`test/tracking-bridge.integration.test.ts`).
 - Live, read-only, opt-in against the dev Traccar with provisioned credentials:
 
