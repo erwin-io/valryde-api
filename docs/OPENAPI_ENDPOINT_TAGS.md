@@ -37,6 +37,8 @@ The OpenAPI server URL is `/api`; paths below are relative to that base. Categor
 
 ## 05 — Fleet Groups & Membership
 
+- `GET /drivers` — `listDrivers`
+- `GET /operators` — `listOperators`
 - `GET /fleet-groups` — `listFleetGroups`
 - `POST /fleet-groups` — `createFleetGroup`
 - `PATCH /fleet-groups/{groupId}` — `updateFleetGroup`

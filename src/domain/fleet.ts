@@ -40,6 +40,40 @@ export interface DriverAssignment {
   activeTo: Date | null;
 }
 
+export interface DriverDirectoryEntry {
+  driverId: string;
+  userId: string;
+  email: string;
+  displayName: string;
+  status: 'ACTIVE' | 'DISABLED';
+  userStatus: 'ACTIVE' | 'DISABLED';
+  emailVerified: boolean;
+  operatorId: string | null;
+  activeJeepneyId: string | null;
+  groupIds: string[];
+  createdAt: Date;
+}
+
+export interface OperatorDirectoryEntry {
+  operatorId: string;
+  ownerUserId: string;
+  email: string;
+  displayName: string;
+  status: 'ACTIVE' | 'DISABLED';
+  userStatus: 'ACTIVE' | 'DISABLED';
+  driverCount: number;
+  jeepneyCount: number;
+  groupCount: number;
+  createdAt: Date;
+}
+
+export interface PaginationResult {
+  page: number;
+  pageSize: number;
+  total: number;
+  totalPages: number;
+}
+
 export function serializeJeepney(jeepney: Jeepney) {
   return {
     id: jeepney.id,
@@ -74,5 +108,19 @@ export function serializeDriverAssignment(assignment: DriverAssignment) {
     assignedByUserId: assignment.assignedByUserId,
     activeFrom: assignment.activeFrom.toISOString(),
     activeTo: assignment.activeTo?.toISOString() ?? null,
+  };
+}
+
+export function serializeDriverDirectoryEntry(driver: DriverDirectoryEntry) {
+  return {
+    ...driver,
+    createdAt: driver.createdAt.toISOString(),
+  };
+}
+
+export function serializeOperatorDirectoryEntry(operator: OperatorDirectoryEntry) {
+  return {
+    ...operator,
+    createdAt: operator.createdAt.toISOString(),
   };
 }

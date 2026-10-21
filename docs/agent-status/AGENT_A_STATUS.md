@@ -2,18 +2,18 @@
 
 ## Current snapshot
 
-- Updated at (ISO 8601, Asia/Manila): 2026-10-21T16:55:00+08:00
+- Updated at (ISO 8601, Asia/Manila): 2026-10-22T02:40:47+08:00
 - Agent / module: A — Core Platform / Fastify API
 - Repository: `erwin-io/valryde-api`
-- Branch / head: `docs/1-unified-real-email` / base `2e8cc4d36fe1066534e07863c3112ec95688f905`
+- Branch / head: `feat/3-5-7-g1-directory` / base `827738c0f2c33ad3082f6a4a38a8e35669d4b0ea`
 - Checklist IDs: 1–11
-- GitHub issues / PRs: PRs [#1](https://github.com/erwin-io/valryde-api/pull/1), [#2](https://github.com/erwin-io/valryde-api/pull/2), [#4](https://github.com/erwin-io/valryde-api/pull/4), [#5](https://github.com/erwin-io/valryde-api/pull/5), [#6](https://github.com/erwin-io/valryde-api/pull/6), [#7](https://github.com/erwin-io/valryde-api/pull/7), and [#8](https://github.com/erwin-io/valryde-api/pull/8) merged; unified-email [PR #11](https://github.com/erwin-io/valryde-api/pull/11) open.
+- GitHub issues / PRs: Accepted G1 proposal [PR #8](https://github.com/erwin-io/valryde-api/pull/8), Agent B foundation [PR #10](https://github.com/erwin-io/valryde-api/pull/10), and unified-email [PR #11](https://github.com/erwin-io/valryde-api/pull/11) are merged on `main`; G1 implementation PR pending publication.
 - Implementation progress: IN_PROGRESS
-- Tech Lead review decision (if actually issued): Existing IDs 1–11 baseline ACCEPTED; unified real-email release authorized for implementation, not yet reviewed.
-- Current objective: Standardize real authenticated SMTP for all interactive environments, preserve Mailpit as a test override, verify seed-no-email behavior, and publish the Agent D readiness contract.
-- Last confirmed result: Existing provider-neutral SMTP source supports authenticated implicit TLS without modification. Gmail TCP/TLS certificate validation passed; full Mailpit registration/verification/recovery passed and cleaned all test rows; real provider authentication/delivery remains owner-gated.
-- Next concrete action: Complete the focused documentation/test gate, open the unified-email PR, then run controlled real-email validation after the owner privately configures SMTP credentials and a reachable callback.
-- Blocked by / decision owner: Owner must configure the authorized sender/SMTP secret and approve a reachable HTTPS callback/test inbox. Real Gmail authentication, external delivery, and Agent D credential handoff cannot be claimed before that evidence exists.
+- Tech Lead review decision (if actually issued): Existing IDs 1–11 baseline ACCEPTED; G1 directory contract approved for implementation. Implementation is not yet Tech Lead-reviewed.
+- Current objective: Publish the approved read-only G1 Driver and Operator directories with exact RBAC, pagination, ownership, and DTO contracts.
+- Last confirmed result: `GET /api/drivers` and `GET /api/operators` pass the full local PostgreSQL-enabled gate; 7 G1 integration cases cover isolation, RBAC, empty results, multi-role ADMIN behavior, assignment/group aggregates, validation, disabled sessions, and response privacy. Generated G1 users were cleaned (`0` residue).
+- Next concrete action: Commit, push the focused G1 branch, open a PR to `main`, and await Tech Lead review without merging.
+- Blocked by / decision owner: No implementation blocker. G2 group-membership read/removal and G3 Driver self-assignment remain explicitly outside this release and require separate Tech Lead authorization.
 - Dependencies / affected agents: B (tracking/latest state/realtime), C (public route/live APIs), D (driver invitation and operator APIs), E (Admin APIs), F (device runbooks), G (shared-contract review).
 
 ## Checklist coverage
@@ -22,11 +22,11 @@
 |---:|---|---|---|---|
 | 1 | Authentication, JWT & Google Sign-In | IN_PROGRESS | Accepted provider-neutral SMTP/resend/recovery baseline plus unified environment documentation and SMTP profile tests on `docs/1-unified-real-email` | Real SMTP authentication/delivery and reachable callback remain owner-gated. |
 | 2 | Role-Based Access Control | DONE_AFTER_ACCEPTANCE | `src/plugins/authorization.ts`, negative RBAC integration tests, merged PR #1 | Downstream clients must preserve server authority. |
-| 3 | User/Profile and first Admin | DONE_AFTER_ACCEPTANCE | Admin CLI and unit/PostgreSQL tests; merged PR #1 | Permanent Admin credentials remain owner-supplied. |
+| 3 | User/Profile and first Admin | IN_PROGRESS | Accepted baseline plus G1 Driver/Operator directory implementation and PostgreSQL tests on `feat/3-5-7-g1-directory` | Tech Lead review of G1 implementation pending. |
 | 4 | Jeepney Management | DONE_AFTER_ACCEPTANCE | `src/routes/fleet-routes.ts`, migration 003, PostgreSQL fleet test, merged PR #1 | UI/client integration pending. |
-| 5 | Driver-to-Jeepney Assignment | DONE_AFTER_ACCEPTANCE | Verified-email Driver association plus same-operator assignment integration tests, merged PR #1 | Downstream integration pending. |
+| 5 | Driver-to-Jeepney Assignment | IN_PROGRESS | Accepted assignment baseline plus G1 Operator Driver picker (`GET /api/drivers`) | G3 Driver self-assignment contract remains separate. |
 | 6 | Fleet Group Management | DONE_AFTER_ACCEPTANCE | Fleet group API, migration 003, PostgreSQL test, merged PR #1 | Downstream integration pending. |
-| 7 | Group Membership & Visibility | DONE_AFTER_ACCEPTANCE | Cross-operator denial, membership visibility, multi-group DRIVER authorization tests, merged PR #1 | Downstream clients must preserve scope. |
+| 7 | Group Membership & Visibility | IN_PROGRESS | Accepted membership baseline plus scoped G1 Driver directory and cross-operator PostgreSQL coverage | G2 membership read/removal remains separate. |
 | 8 | Transit Route Management API | DONE_AFTER_ACCEPTANCE | Search, detail, pagination, OpenAPI, Postman and PostgreSQL/PostGIS tests, merged PR #1 | Downstream clients must adopt the pagination envelope. |
 | 9 | Route Direction Management | DONE_AFTER_ACCEPTANCE | GeoJSON/WGS84 validation, SRID 4326, GiST index, tests, merged PR #1 | Admin UI integration pending. |
 | 10 | Jeepney-to-Transit Assignment | DONE_AFTER_ACCEPTANCE | Frozen effective-route contract, transactional ambiguity guards, PostgreSQL coverage, merged PR #1 | Agent B must consume the shared resolver/endpoint. |
@@ -36,6 +36,8 @@
 
 | Command / check | Environment | Result | Date/time | Evidence / notes |
 |---|---|---|---|---|
+| `npm run db:migrate`, `npm run lint`, `npm run typecheck`, `npm test`, `npm run build`, `npm audit --audit-level=high`, `git diff --check` | G1 branch; local PostgreSQL/PostGIS `valrydedb`, `dbo,public` | PASSED | 2026-10-22 02:39 +08:00 | 20 test files passed, 121 tests passed; one pre-existing live/external test file skipped; zero vulnerabilities; G1 test residue `0`. |
+| Targeted `test/pg-directory.integration.test.ts` | Fastify inject + local PostgreSQL | PASSED | 2026-10-22 02:37 +08:00 | 7/7 tests; OPERATOR tenant isolation, ADMIN filters, empty results, multi-role ADMIN, reassignment, counts, RBAC, disabled session, exact DTO fields. |
 | GitHub API CI and GitGuardian | PR #11 head `b77e491` | PASSED | 2026-10-21 17:26 +08:00 | API `verify` passed in 59 seconds; GitGuardian passed. |
 | `npm run db:migrate`, `npm run lint`, `npm run typecheck`, `npm test`, `npm run build`, `npm audit --audit-level=high`, `git diff --check` | Unified-email branch; local PostgreSQL/PostGIS `dbo` | PASSED | 2026-10-21 17:24 +08:00 | 17 files / 92 tests, 0 skipped; zero vulnerabilities; Admin bootstrap test confirms zero auth challenges. |
 | Gmail port 465 TLS handshake | Local network; no credentials | PASSED | 2026-10-21 16:48 +08:00 | `smtp.gmail.com:465` reachable; certificate authorization true; authentication intentionally not attempted without owner secret. |
@@ -60,7 +62,8 @@
 
 ## Shared contract / risk changes
 
-- API/DTO/schema/migration changes: Unified-email work changes no endpoint, DTO, schema, migration, token, or RBAC contract. It standardizes environment documentation and verifies existing SMTP/bootstrap behavior. Previously accepted additions remain unchanged.
+- API/DTO/schema/migration changes: Implements approved G1 `GET /api/drivers` (`listDrivers`) and `GET /api/operators` (`listOperators`) contracts. Adds no migration and changes no existing endpoint. Both return stable paginated envelopes and only approved fields.
+- G1 RBAC/data-isolation impact: OPERATOR Driver results are derived only from the caller's active Operator profile; `operatorId` and `associated` are ADMIN-only filters. ADMIN can read global directories. DRIVER/COMMUTER are denied. A multi-role ADMIN receives ADMIN semantics. User IDs, Driver IDs, and Operator IDs remain distinct.
 - Auth/RBAC/data-isolation impact: Challenge delivery is provider-neutral SMTP with environment-only configuration, hashed tokens, cooldown, supersession, invalidation, generic public responses, and provider-failure recovery. Driver association requires a verified DRIVER email and transactionally rejects cross-Operator claims.
 - Realtime/Traccar/geospatial impact: No realtime or Traccar implementation changed. Agent B now has a server-authoritative effective-route contract: active direct assignment wins; otherwise exactly one active group assignment is inherited; zero returns no route; multiple inherited routes return `409 ROUTE_ASSIGNMENT_CONFLICT`.
 - Secrets/security/privacy impact: No credentials are tracked. Postman environment values remain blank; runtime E2E credentials were generated in memory and removed. SMTP credentials, JWTs, challenge tokens, and Admin passwords are absent from source, logs, docs, and checked-in Postman data.
@@ -74,6 +77,17 @@
 - Gate: Physical GPS/Traccar mapping and activation. Required actor: operator/Agent F/Agent B. Requested evidence: power, SIM/APN, server connectivity, GPS fix, correct IMEI/uniqueId mapping. State: OWNER_VERIFICATION_PENDING.
 
 ## Activity log (newest first; preserve prior entries)
+
+### 2026-10-22 02:40 +08:00 — Approved G1 Driver/Operator directories implemented
+
+- Action / reason: Implemented the Tech Lead-approved G1 contract merged through PR #8 from canonical `main` after PRs #10 and #11. Used an isolated worktree and preserved Agent B's existing worktree/status history.
+- Checklist/issue: Agent A IDs 3, 5, 7; G1 directory release.
+- Files/config/services affected: Fleet domain/service/routes, OpenAPI contract test and mapping, PostgreSQL directory integration test, Agent D/E G1 handoff, frontend integration handoff, and this status file. No migration, Traccar, Agent B source, credential, or production database change.
+- Observed result (success/failure/rollback): Added scoped `GET /api/drivers` and ADMIN-only `GET /api/operators`. Operator scope cannot be widened; ADMIN-only filtering, stable pagination, exact DTO serialization, aggregate assignment/group/count fields, and multi-role ADMIN behavior match the approved proposal.
+- Validation and evidence: Full local gate passed: migrations, lint, typecheck, 20 test files / 121 tests, build, audit, and diff check. Seven G1 PostgreSQL cases passed and cleanup left zero `G1-%` users.
+- Contracts / risks / dependencies: G1 unblocks Agent D's Operator Driver picker and Agent E's Operator/Driver monitoring and Operator selection. G2 membership read/removal and G3 Driver self-assignment remain unimplemented and unauthorized by this release.
+- Commit/PR link or SHA (if available): Branch `feat/3-5-7-g1-directory`; commit/PR pending publication.
+- Next action / owner gate: Commit, push, open the focused PR, and return `AGENT_A_G1_IMPLEMENTATION_READY_FOR_REVIEW` without merging.
 
 ### 2026-10-21 16:55 +08:00 — Unified real-email environment release started
 
