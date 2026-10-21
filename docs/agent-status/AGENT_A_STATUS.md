@@ -5,9 +5,9 @@
 - Updated at (ISO 8601, Asia/Manila): 2026-10-22T02:40:47+08:00
 - Agent / module: A — Core Platform / Fastify API
 - Repository: `erwin-io/valryde-api`
-- Branch / head: `feat/3-5-7-g1-directory` / base `827738c0f2c33ad3082f6a4a38a8e35669d4b0ea`
+- Branch / implementation commit: `feat/3-5-7-g1-directory` / `100359d`
 - Checklist IDs: 1–11
-- GitHub issues / PRs: Accepted G1 proposal [PR #8](https://github.com/erwin-io/valryde-api/pull/8), Agent B foundation [PR #10](https://github.com/erwin-io/valryde-api/pull/10), and unified-email [PR #11](https://github.com/erwin-io/valryde-api/pull/11) are merged on `main`; G1 implementation PR pending publication.
+- GitHub issues / PRs: Accepted G1 proposal [PR #8](https://github.com/erwin-io/valryde-api/pull/8), Agent B foundation [PR #10](https://github.com/erwin-io/valryde-api/pull/10), and unified-email [PR #11](https://github.com/erwin-io/valryde-api/pull/11) are merged on `main`; G1 implementation [PR #12](https://github.com/erwin-io/valryde-api/pull/12) is open for Tech Lead review.
 - Implementation progress: IN_PROGRESS
 - Tech Lead review decision (if actually issued): Existing IDs 1–11 baseline ACCEPTED; G1 directory contract approved for implementation. Implementation is not yet Tech Lead-reviewed.
 - Current objective: Publish the approved read-only G1 Driver and Operator directories with exact RBAC, pagination, ownership, and DTO contracts.
@@ -86,7 +86,7 @@
 - Observed result (success/failure/rollback): Added scoped `GET /api/drivers` and ADMIN-only `GET /api/operators`. Operator scope cannot be widened; ADMIN-only filtering, stable pagination, exact DTO serialization, aggregate assignment/group/count fields, and multi-role ADMIN behavior match the approved proposal.
 - Validation and evidence: Full local gate passed: migrations, lint, typecheck, 20 test files / 121 tests, build, audit, and diff check. Seven G1 PostgreSQL cases passed and cleanup left zero `G1-%` users.
 - Contracts / risks / dependencies: G1 unblocks Agent D's Operator Driver picker and Agent E's Operator/Driver monitoring and Operator selection. G2 membership read/removal and G3 Driver self-assignment remain unimplemented and unauthorized by this release.
-- Commit/PR link or SHA (if available): Branch `feat/3-5-7-g1-directory`; commit/PR pending publication.
+- Commit/PR link or SHA (if available): Implementation commit `100359d`; [PR #12](https://github.com/erwin-io/valryde-api/pull/12), open and not merged.
 - Next action / owner gate: Commit, push, open the focused PR, and return `AGENT_A_G1_IMPLEMENTATION_READY_FOR_REVIEW` without merging.
 
 ### 2026-10-21 16:55 +08:00 — Unified real-email environment release started
