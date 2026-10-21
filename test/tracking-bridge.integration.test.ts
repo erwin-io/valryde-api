@@ -95,7 +95,9 @@ describe('tracking bridge over real HTTP/WebSocket transport', () => {
     await until(() => provider.state.upgrades.length === 2 && bridge.state === 'RUNNING');
     // Native WebSocket hides handshake status, so every reconnect uses a fresh login.
     expect(provider.state.upgrades[1]?.cookie).toBe('JSESSIONID=session-2');
-    expect(bridge.health()).toMatchObject({ reconnects: 1, lastError: 'SOCKET_CLOSED' });
+    expect(bridge.health().reconnects).toBe(1);
+    // An abrupt TCP loss can emit error before close (including on supported Node 24).
+    expect(['SOCKET_CLOSED', 'SOCKET_ERROR']).toContain(bridge.health().lastError);
 
     await bridge.stop();
     expect(bridge.state).toBe('STOPPED');

@@ -2,6 +2,24 @@
 
 Status: PROPOSED; shared schema/interface decisions below require Tech Lead approval. No runtime source or migration implemented.
 
+Clarification at Codex takeover, 2026-10-21: Stage13a lifecycle/normalization is implemented in PR10; the phrase above applies to Stage13b persistence and the proposed contracts below. No Stage13b implementation is authorized.
+
+## Stage 13b bounded approval packet — Codex takeover
+
+The existing latest-state column table and future compliance/event model below form one design packet, not migration authorization. Proposed scope:
+
+- `vehicle_latest_states`: one authoritative current row per jeepney; mapping generation, normalized coordinates/PostGIS point, provider IDs/times, independent observation/status watermarks, motion/tracker/validity states, route resolution/compliance and revision. No raw telemetry archive.
+- Durable ordering: transactional current-mapping check, strictly newer GPS fix guard, idempotent duplicate handling and per-jeepney revision. Older server/receipt time updates cannot supersede GPS ordering. In-memory Stage13a watermarks are disposable, not persistence evidence.
+- Validity/freshness: keep raw last-known coordinate timestamps distinct from availability. Locked commuter age <=30s remains unchanged. Decide invalid-observation watermark and future tolerance/ingestion-age semantics before SQL; stationary reporting is F/hardware coordination, not authority to widen freshness.
+- Mapping/concurrency: lock current jeepney and mapping/eligibility consistently; serialize first insert and later updates, guard upsert, bound deadlock/serialization retries. Reset coordinate/compliance state on confirmed device-generation change. Audit lock order with A installation and route-assignment transactions; no A-owned schema edit assumed.
+- Effective route: A has approval to design backward-compatible transaction-aware resolution. Consume the resulting reviewed executor interface when integrated. Preserve direct override, zero/one/multiple inherited outcomes and DRIVER existence semantics; do not copy resolver SQL or implement A's change here.
+- Compliance persistence: proposed debounce fields outside_since/consecutive_inside/consecutive_outside and direction identity must commit with state transition and revision. The engine remains a separately approved20–21 slice. Preserve100m configurable corridor,30s OR3 outside fixes and2 inside re-entry. UNKNOWN continuity/initial-entry/event semantics require G sign-off.
+- Compliance events: proposed route_compliance_events stores transition type, jeepney/direction, triggering fix reference/time, distance and state revision, with unique(jeepney_id,state_revision) retry idempotency. No raw coordinate stream. Retention duration and deletion/archival operator remain UNDECIDED; Traccar30-day raw-history retention does not automatically apply to Valryde compliance events. No automatic purge job proposed for implementation without approval.
+- Event visibility: propose ADMIN platform scope, OPERATOR own fleet, DRIVER permitted assignment/group scope through A authorization; COMMUTER receives only public-safe availability, not private event history. Reauthorize REST reads/channel signing; no private identifiers in public snapshots.
+- API/Pusher: internal sink persistence first; public HTTP DTOs/endpoints, audience allowlists, channel scopes/removal semantics and publisher delivery policy require separate contracts. Commit GPS state independently of future publishing failures. No Vercel socket owner, Windows service installation, Neon connection or Linux/Vultr rollout in this stage.
+
+Decisions outstanding: exact column names/nullability/constraints and migration number; freshness/invalid/tie/mapping semantics; debounce and UNKNOWN transition semantics; event retention/access; transaction resolver/lock integration; independent realtime/public API contract. No table, migration, retention job, public endpoint or Pusher contract is created by this document.
+
 ## Stage 13a decisions and implementation — 2026-10-21
 
 Tech Lead released Stage 13a after PR #4 merged (`068da0c`) and the infrastructure cross-platform checkpoint was accepted. Decisions recorded:

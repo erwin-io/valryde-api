@@ -1,18 +1,18 @@
 # VALRYDE — Agent B Status
 
 ## Current snapshot
-- Updated at: 2026-10-21T05:04:36+08:00 (Asia/Singapore; same offset as Asia/Manila).
-- Agent / module: B — Traccar / Tracking Engine. Executor: Claude (temporary transfer from Codex per Tech Lead directive, 2026-10-21); Codex history preserved below.
+- Updated at: 2026-10-21T10:40:00+08:00 (Asia/Singapore; same offset as Asia/Manila).
+- Agent / module: B — Traccar / Tracking Engine. Executor: Codex, explicitly reassigned from Claude by the owner/Tech Lead Stage13a validation release; Claude and Codex history preserved below.
 - Repository: erwin-io/valryde-api.
 - Current implementation branch: feat/13-tracking-bridge (worktree C:/Development/valryde/.worktrees/agent-b-bridge) from origin/main 4a9a152; PR head SHA recorded in the PR and the latest activity entry. Preparation branch docs/13-tracking-bridge-contract (711f4c4) superseded; its documents are carried into this branch.
 - Accepted REST foundation: PR #4 MERGED into main as 068da0c (2026-10-20T20:49:10Z).
 - Checklist IDs: 12–21. Stage 13a: 13, 14 (15/16 normalization groundwork). Earlier slice: 12, 14, 17, 18 (merged).
-- GitHub issues / PRs: [Issue #9](https://github.com/erwin-io/valryde-api/issues/9) Stage 13a; Stage 13a PR (see latest activity entry). Earlier: [Issue #3](https://github.com/erwin-io/valryde-api/issues/3), [PR #4](https://github.com/erwin-io/valryde-api/pull/4) MERGED.
+- GitHub issues / PRs: [Issue #9](https://github.com/erwin-io/valryde-api/issues/9), [PR #10](https://github.com/erwin-io/valryde-api/pull/10) Stage13a OPEN at recovered head dee206ddb4f7eb341c59b8f669c20cdc0e9dfa1f (before takeover fixes). Earlier: [Issue #3](https://github.com/erwin-io/valryde-api/issues/3), [PR #4](https://github.com/erwin-io/valryde-api/pull/4) MERGED.
 - Implementation progress: Stage 13a READY_FOR_REVIEW; overall IDs 12–21 IN_PROGRESS.
 - Tech Lead decision: PR #4 ACCEPTED and merged. Stage 13a released (APPROVED to begin); 13a PR Not reviewed.
-- Objective: TRACKING_BRIDGE_13A_READY_FOR_REVIEW. Persistent bridge process, reconnection, ordering, shutdown, health and Windows operations guide. No schema, public API or Pusher.
-- Last confirmed result: lint, typecheck, build PASS; audit 0 vulnerabilities; DB-enabled Vitest 17 files passed + 1 skipped (opt-in live), 101 tests passed + 1 skipped; git diff --check PASS. Built bridge smoke-run against real Traccar 6.16.0 with invalid placeholder credentials: AUTHENTICATION classified, bounded backoff, health 503, second instance refused (EADDRINUSE), no credential material in logs. Authenticated live run NOT_RUN: service credentials not provisioned.
-- Next concrete action: G reviews the 13a PR. Owner provisions read-only service credentials so B can run the opt-in live test (native WebSocket validation, M5) and attach evidence. Then 13b, after G decisions on latest-state schema, ordering/freshness semantics and the compliance model, plus Agent A executor coordination (M6).
+- Objective: CODEX_AGENT_B_TAKEOVER_READY; recover Stage13a and complete available validation, stopping at secure service-only credential gate. No schema, public API, Pusher or permanent service.
+- Last confirmed result: lint/typecheck/build PASS, audit0; low-concurrency full DB-enabled suite101 passed/1 skipped (17 files passed/1 skipped) after test-only portability correction. Initial parallel failures preserved in activity history. Authenticated live Bridge NOT_RUN: Infrastructure confirmed no service-only file/launcher and inherited credentials absent.
+- Next concrete action: publish test/docs takeover evidence to PR10; owner/Infrastructure securely injects only existing integration-account credentials into bounded child runtime, then authorized authenticated keepalive/reconnect/health validation. Stage13b remains proposal-only.
 - Implementation gates: authenticated live validation pending credential delivery (owner). 13b needs G schema/semantics approval and Agent A resolver executor coordination. Physical GPS and stationary-interval compatibility (M1) are Agent F/hardware.
 - Dependencies: Agent A identity/fleet authorization, GPS mapping, effective-route resolver; later C/D/E realtime consumers and F host/hardware evidence.
 - Missing references: complete Version 1.0 DOCX and standalone checklist not found in workspace; assigned IDs and locked rules are embedded in B/G handoffs and owner directive.
@@ -20,9 +20,10 @@
 ## Checklist coverage
 | IDs | Slice | Progress | Next action |
 |---|---|---|---|
-| 12, 14 | REST/session, bounded recovery | Initial foundation ACCEPTED, integration pending | PR #4 at a4062c8; bridge reconnect remains later |
-| 17, 18 | Native events/history, mapping/RBAC | Initial internal foundation ACCEPTED, integration pending | PR #4; public contract review follows |
-| 13–16 | Persistent bridge / latest state | IN_PROGRESS (preparation only; source NOT_STARTED) | docs/TRACKING_BRIDGE_CONTRACT_PROPOSAL.md; main merge + shared-contract approval required |
+| 12, 14 | REST/session foundation | ACCEPTED and MERGED | PR4, merge068da0c |
+| 17, 18 | Native events/history, mapping/RBAC | Internal foundation ACCEPTED and MERGED | PR4; public contract review follows |
+| 13, 14 | Stage13a lifecycle/recovery | READY_FOR_REVIEW, live evidence gated | PR10; Codex validation recovery in progress |
+| 15, 16 | Normalization groundwork / latest state | IN_PROGRESS; Stage13b persistence NOT_IMPLEMENTED | In-memory gate is not authoritative DB state; proposal approval pending |
 | 19–21 | Realtime/compliance/geospatial | NOT_STARTED | Separate reviewed slices |
 
 ## Latest verification
@@ -43,6 +44,11 @@
 | 2026-10-21 bounded unauthenticated loopback GETs | PASSED | /api/server200 version6.16.0, registration=false; /api/devices401; no credentials or telemetry writes |
 | 2026-10-21 integration preparation | PREPARED | docs/TRACKING_INTEGRATION_PREPARATION.md; readiness matrix, C/D/E API gaps, credential coordination and18 synthetic scenarios; no application test execution |
 | 2026-10-21 documentation checks | PASSED | Three files: balanced fences, relative links resolve, no whitespace errors;18 unique contiguous scenario IDs |
+| Codex takeover: lint/typecheck/build/audit | PASSED | Node24.19.0; audit0; lint/typecheck repeated after test correction |
+| Codex takeover: full DB-enabled single-worker Vitest | PASSED | 17 files passed/1 live skipped;101 tests passed/1 skipped;49.91s |
+| Codex takeover: first parallel Vitest | FAILED, RETAINED | Four startup-hook timeouts plus1 diagnostic assertion; corrected test portability and reran single-worker |
+| Codex takeover: authenticated live evidence | NOT_RUN | No service-only credential delivery; keepalive/reconnect/health/log evidence still required |
+| Codex takeover: documentation/diff | PASSED | New validation report, bounded13b proposal and canonical status fences/links; git diff --check |
 
 ## Shared contract / risk changes
 - 2026-10-21 checkpoint: no approved contract changed. New report proposes public/private tracking API capability/DTO/auth boundaries for C/D/E review; no endpoint or client contract implemented. Versioned provider source clarifies keepalive/cached frames/Origin/token-query behavior; Valryde keeps private cookie auth.
@@ -63,6 +69,21 @@
 - Pusher configuration/hardware evidence are pending later slices. No physical verification claimed.
 
 ## Activity log (newest first; preserve prior entries)
+### 2026-10-21 10:43 +08:00 — Takeover verification complete, live credential gate
+- Rerun result: lint/typecheck/build PASSED; audit0 vulnerabilities. Full DB-enabled Vitest with maxWorkers1/no-file-parallelism PASSED101 tests/1 skipped,17 files/1 skipped,49.91s. Live test skipped deliberately; no authenticated Bridge result claimed.
+- Added docs/TRACKING_BRIDGE_CODEX_TAKEOVER_VALIDATION.md with recovery/worktree safety, actual failure/fix/results, exact secure-delivery blocker and future bounded live acceptance procedure. Stage13b proposal now includes a bounded approval packet covering all requested state/event/locking/visibility/API boundaries. No runtime source or schema changed.
+- Credential coordination confirmed no service-only file/launcher currently exists. Child environment injection from an owner-approved bootstrap-owned mechanism is needed; do not open full admin-containing bundle or guess another secret path. Infrastructure services remain untouched. The owner-authorized coordination reply was sent without secrets.
+- Concrete defect correction: test/tracking-bridge.integration.test.ts accepts either SOCKET_ERROR or SOCKET_CLOSED after TCP destroy, requires exactly1 reconnect; no recovery semantics changed. Initial failed parallel run is not hidden and hook timeouts were not weakened.
+- Current initial source HEAD remains dee206d until ordinary commit; PR10 final acceptance remains G-owned and live evidence gated. No Stage13b implementation, persistent service, telemetry, Linux/Vultr or public exposure.
+- Final lint/typecheck after test correction and documentation fences/local-link/diff checks passed. This evidence packet and corrected PR number are prepared as an ordinary PR10 follow-up commit; no self-merge. Exact committed HEAD is reported by Git/PR metadata rather than a self-referential status SHA.
+
+### 2026-10-21 10:40 +08:00 — Codex takeover recovery and credential coordination
+- Explicit human release resumes previously paused work and transfers execution from Claude. Inspected all worktrees; selected existing C:/Development/valryde/.worktrees/agent-b-bridge, clean at dee206ddb4f7eb341c59b8f669c20cdc0e9dfa1f. Shared checkout/untracked files and all A worktrees preserved; no reset/clean/stash/rebase.
+- Read canonical instructions, reporting policy/handoffs, actual Stage13a source/tests/operations/proposals and merged A contract. main4a9a152, PR10 OPEN with CI/security SUCCESS; no formal review returned. Corrected persistent PR reference to #10.
+- Coordinated with Infrastructure through the owner-authorized chat. Confirmed no service-only credential file or launcher exists and inherited TRACCAR_EMAIL/PASSWORD are absent (presence only checked). Full bootstrap DPAPI bundle/admin/JDBC secrets are prohibited and were not accessed. Need a bootstrap-owned approved launcher that injects only existing integration-account fields into the temporary test child's environment, clears afterward and never emits values. No account/service/firewall/database changes needed.
+- Rerun lint/typecheck passed. Parallel full DB-enabled Vitest:5 files failed,12 passed,1 skipped;87 tests passed,1 assertion failed,14 skipped. Four suite startup-hook timeouts occurred under host resource pressure. Concrete test portability defect: abrupt provider TCP destroy can emit SOCKET_ERROR before SOCKET_CLOSED on Node24.19.0; reconnect/relogin succeeded. Corrected only test assertion to accept either valid terminal event while requiring exactly1 reconnect. Low-concurrency rerun pending; runtime implementation unchanged.
+- Authenticated live Bridge/keepalive/reconnect/health/log tests NOT_RUN due unmet service-only delivery gate. No telemetry, infrastructure restart or permanent process. Stage13b design only; no migration or shared contract implemented.
+
 ### 2026-10-21 05:04 +08:00 — Stage 13a implemented: TRACKING_BRIDGE_13A_READY_FOR_REVIEW
 - Release: Tech Lead approved Stage 13a. Verified PR #4 merged (068da0c) and main at 4a9a152. Created feat/13-tracking-bridge from origin/main in a dedicated worktree (.worktrees/agent-b-bridge); the shared checkout and Agent A worktrees were untouched. Carried the preparation documents and this status (a verified superset of main's status history) into the branch. Issue #9 created.
 - Source: src/bridge.ts (entry point, signals, deadline); src/tracking/tracking-bridge.ts (supervisor, reconnect/backoff, watchdogs, reconciliation, frame validation, ordering, event dedupe, bounded queue, sink, shutdown); telemetry.ts (fix-time gate, normalization); bridge-config.ts; bridge-health.ts (loopback health). traccar-client.ts gains only a session lease/invalidation and exported existing parsers; existing REST behavior unchanged. package.json adds bridge:start/bridge:dev; .env.example adds BRIDGE_* keys. No new dependency, migration, API route, DTO or Pusher contract. No Agent A file changed.
