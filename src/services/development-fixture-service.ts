@@ -41,6 +41,7 @@ export interface DevelopmentFixtureOptions {
   confirmation: string;
   password?: string;
   manifest?: DevelopmentFixtureManifest;
+  allowNonLoopbackTestDatabase?: boolean;
 }
 
 export interface DevelopmentFixtureSummary {
@@ -58,9 +59,14 @@ export interface DevelopmentFixtureSummary {
 
 export async function inspectDevelopmentDatabase(
   pool: pg.Pool,
-  options: Pick<DevelopmentFixtureOptions, 'environment' | 'expectedDatabase' | 'schema'>,
+  options: Pick<
+    DevelopmentFixtureOptions,
+    'environment' | 'expectedDatabase' | 'schema' | 'allowNonLoopbackTestDatabase'
+  >,
 ): Promise<DevelopmentDatabaseBoundary> {
-  if (options.environment !== 'development') {
+  const isolatedAutomatedTest =
+    options.environment === 'test' && options.allowNonLoopbackTestDatabase === true;
+  if (options.environment !== 'development' && !isolatedAutomatedTest) {
     throw new Error('Development fixtures require NODE_ENV=development');
   }
   if (options.schema !== 'dbo') {
@@ -102,7 +108,11 @@ export async function inspectDevelopmentDatabase(
       `Database boundary mismatch: expected ${options.expectedDatabase}, received ${row.database}`,
     );
   }
-  if (row.host !== '127.0.0.1/32' && row.host !== '::1/128') {
+  if (
+    row.host !== '127.0.0.1/32' &&
+    row.host !== '::1/128' &&
+    !isolatedAutomatedTest
+  ) {
     throw new Error('Development fixtures refuse non-loopback PostgreSQL servers');
   }
   if (row.schema !== options.schema) {
@@ -115,7 +125,7 @@ export async function inspectDevelopmentDatabase(
   }
   return {
     database: row.database,
-    host: row.host,
+    host: row.host ?? 'unknown',
     port: row.port,
     schema: row.schema,
     postgis: row.postgis,

@@ -29,11 +29,12 @@ describeDatabase('development business fixtures with PostgreSQL', () => {
   const manifest = createDevelopmentFixtureManifest('e', 'fixture-integration');
   const password = `Fixture-${randomBytes(18).toString('base64url')}!`;
   const cleanupOptions = {
-    environment: 'development',
+    environment: 'test',
     expectedDatabase: '',
     schema: databaseSchema,
     confirmation: 'CLEAN_VALRYDE_DEVELOPMENT_FIXTURES',
     manifest,
+    allowNonLoopbackTestDatabase: true,
   };
   const config: AppConfig = {
     environment: 'test',
@@ -90,9 +91,10 @@ describeDatabase('development business fixtures with PostgreSQL', () => {
 
   it('refuses an unexpected database identity before any write', async () => {
     const boundary = await inspectDevelopmentDatabase(pool, {
-      environment: 'development',
+      environment: 'test',
       expectedDatabase: databaseName,
       schema: databaseSchema,
+      allowNonLoopbackTestDatabase: true,
     });
     expect(boundary).toMatchObject({
       database: databaseName,
@@ -102,9 +104,10 @@ describeDatabase('development business fixtures with PostgreSQL', () => {
     });
     await expect(
       inspectDevelopmentDatabase(pool, {
-        environment: 'development',
+        environment: 'test',
         expectedDatabase: `${databaseName}-wrong`,
         schema: databaseSchema,
+        allowNonLoopbackTestDatabase: true,
       }),
     ).rejects.toThrow('Database boundary mismatch');
     await expect(
