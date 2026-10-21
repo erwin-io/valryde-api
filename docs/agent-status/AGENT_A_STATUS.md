@@ -2,18 +2,18 @@
 
 ## Current snapshot
 
-- Updated at (ISO 8601, Asia/Manila): 2026-10-21T16:55:00+08:00
+- Updated at (ISO 8601, Asia/Manila): 2026-10-22T03:12:06+08:00
 - Agent / module: A — Core Platform / Fastify API
 - Repository: `erwin-io/valryde-api`
-- Branch / head: `docs/1-unified-real-email` / base `2e8cc4d36fe1066534e07863c3112ec95688f905`
+- Branch / base: `feat/development-business-fixtures` / `827738c0f2c33ad3082f6a4a38a8e35669d4b0ea`
 - Checklist IDs: 1–11
-- GitHub issues / PRs: PRs [#1](https://github.com/erwin-io/valryde-api/pull/1), [#2](https://github.com/erwin-io/valryde-api/pull/2), [#4](https://github.com/erwin-io/valryde-api/pull/4), [#5](https://github.com/erwin-io/valryde-api/pull/5), [#6](https://github.com/erwin-io/valryde-api/pull/6), [#7](https://github.com/erwin-io/valryde-api/pull/7), and [#8](https://github.com/erwin-io/valryde-api/pull/8) merged; unified-email [PR #11](https://github.com/erwin-io/valryde-api/pull/11) open.
+- GitHub issues / PRs: Unified-email [PR #11](https://github.com/erwin-io/valryde-api/pull/11) is merged. Approved G1 implementation [PR #12](https://github.com/erwin-io/valryde-api/pull/12) remains independently open and green. Development-fixture PR pending publication.
 - Implementation progress: IN_PROGRESS
-- Tech Lead review decision (if actually issued): Existing IDs 1–11 baseline ACCEPTED; unified real-email release authorized for implementation, not yet reviewed.
-- Current objective: Standardize real authenticated SMTP for all interactive environments, preserve Mailpit as a test override, verify seed-no-email behavior, and publish the Agent D readiness contract.
-- Last confirmed result: Existing provider-neutral SMTP source supports authenticated implicit TLS without modification. Gmail TCP/TLS certificate validation passed; full Mailpit registration/verification/recovery passed and cleaned all test rows; real provider authentication/delivery remains owner-gated.
-- Next concrete action: Complete the focused documentation/test gate, open the unified-email PR, then run controlled real-email validation after the owner privately configures SMTP credentials and a reachable callback.
-- Blocked by / decision owner: Owner must configure the authorized sender/SMTP secret and approve a reachable HTTPS callback/test inbox. Real Gmail authentication, external delivery, and Agent D credential handoff cannot be claimed before that evidence exists.
+- Tech Lead review decision (if actually issued): Existing IDs 1–11 baseline ACCEPTED; controlled local development fixture provisioning explicitly approved. Fixture implementation is not yet reviewed.
+- Current objective: Provide deterministic development-only identities and linked business scenarios for Agents C, D, and E without email delivery, runtime bypasses, production data, or Traccar writes.
+- Last confirmed result: Stable CLI seed/verify/cleanup round-trip created 41 tracked rows and returned to zero. Full PostgreSQL-enabled suite passed with 20 files / 118 tests; normal login, refresh, logout, tenant isolation, route conflict, and unrelated-row preservation are covered.
+- Next concrete action: Commit, push, open the separately reviewable fixture PR, and await Tech Lead review without merging.
+- Blocked by / decision owner: No implementation blocker. Each developer supplies a temporary local `DEV_FIXTURE_PASSWORD` when seeding; no default credential is committed or retained.
 - Dependencies / affected agents: B (tracking/latest state/realtime), C (public route/live APIs), D (driver invitation and operator APIs), E (Admin APIs), F (device runbooks), G (shared-contract review).
 
 ## Checklist coverage
@@ -36,6 +36,9 @@
 
 | Command / check | Environment | Result | Date/time | Evidence / notes |
 |---|---|---|---|---|
+| `npm run db:migrate`, `npm run lint`, `npm run typecheck`, `npm test`, `npm run build`, `npm audit --audit-level=high`, `git diff --check` | Development-fixture branch; local PostgreSQL/PostGIS `valrydedb`, `dbo,public` | PASSED | 2026-10-22 03:12 +08:00 | 20 test files / 118 tests passed; 2 pre-existing owner/live checks skipped; zero vulnerabilities. |
+| `dev:fixtures:seed` → `verify` → `cleanup` → `verify` | Local loopback `valrydedb` with temporary in-memory password | PASSED | 2026-10-22 03:08 +08:00 | Boundary reported PostgreSQL loopback, schema `dbo`; tracked fixture rows `41` after seed and `0` after cleanup. No email or Traccar operation. |
+| `test/pg-development-fixtures.integration.test.ts` | Fastify inject + local PostgreSQL/PostGIS | PASSED | 2026-10-22 03:06 +08:00 | 6/6: boundary refusal, idempotency, 7 verified Argon2 accounts, refresh/logout, linked scenarios, cross-operator denial, route conflict, scoped cleanup. |
 | GitHub API CI and GitGuardian | PR #11 head `b77e491` | PASSED | 2026-10-21 17:26 +08:00 | API `verify` passed in 59 seconds; GitGuardian passed. |
 | `npm run db:migrate`, `npm run lint`, `npm run typecheck`, `npm test`, `npm run build`, `npm audit --audit-level=high`, `git diff --check` | Unified-email branch; local PostgreSQL/PostGIS `dbo` | PASSED | 2026-10-21 17:24 +08:00 | 17 files / 92 tests, 0 skipped; zero vulnerabilities; Admin bootstrap test confirms zero auth challenges. |
 | Gmail port 465 TLS handshake | Local network; no credentials | PASSED | 2026-10-21 16:48 +08:00 | `smtp.gmail.com:465` reachable; certificate authorization true; authentication intentionally not attempted without owner secret. |
@@ -60,6 +63,9 @@
 
 ## Shared contract / risk changes
 
+- API/DTO/schema/migration impact: Development fixture tooling adds no runtime endpoint, DTO, migration, or authorization exception. It directly provisions only the existing approved application schema after strict local-development boundary checks.
+- Fixture security/data impact: Password is caller-supplied, Argon2id-hashed, never logged, and used through normal login/session routes. Accounts are pre-verified without creating challenges or sending email. Stable IDs and collision checks make seed idempotent; cleanup is transactional and manifest-scoped.
+- Traccar/production impact: No Traccar connection is configured or called. The app-database synthetic mapping is clearly labeled and does not represent a physical device. Non-loopback, production-like, wrong-name, non-`dbo`, missing-migration, or Traccar-marked databases are refused.
 - API/DTO/schema/migration changes: Unified-email work changes no endpoint, DTO, schema, migration, token, or RBAC contract. It standardizes environment documentation and verifies existing SMTP/bootstrap behavior. Previously accepted additions remain unchanged.
 - Auth/RBAC/data-isolation impact: Challenge delivery is provider-neutral SMTP with environment-only configuration, hashed tokens, cooldown, supersession, invalidation, generic public responses, and provider-failure recovery. Driver association requires a verified DRIVER email and transactionally rejects cross-Operator claims.
 - Realtime/Traccar/geospatial impact: No realtime or Traccar implementation changed. Agent B now has a server-authoritative effective-route contract: active direct assignment wins; otherwise exactly one active group assignment is inherited; zero returns no route; multiple inherited routes return `409 ROUTE_ASSIGNMENT_CONFLICT`.
@@ -74,6 +80,17 @@
 - Gate: Physical GPS/Traccar mapping and activation. Required actor: operator/Agent F/Agent B. Requested evidence: power, SIM/APN, server connectivity, GPS fix, correct IMEI/uniqueId mapping. State: OWNER_VERIFICATION_PENDING.
 
 ## Activity log (newest first; preserve prior entries)
+
+### 2026-10-22 03:12 +08:00 — Controlled development business fixtures implemented
+
+- Action / reason: Implemented the Tech Lead-authorized, development-only seed/verify/cleanup workflow on a separate branch from G1. Verified the target first as local PostgreSQL 16.3, database `valrydedb`, schema `dbo`, PostGIS enabled, with no Traccar table markers.
+- Checklist/issue: Agent A support for IDs 1–11 and downstream Agents C, D, E; development business-data provisioning authorization.
+- Files/config/services affected: Development fixture manifest, safety/service layer, CLI scripts, package commands, PostgreSQL integration test, README/environment guidance, detailed downstream manifest, and this status file. No migration or runtime API route changed.
+- Observed result (success/failure/rollback): Deterministic seed provides 7 verified accounts, 3 Operators, 3 Drivers, 2 routes/3 directions, 5 jeepneys, 3 groups, assignments, 4 applications, 3 GPS requests, and one synthetic app-DB mapping. Seed is idempotent; cleanup returned the stable manifest from 41 tracked rows to zero and preserved unrelated data.
+- Validation and evidence: Full gate passed with PostgreSQL enabled; 6 dedicated integration tests exercise normal authentication/session behavior, successful/failed/no-assignment scenarios, cross-operator denial, route conflict, and cleanup. Two initial full-suite runs exposed and resolved a test-prefix collision; the clean rerun passed.
+- Contracts / risks / dependencies: G1 remains independently available in PR #12. Fixture tooling does not implement G2/G3 or change RBAC. Developers must choose a temporary password and use only an isolated loopback application database.
+- Commit/PR link or SHA (if available): Branch `feat/development-business-fixtures`; commit/PR pending publication.
+- Next action / owner gate: Commit, push, open a separate PR, then Tech Lead review. Do not merge.
 
 ### 2026-10-21 16:55 +08:00 — Unified real-email environment release started
 
