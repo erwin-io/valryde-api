@@ -7,7 +7,7 @@
 - Repository: `erwin-io/valryde-api`
 - Branch / head: `docs/1-unified-real-email` / base `2e8cc4d36fe1066534e07863c3112ec95688f905`
 - Checklist IDs: 1–11
-- GitHub issues / PRs: PRs [#1](https://github.com/erwin-io/valryde-api/pull/1), [#2](https://github.com/erwin-io/valryde-api/pull/2), [#4](https://github.com/erwin-io/valryde-api/pull/4), [#5](https://github.com/erwin-io/valryde-api/pull/5), [#6](https://github.com/erwin-io/valryde-api/pull/6), [#7](https://github.com/erwin-io/valryde-api/pull/7), and [#8](https://github.com/erwin-io/valryde-api/pull/8) merged; unified-email PR pending.
+- GitHub issues / PRs: PRs [#1](https://github.com/erwin-io/valryde-api/pull/1), [#2](https://github.com/erwin-io/valryde-api/pull/2), [#4](https://github.com/erwin-io/valryde-api/pull/4), [#5](https://github.com/erwin-io/valryde-api/pull/5), [#6](https://github.com/erwin-io/valryde-api/pull/6), [#7](https://github.com/erwin-io/valryde-api/pull/7), and [#8](https://github.com/erwin-io/valryde-api/pull/8) merged; unified-email [PR #11](https://github.com/erwin-io/valryde-api/pull/11) open.
 - Implementation progress: IN_PROGRESS
 - Tech Lead review decision (if actually issued): Existing IDs 1–11 baseline ACCEPTED; unified real-email release authorized for implementation, not yet reviewed.
 - Current objective: Standardize real authenticated SMTP for all interactive environments, preserve Mailpit as a test override, verify seed-no-email behavior, and publish the Agent D readiness contract.
@@ -36,6 +36,7 @@
 
 | Command / check | Environment | Result | Date/time | Evidence / notes |
 |---|---|---|---|---|
+| GitHub API CI and GitGuardian | PR #11 head `b77e491` | PASSED | 2026-10-21 17:26 +08:00 | API `verify` passed in 59 seconds; GitGuardian passed. |
 | `npm run db:migrate`, `npm run lint`, `npm run typecheck`, `npm test`, `npm run build`, `npm audit --audit-level=high`, `git diff --check` | Unified-email branch; local PostgreSQL/PostGIS `dbo` | PASSED | 2026-10-21 17:24 +08:00 | 17 files / 92 tests, 0 skipped; zero vulnerabilities; Admin bootstrap test confirms zero auth challenges. |
 | Gmail port 465 TLS handshake | Local network; no credentials | PASSED | 2026-10-21 16:48 +08:00 | `smtp.gmail.com:465` reachable; certificate authorization true; authentication intentionally not attempted without owner secret. |
 | Live Mailpit registration → verification → login → recovery → reset | Local API/PostgreSQL/Mailpit | PASSED | 2026-10-21 16:44 +08:00 | Verification/reset messages captured; old password rejected, new password accepted; temporary DRIVER and related rows removed, residue zero. This is test-sink evidence, not real external delivery. |
@@ -82,8 +83,8 @@
 - Observed result (success/failure/rollback): Existing Nodemailer adapter already supports provider-neutral authenticated implicit TLS and safe provider failure handling. Local `.env` remains Mailpit-configured and was not overwritten. Gmail TCP/TLS passed without credentials. Real provider authentication/delivery remains blocked by the owner gate.
 - Validation and evidence: Full local Mailpit registration/verification/recovery passed with zero database residue. Seeder audit found only the controlled first-Admin CLI; it directly creates a verified Admin, records `ADMIN_BOOTSTRAPPED`, and has no notification dependency. Added PostgreSQL assertion that it creates zero auth challenges.
 - Contracts / risks / dependencies: Existing single `APP_*_URL` set cannot target C/D/E independently. Current safe proposal is one role-neutral HTTPS callback; Agent C currently implements all three callback routes. No arbitrary client redirect or deep-link contract was added.
-- Commit/PR link or SHA (if available): Branch `docs/1-unified-real-email`; PR pending.
-- Next action / owner gate: Run the complete branch gate and open a focused PR. Owner then configures SMTP secrets and approved callback/inbox for real external validation.
+- Commit/PR link or SHA (if available): Implementation/docs commit `b77e491`; [PR #11](https://github.com/erwin-io/valryde-api/pull/11), open and not merged.
+- Next action / owner gate: Tech Lead reviews PR #11. Owner then configures SMTP secrets and approved callback/inbox for real external validation.
 
 ### 2026-10-21 06:30 +08:00 — G1 contract proposal; Agent B resolver coordination
 
