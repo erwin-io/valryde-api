@@ -1,6 +1,6 @@
 # Transaction, observation and compliance contract — proposed
 
-Requires D01–D07/D12 and explicit implementation release. No interface or SQL below is implemented here. [Schema](SCHEMA_AND_MIGRATIONS.md), [gates](README.md).
+Requires D01–D07/D12 and explicit implementation release. No interface or SQL below is implemented here. [Schema](SCHEMA_AND_MIGRATIONS.md), [recommended decisions](DECISION_REGISTER.md), [A boundary/delivery status](AGENT_A_INTERFACE_BOUNDARY.md), [release phases](IMPLEMENTATION_RELEASE_PLAN.md).
 
 ## Accepted interface gap and additive boundary
 
@@ -15,7 +15,9 @@ Proposed TypeScript signature sketch, not source code added to src:
 ```ts
 type TrackingObservation = {
   provider: 'TRACCAR';
-  deviceId: string; uniqueId: string; // internal safe-decimal identity, never DTO
+  deviceId: string; uniqueId: string; // decimal device ID; opaque uniqueId; server-only
+  expectedMappingGeneration: MappingGenerationSnapshot | null; // bound before queuing
+  expectedContextCutover: string | null; // A-owned proposed identity, never guessed
   connectionEpoch: string; ingressSequence: string;
   receivedAt: string; kind: 'POSITION' | 'INVALID_FIX' | 'DEVICE_STATUS';
   fix?: NormalizedValidFix; // source ID, lon/lat, three times, speedKph, heading
@@ -39,6 +41,8 @@ DB/provider bigint fields are decimal strings beyond the parser boundary; reject
 
 Resolve authenticated Traccar device→uniqueId→current traccar_device_mappings→gps_devices→gps_setup_requests→approved vehicle_application→jeepney. Require all entity joins coherent, device ACTIVE, request INSTALLED/VERIFIED, application APPROVED, jeepney ACTIVE. Existing association uniqueness is reused, not duplicated in a provider-ID business table.
 
+A null/unresolved generation is UNMAPPED, not permission to bind queued old work to a new identity during drain. Exact generation/cutover types remain proposed until A delivers the approved boundary.
+
 Current accepted API creates immutable mappings; it has no remap endpoint. D06 requires any future approved remap to use a **new mapping UUID and later mapped_at**, invalidate current tracking state atomically and reset queued identity context. Direct SQL ABA edits (A→B→A retaining the same generation) are unsupported. Do not claim hashing mutable values prevents unseen ABA. Matching UUID/time/fingerprint is generation provenance, not a substitute for an A-owned atomic remap protocol.
 
 Discard observations captured before the current mapping generation and source fixes/provider-server times predating it. Compare expected identity/generation when queues drain; never relabel an old-device fix with a newly looked-up identity. If clocks/ID reuse make provenance ambiguous, fail closed and reconcile; do not infer mapping from numeric ID alone. Traccar restore/reinstall/reused IDs require owner-reviewed provider/mapping revalidation rather than resetting durable watermarks automatically.
@@ -49,11 +53,11 @@ On mapping change clear valid-fix/observation/status/compliance fields, set UNKN
 
 One jeepney per transaction; different jeepneys can proceed independently. Validate JSON/units before opening it; do no Traccar/Pusher/network calls while holding DB locks. Sort work by jeepney UUID if a maintenance action touches multiple vehicles; no arbitrary batch-wide lock graph.
 
-Recommended isolation: READ COMMITTED **with the reviewed shared mutation lock protocol**, not assumed serializable by label. Candidate order: lease row FOR SHARE → jeepney FOR UPDATE → current state row FOR UPDATE → mapping/device/setup/application rows FOR SHARE in the approved fixed table/UUID order → resolved direction and parent route FOR SHARE. B does not acquire fleet-group locks; A group changes keep their existing group-first/ascending-jeepney ordering and block on jeepney. A must supply transaction-consistent resolver and scope executors.
+Recommended isolation: READ COMMITTED **with the reviewed shared mutation lock protocol**, not assumed serializable by label. Earlier candidate order (not a delivered or approved A interface): lease row FOR SHARE → jeepney FOR UPDATE → current state row FOR UPDATE → mapping/device/setup/application rows FOR SHARE in the approved fixed table/UUID order → resolved direction and parent route FOR SHARE. B does not acquire fleet-group locks; A group changes keep their existing group-first/ascending-jeepney ordering and block on jeepney. A must supply transaction-consistent resolver and scope executors.
 
 **Known baseline conflict, deployment gate D05:** current A application review locks application then updates jeepney; verification locks GPS request then updates jeepney. Naively taking jeepney then those rows in B creates an inverted wait graph. A/G must approve a consistent eligibility-mutation ordering (e.g. jeepney before request/application, with immutable ID discovery followed by locked revalidation), or an explicitly reviewed alternative transactional context protocol. Resolver executor approval does not authorize these changes by itself. Do not hide this behind "retry deadlocks" or ship B locking against unchanged A workflows. No A module is modified in this design.
 
-After D05 approval, transaction steps:
+The [A-owned boundary](AGENT_A_INTERFACE_BOUNDARY.md) must resolve the final global order and privilege model before these steps become implementation-ready. No speculative adapter is provided here. After D05 approval, transaction steps:
 
 1. BEGIN; bounded lock/statement deadlines; verify lease owner/fence/DB-clock expiry with lease-row lock. A lost-fence process cannot mutate current state.
 2. Lock jeepney even when no latest row exists, serializing the first insert. Read/lock current state and current mapping/eligibility; revalidate join identities. Ineligible/unmapped state becomes UNKNOWN with no public coordinates; no GPS write accepted.
@@ -76,7 +80,7 @@ RETURNING revision;
 
 The actual implementation must ALSO validate the locked lease/generation and strictly newer observation predicates; the sketch alone is not a concurrency guarantee. Missing row uses INSERT ON CONFLICT DO NOTHING + controlled reload, never blind overwrite. Unexpected zero-row CAS is a re-read/recompute or bounded retry, not success. Never retry only the last statement of an aborted transaction.
 
-Proposed total3 transaction attempts for SQLSTATE40P01/40001/55P03 with bounded jitter outside the transaction, subject to overall deadline. Final failure propagates SINK_FAILURE to accepted reconnect/reconciliation; it never acknowledges an uncommitted fix. Metrics contain classified error/count/requestId only, no coordinates/provider identities. Genuine programming/constraint errors are surfaced for diagnosis and are not infinite-retry events.
+Proposed total3 transaction attempts for SQLSTATE40P01/40001/55P03 with proposed50–200ms jitter outside the transaction, subject to overall10s deadline. Fewer than3 attempts are allowed when the deadline is exhausted; never extend it to force retries. Final failure propagates SINK_FAILURE to accepted reconnect/reconciliation; it never acknowledges an uncommitted fix. Metrics contain classified error/count/requestId only, no coordinates/provider identities. Genuine programming/constraint errors are surfaced for diagnosis and are not infinite-retry events.
 
 ## Observation and clock decisions
 
@@ -87,7 +91,7 @@ Proposed total3 transaction attempts for SQLSTATE40P01/40001/55P03 with bounded 
 | Invalid fix with trusted device and parseable newer fixTime within admission bounds | Advance observed_at, clear motion/compliance/run counters to UNKNOWN/INVALID; retain last valid coordinate privately; do not update last_successful_update_at |
 | Malformed/unorderable identity/time | Ignore/quarantine count without raw payload log; never let an unordered old packet erase a newer valid observation. Current prior fix expires normally; this interpretation requires D03 approval |
 | GPS time>DB now+5s | Reject; no future watermark poisoning; prior current state not overwritten.5s tolerance is operational proposal matching13a, not public availability relaxation |
-| GPS time within next5s | May be stored under D03 but not commuter-eligible while age<0; no timer counts it as an additional GPS fix |
+| GPS time within next5s | May be stored under D03 but not commuter-eligible while age<0; compliance UNKNOWN until a new qualifying fix, never duplicate-driven recovery or a timer counted as another fix |
 | Arrival age>30s | Do not replace a newer valid fix or count compliance; normalize expired state UNKNOWN. New empty row may record STALE/no coordinates; raw historical detail stays in Traccar |
 | Source times inconsistent/untrusted generation or clock skew beyond approved tolerance | Fail closed, classified diagnostic and reconciliation; never replace source GPS time with receipt/server time |
 

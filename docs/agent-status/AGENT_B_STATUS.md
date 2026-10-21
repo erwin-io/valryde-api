@@ -1,16 +1,16 @@
 # VALRYDE — Agent B Status
 
 ## Current snapshot
-- Updated at: 2026-10-22T02:53:00+08:00 (Asia/Singapore; same offset as Asia/Manila).
+- Updated at: 2026-10-22T03:36:14+08:00 (Asia/Singapore; same offset as Asia/Manila).
 - Agent / module: B — Traccar / Tracking Engine. Codex executor; prior Claude/Codex evidence and history preserved below.
 - Repository: erwin-io/valryde-api. Overall checklist IDs12–21 remain IN_PROGRESS.
 - Branch / baseline HEAD: docs/13b-durable-tracking-design, based on canonical origin/main **827738c0f2c33ad3082f6a4a38a8e35669d4b0ea** in C:/Development/valryde/.worktrees/agent-b-bridge. Documentation commit HEAD is recorded in Git/PR metadata, avoiding a self-referential SHA.
 - Accepted REST foundation: PR #4 MERGED as 068da0c7cbb3bd5759d90c26ac96026eb706b999; accepted source a4062c800944457f11f6f8e97848b15c18d507b4, Tech Lead review comment6267265303. No change to accepted PR4.
 - Accepted Stage13a: [PR #10](https://github.com/erwin-io/valryde-api/pull/10) ACCEPTED per Tech Lead release and MERGED; final head9d009d5a9467c498125d54c8f844dabacd3cc6c3, merge69deb572a9e323ce5cb2f0fb0f163dafe8df2bbd. Scoped progress DONE_AFTER_ACCEPTANCE; prior runtime/live evidence preserved, not rerun for design.
-- Current objective: **AGENT_B_STAGE13B_DESIGN_READY_FOR_REVIEW**, design approval only. Stage13b schema/runtime NOT_IMPLEMENTED; no migration or client contract authorized.
-- Current review: Stage13b package not yet reviewed. [Design issue #13](https://github.com/erwin-io/valryde-api/issues/13), [documentation PR #14](https://github.com/erwin-io/valryde-api/pull/14) OPEN; initial design source head d4884c0fb2be831701d24254cd9f70ed6592c750; earlier [Issue #9](https://github.com/erwin-io/valryde-api/issues/9) / PR10 and [Issue #3](https://github.com/erwin-io/valryde-api/issues/3) / [PR #4](https://github.com/erwin-io/valryde-api/pull/4) retained as historical slices.
-- Last confirmed result: fetched merged main; read current A/B contracts/source and infrastructure evidence; actual app metadata inspected in explicit READ ONLY transaction then ROLLBACK (001–005, PostGIS3.6.2, no latest/compliance tables). Five design documents plus successor link prepared. No business rows queried or credentials decrypted.
-- Next concrete action: G reviews documentation PR14/decisions D01–D12; await explicit Stage13b implementation release. Design merge alone does not authorize SQL/runtime.
+- Current objective: **AGENT_B_STAGE13B_DESIGN_DECISIONS_RESOLVED_FOR_REVIEW**, recommended resolutions explicit, approval pending. Stage13b schema/runtime NOT_IMPLEMENTED; no migration or client contract authorized.
+- Current review: architecture direction ACCEPTED IN PRINCIPLE by current Tech Lead directive; exact D01–D12/migrations/runtime/gateway NOT_APPROVED. Continuing existing PR14; no new acceptance claim. [Design issue #13](https://github.com/erwin-io/valryde-api/issues/13), [documentation PR #14](https://github.com/erwin-io/valryde-api/pull/14) OPEN; initial design source head d4884c0fb2be831701d24254cd9f70ed6592c750; earlier [Issue #9](https://github.com/erwin-io/valryde-api/issues/9) / PR10 and [Issue #3](https://github.com/erwin-io/valryde-api/issues/3) / [PR #4](https://github.com/erwin-io/valryde-api/pull/4) retained as historical slices.
+- Last confirmed result: main remains827738c; existing PR14 head b8f3260705e2a05b853de4800107a44252f03f77 preserved as prior review. Added explicit D01–D12 recommendations/test/gates, same42 Given/When/Then specifications, A boundary coordination and five-phase release/rollback plan. No DB access or runtime tests during refinement.
+- Next concrete action: review refined PR14 D01–D12 recommendations; reconcile A-owned interface when delivered/approved. Await named P1–P5 release with exact SQL/A dependencies/isolated DB authority. Design merge alone does not authorize SQL/runtime.
 - Shared blockers: A transaction-aware resolver/auth and shared mutation lock-order integration (existing request/application-first workflows conflict with naive B jeepney-first locks); immutable remap protocol; invalid-observation adapter; timing/retention/temporal-history and gateway decisions.
 - Dependencies: A business eligibility/authorization/route precedence; C/D/E versioned DTOs and REST/Pusher reconciliation; Infrastructure/owner approved app test writer and later rollout; F stationary-reporting/physical GPS evidence.
 - Missing references: complete Version1.0 DOCX and standalone checklist unavailable in workspace; frozen handoffs/owner directives used, no requirements invented.
@@ -32,6 +32,7 @@ Current design verification is separate from historical implementation results b
 | 2026-10-22 Stage13b preflight | VERIFIED | main827738c; PR10 MERGED69deb572; current A/B source/contracts and Infrastructure evidence read |
 | 2026-10-22 app schema metadata | PASSED, READ ONLY | Explicit BEGIN READ ONLY / SHOW transaction_read_only=on / ROLLBACK;001–005/PostGIS3.6.2; no business data reads/writes |
 | Stage13b documentation static checks | PASSED | Seven documents: local links/fences/table widths, D01–D12,42 unique contiguous cases, exact documentation-only allowlist; git diff --check |
+| Stage13b refinement static checks | PASSED | Eleven package/history docs: links/fences/tables, D01–D12, same42 detailed scenarios,5 phases/tests/rollback/gates, append-only history and documentation-only allowlist; git diff --check |
 | Stage13b runtime/concurrency/PostGIS acceptance | NOT_RUN | Design-only release;42 concrete planned cases, no fixtures/migrations/live sessions/Pusher/services |
 | npm run db:migrate | PASSED | Existing migrations already applied; no SQL changes |
 | npm run lint | PASSED | Initial lint findings corrected |
@@ -55,6 +56,8 @@ Current design verification is separate from historical implementation results b
 | Codex takeover: documentation/diff | PASSED | New validation report, bounded13b proposal and canonical status fences/links; git diff --check |
 
 ## Shared contract / risk changes
+- Current refinement: architecture accepted in principle only. DECISION_REGISTER.md records12 explicit recommended resolutions, mapped42 planned cases and named gates; no approved migration/runtime/gateway contract. IMPLEMENTATION_RELEASE_PLAN.md separates P1 exact schema, P2 latest UNKNOWN-compliance writer, P3 compliance/events, P4 recovery/readiness and P5 separately released gateway.
+- A coordination authorized by human B2 directive: sent transaction/scope/global-lock/mapping/cutover/privilege request to Agent: A — Fastify API. A separately assigned specification is in progress, no approved interface delivered at refinement preflight. Proposed boundary remains documentation only; no speculative adapter or cross-worktree edit.
 - Current2026-10-22: [Stage13b design](../design/stage13b/README.md) supersedes prior proposal alternatives for review only. Three core tables and later optional pointer-intent table, observation/writer interface, 30s eligibility projection, transition-only history and invalidation-only Pusher proposed; no approved contract/runtime/schema changed.
 - D05 is a hard A/G gate: transaction executor alone is insufficient; reconcile current review/verification lock inversion and authorize transaction-consistent scopes before implementing the writer. D06/D07 remap/context changes also need A integration.
 - D02/D03 confirm bootstrap/re-entry continuity, invalid watermark and clock/freshness treatment; D08 compliance retention, D09 temporal history/DTO/path limits, D10/D11 gateway delivery and D12 operational limits need explicit decisions. See design decision registry for exact scope.
@@ -79,6 +82,14 @@ Current design verification is separate from historical implementation results b
 - Pusher configuration/hardware evidence are pending later slices. No physical verification claimed.
 
 ## Activity log (newest first; preserve prior entries)
+### 2026-10-22 03:36 +08:00 — Stage13b design refinement and Agent A coordination
+- Human Tech Lead accepts architecture direction in principle only and requests B1–B4 refinement on existing PR14. Same branch preserved at prior head b8f3260; fetched main still827738c. No migrations/runtime/gateway approved or implemented.
+- Added DECISION_REGISTER.md (D01–D12 explicit recommendations/test/gates), AGENT_A_INTERFACE_BOUNDARY.md (A-owned proposed boundary/delivery checks), ACCEPTANCE_SPECIFICATIONS.md (same42 Given/When/Then scenarios, all PLANNED/NOT_RUN), IMPLEMENTATION_RELEASE_PLAN.md (P1–P5 tests/rollback/approval).
+- Updated package index, existing persistence/schema/test plan for cross-references, independent competing-owner lease tests, expired-fence renewal rejection, phase2 UNKNOWN compliance and restart-gap continuity. Prior lock inversion, SELECT-only privilege gap and mapping/context ABA findings preserved.
+- Read Agent A active shared-interface assignment; sent owner-authorized request to chat01a15086-5639-7691-87b5-b29f637818f5. No approved A interface delivered at preflight; A is completing separately authorized fixture verification first. No speculative helper/adapter/source change. A files/worktrees untouched.
+- Verification: refinement static checks PASSED (eleven package/history docs, local links/fences/tables, D01–D12, same42 detailed scenarios,5 phases/tests/rollback/gates, append-only history, documentation-only allowlist and diff whitespace);42 runtime scenarios NOT_RUN. Earlier app metadata/live13a evidence stays historical. No database/Traccar session, credential read, telemetry, infrastructure change, permanent service, migration or deployment in refinement.
+- Next: G reviews proposed resolutions and A-owned interface, then explicitly releases named phase and isolated test/database scope. P1 exact006/007 SQL PR is future work; optional008 belongs only to P5. Overall B IDs12–21 IN_PROGRESS, no self-merge.
+
 ### 2026-10-22 02:53 +08:00 — Stage13b design PR published
 - Committed seven documentation-only files as d4884c0fb2be831701d24254cd9f70ed6592c750, ordinary push on docs/13b-durable-tracking-design; opened issue13 and PR14 and attached PR to this chat. No main push/self-merge; no accepted13a modification.
 - GitGuardian and API CI SUCCESS on initial design head d4884c0fb2be831701d24254cd9f70ed6592c750 (run39656593753); final handoff commit gets its own checks. These ordinary CI checks do not implement/exercise the42 future13b cases; all remain NOT_RUN. Links/fences/tables/IDs/allowlist and whitespace checks passed.

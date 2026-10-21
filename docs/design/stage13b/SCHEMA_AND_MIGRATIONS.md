@@ -1,6 +1,6 @@
 # Proposed schema and migration plan
 
-Status: PROPOSED under D01/D06/D08/D11/D12. This is a specification, **not an executable migration**. All new objects use configured application schema (`dbo` today), never Traccar's database. Existing001–005 remain unchanged. Complete architecture/gates: [index](README.md).
+Status: PROPOSED under D01/D06/D08/D11/D12. This is a specification, **not an executable migration**. All new objects use configured application schema (`dbo` today), never Traccar's database. Existing001–005 remain unchanged. Complete architecture/gates: [index](README.md), [D01–D12](DECISION_REGISTER.md) and [phase-specific release/rollback plan](IMPLEMENTATION_RELEASE_PLAN.md).
 
 ## 1. vehicle_latest_states
 
@@ -66,7 +66,7 @@ Validate generated-expression immutability against actual deployed PostgreSQL/Po
 
 ## 2. tracking_bridge_leases
 
-One operational row for the single MVP provider deployment, not multi-provider product scope. Fields: deployment_key text PK CHECK='primary'; fence bigint NOT NULL DEFAULT0 CHECK>=0; owner_id uuid NULL; expires_at timestamptz NULL; heartbeat_at timestamptz NULL; phase text NOT NULL DEFAULT'STOPPED' limited to accepted Bridge phases. Acquisition atomically increments fence; heartbeat/phase/release predicates require matching owner+fence. Initial empty row is migration seed metadata, not telemetry.
+One operational row for the single MVP provider deployment, not multi-provider product scope. Fields: deployment_key text PK CHECK='primary'; fence bigint NOT NULL DEFAULT0 CHECK>=0; owner_id uuid NULL; expires_at timestamptz NULL; heartbeat_at timestamptz NULL; phase text NOT NULL DEFAULT'STOPPED' limited to accepted Bridge phases. Acquisition atomically increments fence; heartbeat/phase/release predicates require matching owner+fence. Heartbeat/start-write also require an unexpired DB-clock lease; an expired owner reacquires with a new fence rather than resurrecting the old one. Initial empty row is migration seed metadata, not telemetry.
 
 Suggested operational settings requiring D12 approval: heartbeat5s, lease15s, sweep1s/batch100, statement timeout5s, lock timeout1s, whole transaction budget10s. Lock the lease row FOR SHARE inside each state transaction and verify DB-clock expiry/fence; acquisition FOR UPDATE prevents an old transaction straddling a new fence. Use a separate small heartbeat connection so long data work does not starve liveness. Loss of owner/lease/DB readiness stops sink writes; lease state and fresh-fix checks prevent stale public availability. No health-port lock is treated as durable singleton proof.
 
@@ -93,6 +93,8 @@ Preserve pending removal for every prior public route independently until delive
 |006_tracking_latest_state.sql | vehicle_latest_states + tracking_bridge_leases + checks/indexes/empty lease seed | D01/D03/D05/D06/D12 plus explicit implementation/migration release |
 |007_route_compliance_events.sql | event table/constraints/indexes; no historical import or purge | D01/D02/D08 plus compliance release |
 |008_tracking_publication_intents.sql | pointer-only delivery intents, no Pusher settings | D09–D11 plus ID19 release |
+
+P1 is the dedicated exact application-schema PR for006/007, with no runtime enablement. P2 keeps compliance UNKNOWN; P3 adds approved compliance/event writes;008 remains a separate P5 release. Approved A context/cutover design may require a separately reviewed dependency, never guessed columns/helpers in006.
 
 Numbers are reservations in this proposal only. Re-fetch main before implementation; renumber if occupied. Do not create runtime objects on import or add auto-migration to Bridge startup.
 

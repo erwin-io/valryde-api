@@ -1,6 +1,6 @@
 # Stage 13b durable tracking — design for review
 
-Checkpoint: **AGENT_B_STAGE13B_DESIGN_READY_FOR_REVIEW**. Agent B, IDs12–21. Design release2026-10-22; **PROPOSED, not implementation/migration/client-contract authorization**. Overall B remains IN_PROGRESS.
+Checkpoint: **AGENT_B_STAGE13B_DESIGN_DECISIONS_RESOLVED_FOR_REVIEW**. Architecture direction accepted in principle; exact decisions remain recommended for review. Agent B, IDs12–21. Design release2026-10-22; **PROPOSED, not implementation/migration/client-contract authorization**. Overall B remains IN_PROGRESS.
 
 ## Baseline and evidence
 
@@ -19,6 +19,10 @@ Infrastructure status/evidence reviewed read-only: Windows Traccar6.16.0 develop
 | Transaction/observation interfaces, locking, ordering, compliance | [Persistence](PERSISTENCE_AND_COMPLIANCE.md) |
 | Public/private DTOs, REST/Pusher/auth/reconciliation | [Gateway](GATEWAY_CONTRACT_PROPOSAL.md) |
 | Concrete concurrency/failure tests, security, retention/rollout | [Verification and rollout](VERIFICATION_AND_ROLLOUT.md) |
+| Explicit D01–D12 recommended resolutions/tests/gates | [Decision register](DECISION_REGISTER.md) |
+| A-owned transaction/scope/locks/mapping/context coordination | [A interface boundary](AGENT_A_INTERFACE_BOUNDARY.md) |
+|42 detailed acceptance specifications, all planned | [Acceptance specifications](ACCEPTANCE_SPECIFICATIONS.md) |
+| Five separately authorized implementation phases | [Release plan](IMPLEMENTATION_RELEASE_PLAN.md) |
 
 ## Architecture
 
@@ -52,20 +56,9 @@ Stage13a lifecycle, cookie authentication, keepalive, bounded retry, validation,
 
 All recommended choices below are proposals. **No implementation proceeds merely because a design PR merges.** G must explicitly release named components and migrations after design review.
 
-| ID | Decision / recommended proposal | Approval owner / gate |
-|---|---|---|
-| D01 | Three core tables, constraints, lease/revision/event semantics; optional later publication-intent table | G; approve exact SQL before any migration |
-| D02 | Initial inside fix→ON_ROUTE; preserve two-fix re-entry latch across UNKNOWN after OFF_ROUTE; UNKNOWN resets runs, not threshold values | G compliance semantics confirmation |
-| D03 |30s ingest freshness for compliance,5s future admission tolerance, invalid-observation watermark and treatment of unorderable malformed input | G; no silent change to locked public30s |
-| D04 | Add optional pre-gate observation boundary so durable sink can see trusted invalid observations Stage13a currently drops; default13a unchanged | G/B implementation release |
-| D05 | A transaction-aware resolver AND transaction-aware tracking authorization, plus shared mutation lock-order audit/integration | A/G; resolver design approval alone does not approve other A changes |
-| D06 | Mapping rows immutable per generation; any future remap gets new mapping UUID/time, atomic invalidation and queue-generation fencing | A/G; no approved remap endpoint currently exists |
-| D07 | Context invalidation hooks for ownership/route/geometry/corridor/eligibility; bounded reconciler/read masking until materialized | A/B/G; no client may trust stored route alone |
-| D08 | Recommend30-day MVP Valryde compliance-event retention, separately from Traccar30-day raw policy; exact retention/legal/archival decision still pending | Owner/G; no purge job or indefinite-retention default approved |
-| D09 | Public-safe projection and private DTO allowlists, paths/errors/snapshot consistency/limits | G plus C/D/E; no client integration before freeze |
-| D10 | Invalidation-only route and user-private delivery; no GPS/vehicle payload on channels; any direct public-coordinate mode requires separate approval | G security/realtime; credentials/channel signing not configured now |
-| D11 | Pointer-only coalescing publication intents for recoverable delivery; operational TTL/poll/size limits | G separate ID19 release; no raw GPS outbox archive |
-| D12 | Lease/heartbeat/stale sweep/retry/clock limits, locking privileges/DB roles/TLS/host rollout and rollback evidence | G/Infrastructure/Owner; Windows only target, Neon/production changes separately authorized |
+The authoritative [D01–D12 decision register](DECISION_REGISTER.md) supplies explicit recommendations, mapped acceptance cases, approvers and phase gates. Every decision is RECOMMENDED / APPROVAL_PENDING. Earlier architecture/locking findings are preserved; none is approved because its document exists.
+
+[Agent A coordination and proposed interface boundary](AGENT_A_INTERFACE_BOUNDARY.md) records delivery status, current-schema gaps and the explicit ban on speculative adapters. [P1–P5 release plan](IMPLEMENTATION_RELEASE_PLAN.md) separates exact migration PR, latest state, compliance/events, reconciliation/readiness, then gateway. [Given/When/Then specifications](ACCEPTANCE_SPECIFICATIONS.md) finalize the same42 planned IDs.
 
 ## C/D/E dependency matrix
 
@@ -83,4 +76,4 @@ The full C/D/E matrices were reviewed as consumer requirements, not approval to 
 
 This package has documentation/static consistency verification only plus the read-only metadata inspection. Concurrency/PostGIS/state/gateway tests below are executable acceptance specifications **NOT_RUN** in this design release. Historical13a tests are not13b evidence. Review issue/PR and exact proposal HEAD are supplied in the PR/status/chat; no self-referential hash baked into all documents.
 
-Next: G resolves D01–D12 and issues explicit Stage13b implementation release with A integration scope, authorized app test DB and exact migration ownership. Then create an implementation branch from freshly merged main; do not run the candidate plans here.
+Next: G reviews recommended D01–D12 resolutions and A delivers the shared interface for approval. Then G explicitly releases the named P1–P5 phase, approved A dependency approach, authorized isolated app test DB and exact migration ownership. Continue review on PR14; no schema/runtime work is authorized.

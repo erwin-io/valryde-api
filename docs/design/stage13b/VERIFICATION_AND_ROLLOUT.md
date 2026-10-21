@@ -10,6 +10,8 @@ Base T=2026-10-22T00:00:00Z in pure state-machine tests. Production time comes f
 
 Canonical metric line fixture uses a sufficiently long SRID4326 LineString; derive inside/boundary/outside points with geography ST_Project and then assert actual ST_Distance within a documented floating-point test tolerance. Test99/100/101m without degree approximations or altering production corridor. Exact equality branch can also be proven against the numeric distance used by the evaluator; numerical fixture tolerance must not become a runtime relaxed corridor.
 
+Detailed [Given/When/Then specifications](ACCEPTANCE_SPECIFICATIONS.md) finalize the same42 cases; all remain PLANNED / NOT_RUN. [D01–D12 recommendations](DECISION_REGISTER.md) map these cases to exact gates.
+
 ## Concrete case matrix
 
 | ID | Stimulus | Expected invariant / evidence |
@@ -18,7 +20,7 @@ Canonical metric line fixture uses a sufficiently long SRID4326 LineString; deri
 | B13B-02 | Out-of-bounds swapped lat/lon, bounds/NaN/Infinity | Reject malformed input; no invalid point/speed/counters or raw payload log |
 | B13B-03 |10knots, heading360, three distinct UTC source times |18.52km/h, heading0, all source times preserved; receipt time not GPS time |
 | B13B-04 | Outside T then T+30s, only2 fixes, continuous fresh context | OFF_ROUTE by time branch, one deviation; independent of3-fix branch |
-| B13B-05 | Outside T,T+10,T+20 | OFF_ROUTE on third fix, one deviation, outside_since survives process restart |
+| B13B-05 | Outside T,T+10,T+20 | OFF_ROUTE on third fix, one deviation, outside_since survives transaction reload; restart gaps reset continuity per35 |
 | B13B-06 | One outside noisy point then inside | No OFF_ROUTE/deviation; outside run reset |
 | B13B-07 | OFF_ROUTE then first/second inside | First remains OFF_ROUTE; second ON_ROUTE, exactly one re-entry |
 | B13B-08 | OFF_ROUTE→invalid/stale UNKNOWN→one/two inside same context | Unknown resets runs but retains re-entry latch; cannot bypass two-fix rule |
@@ -46,7 +48,7 @@ Canonical metric line fixture uses a sufficiently long SRID4326 LineString; deri
 | B13B-30 | Sweep selects expired row; newer fresh fix wins before sweep lock | Sweep rechecks after lock/CAS and never downgrades newer fix |
 | B13B-31 | A verification/review/remap races B update | Approved shared lock order avoids baseline inversion; no false-active row or A request deadlock500; execute against reviewed A integration |
 | B13B-32 | A group/direct assignment mutation races resolver/state write | Consistent resolved snapshot under shared locks; direct precedence unchanged; no split pool/transaction query |
-| B13B-33 | Old lease writer overlaps newly acquired fence | Old token rejected, no commit across new-fence acquisition; one active durable owner |
+| B13B-33 | Two owners race acquisition; expired/stale writer overlaps new fence | Old token rejected, no commit across new-fence acquisition; one active durable owner |
 | B13B-34 | Inject40P01/40001/55P03 and exhausted retry budget | Whole transaction retry only; one eventual event or classified failure; no endless loops/partial commit |
 | B13B-35 | Commit succeeds but acknowledgement lost; process restarts/replays | DB duplicate guard wins, no duplicate state/event; source watermark survives restart |
 | B13B-36 | DB outage between point write and event/intent write | Entire transaction rolls back; SINK_FAILURE/reconciliation, no log-only success acknowledgement |
@@ -86,11 +88,7 @@ Bridge app DB role needs the exact business/context reads and permitted writes o
 
 ## Proposed implementation/rollout slices after explicit release
 
-1. **13b.1 context contracts:** G resolves decisions, A delivers executor/auth/lock integration, B adds optional durable observation adapter and pure state machine with no default13a behavior regression. Review exact schema SQL; authorize isolated app DB only.
-2. **13b.2 durable writer:** approved006/007, fencing lease, guarded point/state/debounce/event transaction, expiration/context maintenance and actual PostgreSQL concurrency/failure tests. Do not publish Pusher or serve public current tracking before these semantics pass.
-3. **13b.3 controlled Windows proof:** temporary owner-authorized process using existing service-only Traccar credential and separately approved app test writer; no automatic permanent service. Validate replay/shutdown/health with unchanged Traccar/PG. Live GPS writes to application DB require a new explicit release; none occur in this design.
-4. **ID19 gateway slice:** separately approved TypeBox DTOs/OpenAPI, audience scopes, REST snapshot/expiry, optional008pointer intents and Pusher configuration from owner. C/D/E consume only the accepted version after negative-auth and reconnect tests. No client module edited now.
-5. **Operations:** only after code/evidence acceptance, owner separately approves permanent process/Neon TLS/backup/retention and any production rollout. No Linux/Vultr or second PostgreSQL cluster implied.
+The [P1–P5 release plan](IMPLEMENTATION_RELEASE_PLAN.md) supersedes the earlier combined writer/compliance slice ordering: P1 exact schema PR; P2 latest-state writer with compliance UNKNOWN; P3 compliance/events; P4 recovery/operations; P5 separately authorized REST/Pusher. Every phase specifies its dependency, tests, rollback and approval boundary. All phases NOT_RELEASED; no implementation follows merely from this design refinement.
 
 Suggested feature gates (names not implemented): TRACKING_PERSISTENCE_ENABLED, TRACKING_COMPLIANCE_ENABLED, TRACKING_GATEWAY_ENABLED, TRACKING_PUBLISHER_ENABLED; defaultfalse until matching schema/config acceptance. Health distinguishes disabled/ready/degraded; never a silent summary sink while persistence flag claims success. Operational rollback switches off readers/publisher/writer in controlled order, stops temporary Bridge gracefully and leaves new tables/events intact. Accepted13a can still operate summary-only, but UI must show tracking unavailable; no old durable row passed off as live. See [migration rollback](SCHEMA_AND_MIGRATIONS.md).
 
