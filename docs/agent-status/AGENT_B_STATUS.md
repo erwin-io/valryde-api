@@ -1,16 +1,16 @@
 # VALRYDE — Agent B Status
 
 ## Current snapshot
-- Updated at: 2026-10-22T02:50:00+08:00 (Asia/Singapore; same offset as Asia/Manila).
+- Updated at: 2026-10-22T02:53:00+08:00 (Asia/Singapore; same offset as Asia/Manila).
 - Agent / module: B — Traccar / Tracking Engine. Codex executor; prior Claude/Codex evidence and history preserved below.
 - Repository: erwin-io/valryde-api. Overall checklist IDs12–21 remain IN_PROGRESS.
 - Branch / baseline HEAD: docs/13b-durable-tracking-design, based on canonical origin/main **827738c0f2c33ad3082f6a4a38a8e35669d4b0ea** in C:/Development/valryde/.worktrees/agent-b-bridge. Documentation commit HEAD is recorded in Git/PR metadata, avoiding a self-referential SHA.
 - Accepted REST foundation: PR #4 MERGED as 068da0c7cbb3bd5759d90c26ac96026eb706b999; accepted source a4062c800944457f11f6f8e97848b15c18d507b4, Tech Lead review comment6267265303. No change to accepted PR4.
 - Accepted Stage13a: [PR #10](https://github.com/erwin-io/valryde-api/pull/10) ACCEPTED per Tech Lead release and MERGED; final head9d009d5a9467c498125d54c8f844dabacd3cc6c3, merge69deb572a9e323ce5cb2f0fb0f163dafe8df2bbd. Scoped progress DONE_AFTER_ACCEPTANCE; prior runtime/live evidence preserved, not rerun for design.
 - Current objective: **AGENT_B_STAGE13B_DESIGN_READY_FOR_REVIEW**, design approval only. Stage13b schema/runtime NOT_IMPLEMENTED; no migration or client contract authorized.
-- Current review: Stage13b package not yet reviewed. [Design issue #13](https://github.com/erwin-io/valryde-api/issues/13) created; documentation PR publication pending; earlier [Issue #9](https://github.com/erwin-io/valryde-api/issues/9) / PR10 and [Issue #3](https://github.com/erwin-io/valryde-api/issues/3) / [PR #4](https://github.com/erwin-io/valryde-api/pull/4) retained as historical slices.
+- Current review: Stage13b package not yet reviewed. [Design issue #13](https://github.com/erwin-io/valryde-api/issues/13), [documentation PR #14](https://github.com/erwin-io/valryde-api/pull/14) OPEN; initial design source head d4884c0fb2be831701d24254cd9f70ed6592c750; earlier [Issue #9](https://github.com/erwin-io/valryde-api/issues/9) / PR10 and [Issue #3](https://github.com/erwin-io/valryde-api/issues/3) / [PR #4](https://github.com/erwin-io/valryde-api/pull/4) retained as historical slices.
 - Last confirmed result: fetched merged main; read current A/B contracts/source and infrastructure evidence; actual app metadata inspected in explicit READ ONLY transaction then ROLLBACK (001–005, PostGIS3.6.2, no latest/compliance tables). Five design documents plus successor link prepared. No business rows queried or credentials decrypted.
-- Next concrete action: publish focused documentation package and obtain G decisions D01–D12, then await explicit Stage13b implementation release. Design merge alone does not authorize SQL/runtime.
+- Next concrete action: G reviews documentation PR14/decisions D01–D12; await explicit Stage13b implementation release. Design merge alone does not authorize SQL/runtime.
 - Shared blockers: A transaction-aware resolver/auth and shared mutation lock-order integration (existing request/application-first workflows conflict with naive B jeepney-first locks); immutable remap protocol; invalid-observation adapter; timing/retention/temporal-history and gateway decisions.
 - Dependencies: A business eligibility/authorization/route precedence; C/D/E versioned DTOs and REST/Pusher reconciliation; Infrastructure/owner approved app test writer and later rollout; F stationary-reporting/physical GPS evidence.
 - Missing references: complete Version1.0 DOCX and standalone checklist unavailable in workspace; frozen handoffs/owner directives used, no requirements invented.
@@ -79,6 +79,11 @@ Current design verification is separate from historical implementation results b
 - Pusher configuration/hardware evidence are pending later slices. No physical verification claimed.
 
 ## Activity log (newest first; preserve prior entries)
+### 2026-10-22 02:53 +08:00 — Stage13b design PR published
+- Committed seven documentation-only files as d4884c0fb2be831701d24254cd9f70ed6592c750, ordinary push on docs/13b-durable-tracking-design; opened issue13 and PR14 and attached PR to this chat. No main push/self-merge; no accepted13a modification.
+- GitGuardian and API CI SUCCESS on initial design head d4884c0fb2be831701d24254cd9f70ed6592c750 (run39656593753); final handoff commit gets its own checks. These ordinary CI checks do not implement/exercise the42 future13b cases; all remain NOT_RUN. Links/fences/tables/IDs/allowlist and whitespace checks passed.
+- Added review navigation to package/status in the same documentation PR. Exact final published HEAD is in Git/PR metadata. Await G review D01–D12 plus explicit implementation release; overall B remains IN_PROGRESS.
+
 ### 2026-10-22 02:50 +08:00 — Stage13b durable tracking design prepared
 - Release: Tech Lead approves design only; fetched main827738c, confirmed PR10 accepted/merged69deb572, reused clean B worktree on docs/13b-durable-tracking-design. Shared primary checkout/untracked docs and A worktrees preserved; no reset/rebase/main push.
 - Preflight: current migrations/source, A frozen resolver/scope, proposals/handoffs/status and canonical Infrastructure evidence reviewed. Actual application schema metadata inspected with explicit READ ONLY transaction then rollback:001–005/PostGIS3.6.2, no latest-state/compliance tables. No business rows queried, Traccar sessions, credentials/DPAPI, infrastructure changes or runtime tests.
