@@ -36,6 +36,7 @@
 
 | Command / check | Environment | Result | Date/time | Evidence / notes |
 |---|---|---|---|---|
+| GitHub API CI and GitGuardian | PR #16 head `53edc9a` | PASSED | 2026-10-22 03:23 +08:00 | API `verify` passed in 57 seconds; GitGuardian passed. Documentation-only scope. |
 | GitHub API CI and GitGuardian | PR #11 head `b77e491` | PASSED | 2026-10-21 17:26 +08:00 | API `verify` passed in 59 seconds; GitGuardian passed. |
 | `npm run db:migrate`, `npm run lint`, `npm run typecheck`, `npm test`, `npm run build`, `npm audit --audit-level=high`, `git diff --check` | Unified-email branch; local PostgreSQL/PostGIS `dbo` | PASSED | 2026-10-21 17:24 +08:00 | 17 files / 92 tests, 0 skipped; zero vulnerabilities; Admin bootstrap test confirms zero auth challenges. |
 | Gmail port 465 TLS handshake | Local network; no credentials | PASSED | 2026-10-21 16:48 +08:00 | `smtp.gmail.com:465` reachable; certificate authorization true; authentication intentionally not attempted without owner secret. |
@@ -81,7 +82,7 @@
 - Checklist/issue: Cross-project mobile governance supporting Agent C IDs 22–37 and Agent D IDs 38–55; no runtime checklist implementation changed.
 - Files/config/services affected: New mobile testing policy, `AGENTS.md`, Tech Lead repository-management handoff, and this Agent A status record. No application source, migration, database, security control, API contract, or infrastructure changed.
 - Observed result (success/failure/rollback): Policy now separates development acceptance from exclusively owner-managed physical Android-device acceptance; defines mandatory automated/native/API/security evidence; and registers the four required reporting classifications.
-- Validation and evidence: Required policy marker/reference checks passed; `git diff --check` passed after correcting Markdown whitespace; changed-path audit confirms documentation-only scope. GitHub CI status is recorded on PR #16.
+- Validation and evidence: Required policy marker/reference checks passed; `git diff --check` passed after correcting Markdown whitespace; changed-path audit confirms documentation-only scope. API `verify` and GitGuardian both passed on PR #16.
 - Contracts / risks / dependencies: Agents C and D must use the canonical policy path and an identified accepted commit. No agent or Tech Lead may use `OWNER_DEVICE_ACCEPTED` without explicit owner confirmation. Owner-discovered device defects require tracked hotfix work and regression coverage.
 - Commit/PR link or SHA (if available): Policy commit `89ef973162096c959d6ad6fa4eec1da04ab4ea74`; [PR #16](https://github.com/erwin-io/valryde-api/pull/16), open and not merged.
 - Next action / owner gate: Provide the final PR head SHA and canonical policy path to Agents C and D, then await Tech Lead review without self-merging.
