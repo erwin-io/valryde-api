@@ -67,10 +67,13 @@ describeDatabase('first Admin bootstrap with PostgreSQL', () => {
       password_hash: string;
       role: string;
       audit_count: number;
+      challenge_count: number;
     }>(
       `SELECT u.status, u.email_verified_at, u.password_hash, ur.role::text,
          (SELECT count(*)::integer FROM audit_logs a
-          WHERE a.action = 'ADMIN_BOOTSTRAPPED' AND a.entity_id = u.id::text) AS audit_count
+          WHERE a.action = 'ADMIN_BOOTSTRAPPED' AND a.entity_id = u.id::text) AS audit_count,
+         (SELECT count(*)::integer FROM auth_challenges c
+          WHERE c.user_id = u.id) AS challenge_count
        FROM users u
        JOIN user_roles ur ON ur.user_id = u.id
        WHERE u.id = $1`,
@@ -84,6 +87,7 @@ describeDatabase('first Admin bootstrap with PostgreSQL', () => {
     expect(row?.password_hash.startsWith('$argon2id$')).toBe(true);
     expect(await argon2.verify(row?.password_hash ?? '', password)).toBe(true);
     expect(row?.audit_count).toBe(1);
+    expect(row?.challenge_count).toBe(0);
 
     await expect(bootstrapFirstAdmin(pool, input)).resolves.toEqual({
       status: 'already_exists',
