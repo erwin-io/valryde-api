@@ -101,9 +101,9 @@ The exact `ADMIN_BOOTSTRAP_CONFIRM` value is a deliberate one-time authorization
 
 ## Development business fixtures
 
-Agent C, D, and E integration can use the deterministic, development-only fixture tooling documented in [Development fixtures](docs/development/DEVELOPMENT_FIXTURES.md). It creates verified accounts with a caller-supplied Argon2id password, linked fleet/route/application/GPS scenarios, and no verification email. The command refuses production mode, non-loopback PostgreSQL, a database-name mismatch, a non-`dbo` schema, missing Valryde migrations, or a database containing Traccar table markers.
+Agent C, D, and E integration can use the deterministic, development-only fixture tooling documented in [Development fixtures](docs/development/DEVELOPMENT_FIXTURES.md). It creates verified accounts with a caller-supplied Argon2id password, linked fleet/route/application/GPS scenarios, and no verification email. The command refuses production mode, non-loopback PostgreSQL, a database-name mismatch, a non-`dbo` schema, missing Valryde migrations, Traccar table markers, any non-fixture user, or a cross-boundary business/audit relationship.
 
-The seed is idempotent, while cleanup targets only the stable IDs in the fixture manifest. Never point either command at a shared, production, or Traccar database.
+The seed is idempotent, while cleanup targets only the stable IDs in the fixture manifest after all ownership checks pass. Never point either command at a shared, production, or Traccar database.
 
 ## Verification
 

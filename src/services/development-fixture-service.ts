@@ -42,6 +42,7 @@ export interface DevelopmentFixtureOptions {
   password?: string;
   manifest?: DevelopmentFixtureManifest;
   allowNonLoopbackTestDatabase?: boolean;
+  allowSharedAutomatedTestDatabase?: boolean;
 }
 
 export interface DevelopmentFixtureSummary {
@@ -150,6 +151,7 @@ export async function seedDevelopmentFixtures(
   try {
     await client.query('BEGIN');
     await client.query("SELECT pg_advisory_xact_lock(hashtext('valryde-development-fixtures'))");
+    await assertIsolatedUserSet(client, manifest, options);
     await assertFixtureOwnership(client, manifest);
     await cleanupFixtureRows(client, manifest);
     await insertFixtures(client, manifest, passwordHash);
@@ -176,6 +178,7 @@ export async function cleanupDevelopmentFixtures(
   try {
     await client.query('BEGIN');
     await client.query("SELECT pg_advisory_xact_lock(hashtext('valryde-development-fixtures'))");
+    await assertIsolatedUserSet(client, manifest, options);
     await assertFixtureOwnership(client, manifest);
     await cleanupFixtureRows(client, manifest);
     await client.query('COMMIT');
@@ -290,6 +293,212 @@ async function assertFixtureOwnership(
   );
   if (externalMemberships.rows[0]?.has_external_membership) {
     throw new Error('Fixture membership is linked to non-fixture data; cleanup refused');
+  }
+  await assertNoExternalBusinessRelationships(client, manifest);
+}
+
+async function assertIsolatedUserSet(
+  client: pg.PoolClient,
+  manifest: DevelopmentFixtureManifest,
+  options: DevelopmentFixtureOptions,
+): Promise<void> {
+  const sharedAutomatedTestDatabase =
+    options.environment === 'test' && options.allowSharedAutomatedTestDatabase === true;
+  if (sharedAutomatedTestDatabase) return;
+
+  const accounts = Object.values(manifest.accounts);
+  const expectedById = new Map(accounts.map((account) => [account.id, account]));
+  const users = await client.query<{ id: string; email: string; display_name: string }>(
+    'SELECT id, email::text, display_name FROM users',
+  );
+  const hasSharedUser = users.rows.some((row) => {
+    const expected = expectedById.get(row.id);
+    return (
+      expected === undefined ||
+      expected.email !== row.email ||
+      expected.displayName !== row.display_name
+    );
+  });
+  if (hasSharedUser) {
+    throw new Error(
+      'Development fixtures refuse databases containing non-fixture users; use a dedicated isolated development database',
+    );
+  }
+}
+
+async function assertNoExternalBusinessRelationships(
+  client: pg.PoolClient,
+  manifest: DevelopmentFixtureManifest,
+): Promise<void> {
+  const users = Object.values(manifest.accounts).map(({ id }) => id);
+  const operators = Object.values(manifest.operators);
+  const drivers = Object.values(manifest.drivers);
+  const routes = Object.values(manifest.routes);
+  const directions = Object.values(manifest.directions);
+  const jeepneys = Object.values(manifest.jeepneys);
+  const groups = Object.values(manifest.groups);
+  const driverAssignments = Object.values(manifest.driverAssignments);
+  const routeAssignments = Object.values(manifest.routeAssignments);
+  const applications = Object.values(manifest.applications);
+  const gpsRequests = Object.values(manifest.gpsRequests);
+  const gpsDevices = [manifest.gpsDevice];
+  const mappings = [manifest.deviceMapping];
+  const allIds = fixtureIds(manifest);
+
+  const externalProfiles = await client.query<{ found: boolean }>(
+    `SELECT EXISTS (
+       SELECT 1 FROM operators
+       WHERE (id = ANY($1::uuid[]) OR owner_user_id = ANY($2::uuid[]))
+         AND NOT (id = ANY($1::uuid[]) AND owner_user_id = ANY($2::uuid[]))
+       UNION ALL
+       SELECT 1 FROM drivers
+       WHERE (id = ANY($3::uuid[]) OR user_id = ANY($2::uuid[]) OR operator_id = ANY($1::uuid[]))
+         AND NOT (
+           id = ANY($3::uuid[])
+           AND user_id = ANY($2::uuid[])
+           AND (operator_id IS NULL OR operator_id = ANY($1::uuid[]))
+         )
+       UNION ALL
+       SELECT 1 FROM user_roles
+       WHERE user_id = ANY($2::uuid[])
+         AND NOT (
+           (user_id = $4 AND role = 'COMMUTER')
+           OR (user_id = $5 AND role = 'DRIVER')
+           OR (user_id = $6 AND role = 'OPERATOR')
+           OR (user_id = $7 AND role = 'ADMIN')
+           OR (user_id = $8 AND role IN ('DRIVER', 'OPERATOR'))
+           OR (user_id = $9 AND role = 'DRIVER')
+           OR (user_id = $10 AND role = 'OPERATOR')
+         )
+       UNION ALL
+       SELECT 1 FROM external_identities WHERE user_id = ANY($2::uuid[])
+     ) AS found`,
+    [
+      operators,
+      users,
+      drivers,
+      manifest.accounts.commuter.id,
+      manifest.accounts.driverA.id,
+      manifest.accounts.operatorA.id,
+      manifest.accounts.admin.id,
+      manifest.accounts.dualRole.id,
+      manifest.accounts.driverB.id,
+      manifest.accounts.operatorB.id,
+    ],
+  );
+  if (externalProfiles.rows[0]?.found) {
+    throw new Error('Fixture accounts or profiles have unowned relationships; cleanup refused');
+  }
+
+  const externalFleet = await client.query<{ found: boolean }>(
+    `SELECT EXISTS (
+       SELECT 1 FROM route_directions
+       WHERE (id = ANY($1::uuid[]) OR route_id = ANY($2::uuid[]))
+         AND NOT (id = ANY($1::uuid[]) AND route_id = ANY($2::uuid[]))
+       UNION ALL
+       SELECT 1 FROM jeepneys
+       WHERE (id = ANY($3::uuid[]) OR operator_id = ANY($4::uuid[]) OR created_by_user_id = ANY($5::uuid[]))
+         AND NOT (
+           id = ANY($3::uuid[])
+           AND operator_id = ANY($4::uuid[])
+           AND created_by_user_id = ANY($5::uuid[])
+         )
+       UNION ALL
+       SELECT 1 FROM fleet_groups
+       WHERE (id = ANY($6::uuid[]) OR operator_id = ANY($4::uuid[]))
+         AND NOT (id = ANY($6::uuid[]) AND operator_id = ANY($4::uuid[]))
+       UNION ALL
+       SELECT 1 FROM driver_jeepney_assignments
+       WHERE (
+         id = ANY($7::uuid[]) OR driver_id = ANY($8::uuid[])
+         OR jeepney_id = ANY($3::uuid[]) OR assigned_by_user_id = ANY($5::uuid[])
+       )
+         AND NOT (
+           id = ANY($7::uuid[]) AND driver_id = ANY($8::uuid[])
+           AND jeepney_id = ANY($3::uuid[]) AND assigned_by_user_id = ANY($5::uuid[])
+         )
+       UNION ALL
+       SELECT 1 FROM vehicle_route_assignments
+       WHERE (
+         id = ANY($9::uuid[]) OR jeepney_id = ANY($3::uuid[]) OR group_id = ANY($6::uuid[])
+         OR route_direction_id = ANY($1::uuid[]) OR assigned_by_user_id = ANY($5::uuid[])
+       )
+         AND NOT (
+           id = ANY($9::uuid[]) AND route_direction_id = ANY($1::uuid[])
+           AND assigned_by_user_id = ANY($5::uuid[])
+           AND (
+             (jeepney_id = ANY($3::uuid[]) AND group_id IS NULL)
+             OR (group_id = ANY($6::uuid[]) AND jeepney_id IS NULL)
+           )
+         )
+     ) AS found`,
+    [directions, routes, jeepneys, operators, users, groups, driverAssignments, drivers, routeAssignments],
+  );
+  if (externalFleet.rows[0]?.found) {
+    throw new Error('Fixture fleet or route data has unowned relationships; cleanup refused');
+  }
+
+  const externalWorkflow = await client.query<{ found: boolean }>(
+    `SELECT EXISTS (
+       SELECT 1 FROM vehicle_applications
+       WHERE (
+         id = ANY($1::uuid[]) OR jeepney_id = ANY($2::uuid[])
+         OR submitted_by_user_id = ANY($3::uuid[]) OR reviewed_by_user_id = ANY($3::uuid[])
+       )
+         AND NOT (
+           id = ANY($1::uuid[]) AND jeepney_id = ANY($2::uuid[])
+           AND submitted_by_user_id = ANY($3::uuid[])
+           AND (reviewed_by_user_id IS NULL OR reviewed_by_user_id = ANY($3::uuid[]))
+         )
+       UNION ALL
+       SELECT 1 FROM gps_setup_requests
+       WHERE (
+         id = ANY($4::uuid[]) OR vehicle_application_id = ANY($1::uuid[])
+         OR jeepney_id = ANY($2::uuid[]) OR requested_by_user_id = ANY($3::uuid[])
+         OR verified_by_user_id = ANY($3::uuid[])
+       )
+         AND NOT (
+           id = ANY($4::uuid[]) AND vehicle_application_id = ANY($1::uuid[])
+           AND jeepney_id = ANY($2::uuid[]) AND requested_by_user_id = ANY($3::uuid[])
+           AND (verified_by_user_id IS NULL OR verified_by_user_id = ANY($3::uuid[]))
+         )
+       UNION ALL
+       SELECT 1 FROM traccar_device_mappings
+       WHERE (
+         id = ANY($5::uuid[]) OR gps_setup_request_id = ANY($4::uuid[])
+         OR gps_device_id = ANY($6::uuid[]) OR jeepney_id = ANY($2::uuid[])
+         OR mapped_by_user_id = ANY($3::uuid[])
+       )
+         AND NOT (
+           id = ANY($5::uuid[]) AND gps_setup_request_id = ANY($4::uuid[])
+           AND gps_device_id = ANY($6::uuid[]) AND jeepney_id = ANY($2::uuid[])
+           AND mapped_by_user_id = ANY($3::uuid[])
+         )
+     ) AS found`,
+    [applications, jeepneys, users, gpsRequests, mappings, gpsDevices],
+  );
+  if (externalWorkflow.rows[0]?.found) {
+    throw new Error('Fixture application or GPS data has unowned relationships; cleanup refused');
+  }
+
+  const externalAudits = await client.query<{ found: boolean }>(
+    `SELECT EXISTS (
+       SELECT 1 FROM audit_logs a
+       WHERE (a.actor_user_id = ANY($1::uuid[]) OR a.entity_id = ANY($2::text[]))
+         AND NOT (
+           a.actor_user_id = ANY($1::uuid[])
+           AND (
+             a.entity_id = ANY($2::text[])
+             OR a.entity_id IN (
+               SELECT c.id::text FROM auth_challenges c WHERE c.user_id = ANY($1::uuid[])
+             )
+           )
+         )
+     ) AS found`,
+    [users, allIds],
+  );
+  if (externalAudits.rows[0]?.found) {
+    throw new Error('Fixture audit history crosses the fixture ownership boundary; cleanup refused');
   }
 }
 

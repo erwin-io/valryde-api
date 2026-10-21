@@ -35,6 +35,7 @@ describeDatabase('development business fixtures with PostgreSQL', () => {
     confirmation: 'CLEAN_VALRYDE_DEVELOPMENT_FIXTURES',
     manifest,
     allowNonLoopbackTestDatabase: true,
+    allowSharedAutomatedTestDatabase: true,
   };
   const config: AppConfig = {
     environment: 'test',
@@ -248,7 +249,7 @@ describeDatabase('development business fixtures with PostgreSQL', () => {
     ).not.toContain(manifest.jeepneys.operatorB);
   });
 
-  it('cleans only manifest-owned records and leaves unrelated application data untouched', async () => {
+  it('refuses a shared user database before cleanup and leaves every row unchanged', async () => {
     const unrelated = await repository.createUser({
       email: `fixture-sentinel-${randomUUID()}@example.com`,
       displayName: 'Fixture cleanup sentinel',
@@ -258,9 +259,42 @@ describeDatabase('development business fixtures with PostgreSQL', () => {
     });
     unrelatedUserId = unrelated.id;
 
+    await expect(
+      cleanupDevelopmentFixtures(pool, {
+        ...cleanupOptions,
+        allowSharedAutomatedTestDatabase: false,
+      }),
+    ).rejects.toThrow('databases containing non-fixture users');
+    expect(await countDevelopmentFixtureRows(pool, manifest)).toBe(41);
+    expect(await repository.findUserById(unrelated.id)).not.toBeNull();
+
+    await pool.query('DELETE FROM users WHERE id = $1', [unrelated.id]);
+    unrelatedUserId = undefined;
+  });
+
+  it('refuses external business relationships before cleanup and preserves the fixture set', async () => {
+    const externalGroupId = randomUUID();
+    await pool.query(
+      `INSERT INTO fleet_groups(id, operator_id, name, description)
+       VALUES ($1, $2, $3, 'External relationship sentinel')`,
+      [externalGroupId, manifest.operators.operatorA, `External-${externalGroupId}`],
+    );
+    try {
+      await expect(cleanupDevelopmentFixtures(pool, cleanupOptions)).rejects.toThrow(
+        'unowned relationships',
+      );
+      expect(await countDevelopmentFixtureRows(pool, manifest)).toBe(41);
+      const externalGroup = await pool.query<{ count: number }>(
+        'SELECT count(*)::integer AS count FROM fleet_groups WHERE id = $1',
+        [externalGroupId],
+      );
+      expect(externalGroup.rows[0]?.count).toBe(1);
+    } finally {
+      await pool.query('DELETE FROM fleet_groups WHERE id = $1', [externalGroupId]);
+    }
+
     await cleanupDevelopmentFixtures(pool, cleanupOptions);
     expect(await countDevelopmentFixtureRows(pool, manifest)).toBe(0);
-    expect(await repository.findUserById(unrelated.id)).not.toBeNull();
   });
 
   async function login(email: string): Promise<string> {

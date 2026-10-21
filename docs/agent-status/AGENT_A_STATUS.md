@@ -2,17 +2,17 @@
 
 ## Current snapshot
 
-- Updated at (ISO 8601, Asia/Manila): 2026-10-22T03:12:06+08:00
+- Updated at (ISO 8601, Asia/Manila): 2026-10-22T03:35:01+08:00
 - Agent / module: A — Core Platform / Fastify API
 - Repository: `erwin-io/valryde-api`
-- Branch / implementation commit: `feat/development-business-fixtures` / `54ce7f1`
+- Branch / implementation commit: `feat/development-business-fixtures` / `3da914dd959087d58ee313cf573d3c57d8435a08` plus final boundary-verification changes pending commit
 - Checklist IDs: 1–11
 - GitHub issues / PRs: Unified-email [PR #11](https://github.com/erwin-io/valryde-api/pull/11) is merged. Approved G1 implementation [PR #12](https://github.com/erwin-io/valryde-api/pull/12) remains independently open and green. Development-fixture [PR #15](https://github.com/erwin-io/valryde-api/pull/15) is open for Tech Lead review.
 - Implementation progress: IN_PROGRESS
-- Tech Lead review decision (if actually issued): Existing IDs 1–11 baseline ACCEPTED; controlled local development fixture provisioning explicitly approved. Fixture implementation is not yet reviewed.
+- Tech Lead review decision (if actually issued): Existing IDs 1–11 baseline ACCEPTED; PR #15 requires final environment-boundary verification before acceptance.
 - Current objective: Provide deterministic development-only identities and linked business scenarios for Agents C, D, and E without email delivery, runtime bypasses, production data, or Traccar writes.
-- Last confirmed result: Stable CLI seed/verify/cleanup round-trip created 41 tracked rows and returned to zero. Full PostgreSQL-enabled suite passed with 20 files / 118 tests; normal login, refresh, logout, tenant isolation, route conflict, and unrelated-row preservation are covered.
-- Next concrete action: Commit, push, open the separately reviewable fixture PR, and await Tech Lead review without merging.
+- Last confirmed result: The CLI path now refuses databases containing any non-fixture user and rejects cross-boundary profile, role, identity, fleet, route, workflow, mapping, membership, or audit relationships before deletion. Full PostgreSQL-enabled suite passed with 20 files / 119 tests; all fixture rows remained intact after both refusal scenarios.
+- Next concrete action: Commit and push the final boundary changes to PR #15, confirm API CI, and return it for Tech Lead re-review without merging.
 - Blocked by / decision owner: No implementation blocker. Each developer supplies a temporary local `DEV_FIXTURE_PASSWORD` when seeding; no default credential is committed or retained.
 - Dependencies / affected agents: B (tracking/latest state/realtime), C (public route/live APIs), D (driver invitation and operator APIs), E (Admin APIs), F (device runbooks), G (shared-contract review).
 
@@ -36,6 +36,8 @@
 
 | Command / check | Environment | Result | Date/time | Evidence / notes |
 |---|---|---|---|---|
+| `npm run db:migrate`, `npm run lint`, `npm run typecheck`, `npm test`, `npm run build`, `npm audit --audit-level=high`, `git diff --check` | Final fixture-boundary changes; local PostgreSQL/PostGIS `valrydedb`, `dbo,public` | PASSED | 2026-10-22 03:35 +08:00 | 20 test files / 119 tests passed; 2 pre-existing owner/live checks skipped; zero vulnerabilities. |
+| `test/pg-development-fixtures.integration.test.ts` | PostgreSQL fixture boundary | PASSED | 2026-10-22 03:33 +08:00 | 7/7; strict shared-user refusal and external-business-relationship refusal both roll back before deleting fixture or sentinel rows. |
 | `npm run db:migrate`, `npm run lint`, `npm run typecheck`, `npm test`, `npm run build`, `npm audit --audit-level=high`, `git diff --check` | Development-fixture branch; local PostgreSQL/PostGIS `valrydedb`, `dbo,public` | PASSED | 2026-10-22 03:12 +08:00 | 20 test files / 118 tests passed; 2 pre-existing owner/live checks skipped; zero vulnerabilities. |
 | `dev:fixtures:seed` → `verify` → `cleanup` → `verify` | Local loopback `valrydedb` with temporary in-memory password | PASSED | 2026-10-22 03:08 +08:00 | Boundary reported PostgreSQL loopback, schema `dbo`; tracked fixture rows `41` after seed and `0` after cleanup. No email or Traccar operation. |
 | `test/pg-development-fixtures.integration.test.ts` | Fastify inject + local PostgreSQL/PostGIS | PASSED | 2026-10-22 03:06 +08:00 | 6/6: boundary refusal, idempotency, 7 verified Argon2 accounts, refresh/logout, linked scenarios, cross-operator denial, route conflict, scoped cleanup. |
@@ -80,6 +82,17 @@
 - Gate: Physical GPS/Traccar mapping and activation. Required actor: operator/Agent F/Agent B. Requested evidence: power, SIM/APN, server connectivity, GPS fix, correct IMEI/uniqueId mapping. State: OWNER_VERIFICATION_PENDING.
 
 ## Activity log (newest first; preserve prior entries)
+
+### 2026-10-22 03:35 +08:00 — Fixture environment and ownership boundary finalized
+
+- Action / reason: Addressed the Tech Lead's final PR #15 boundary checkpoint. Audited all seed/cleanup preconditions and found that loopback/name/schema checks did not independently prove absence of shared users, while only fleet memberships had an explicit cross-boundary relationship assertion.
+- Checklist/issue: Agent A support for IDs 1–11 and downstream Agents C, D, E; PR #15 final environment-boundary verification.
+- Files/config/services affected: Development fixture service, PostgreSQL integration tests, fixture runbook, README, and this status file. G1 PR #12 history remains separate and unchanged.
+- Observed result (success/failure/rollback): Production CLI seed/cleanup now refuses every non-manifest user and all detected cross-boundary roles, identities, profiles, routes, fleet records, assignments, applications, GPS records, mappings, memberships, and audit rows. Assertions run under the fixture advisory lock before the first delete/insert; rejection rolls back without changing fixture or sentinel rows. The shared-test-database allowance is service-only, requires `environment=test`, and is not exposed by the CLI or environment variables.
+- Validation and evidence: Targeted fixture test 7/7 passed. Full migration/lint/typecheck/test/build/audit/diff gate passed with PostgreSQL enabled: 20 files / 119 tests, 2 pre-existing owner/live skips, zero vulnerabilities.
+- Contracts / risks / dependencies: No runtime endpoint, DTO, migration, RBAC, Traccar, or production behavior changed. Dedicated database identity is the exact database name + server address + port + active `dbo` schema, plus PostGIS/migration/Traccar/user-isolation checks documented in the fixture runbook.
+- Commit/PR link or SHA (if available): [PR #15](https://github.com/erwin-io/valryde-api/pull/15); final correction commit pending.
+- Next action / owner gate: Commit/push to PR #15, verify API CI/GitGuardian, and await Tech Lead re-review. Do not merge.
 
 ### 2026-10-22 03:12 +08:00 — Controlled development business fixtures implemented
 

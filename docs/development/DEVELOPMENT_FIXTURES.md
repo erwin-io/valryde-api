@@ -1,7 +1,9 @@
 # VALRYDE development business fixtures
 
-**Scope:** isolated local Valryde application development database only.  
-**Consumers:** Agents C, D, and E.  
+**Scope:** isolated local Valryde application development database only.
+
+**Consumers:** Agents C, D, and E.
+
 **Not affected:** Traccar database, production users, runtime authentication policy, email providers.
 
 ## Safety boundary
@@ -14,9 +16,20 @@ Every seed, verify, and cleanup operation inspects PostgreSQL before it writes. 
 - PostgreSQL reports a loopback server address (`127.0.0.1` or `::1`);
 - the active schema is `dbo`;
 - PostGIS and all required Valryde application tables exist;
-- no `tc_users`, `tc_devices`, or `tc_positions` Traccar table markers exist.
+- no `tc_users`, `tc_devices`, or `tc_positions` Traccar table markers exist; and
+- the `users` table is empty or contains only the exact manifest identities. Any unrelated user makes the database shared and seed/cleanup refuses it.
 
-Seed and cleanup run in one transaction under a PostgreSQL advisory lock. A failure rolls back the whole operation. The tool refuses known fixture-ID/email/route-code/plate collisions instead of overwriting them. Cleanup uses only manifest IDs and aborts if non-fixture foreign keys prevent safe removal; it never resets a schema or truncates a table.
+The database identity is the complete verified tuple printed by `dev:fixtures:verify`:
+
+```text
+current_database() + inet_server_addr() + inet_server_port() + current_schema()
+```
+
+`DEV_FIXTURE_TARGET_DATABASE` must exactly equal `current_database()`. The reported server address must be loopback, and `current_schema()` must be `dbo` under `search_path=dbo,public`. A familiar database name or a loopback address by itself is not sufficient: every condition above must pass. Create a dedicated local application database if the normal development database contains any non-fixture account or shared business data.
+
+Seed and cleanup run in one transaction under a PostgreSQL advisory lock. All ownership and relationship assertions execute before the first delete or insert; a failure rolls back the whole operation. The tool refuses fixture-ID/email/route-code/plate collisions instead of overwriting them. It also refuses unexpected roles or external identities on fixture users and any cross-boundary profile, route, fleet, assignment, application, GPS, mapping, membership, or audit relationship. Cleanup uses only manifest IDs after those checks pass; it never resets a schema, truncates a table, removes an unrelated row, or relies on a cascading foreign key to erase an unowned relationship.
+
+The CLI exposes no override for the user-isolation or relationship checks. The service has one test-only shared-database option so PostgreSQL test files can coexist in CI; that option is honored only with `environment=test` and is not configurable through the CLI or environment variables.
 
 ## Commands
 
@@ -59,7 +72,7 @@ try {
 }
 ```
 
-`DATABASE_URL`, `DATABASE_SCHEMA=dbo`, and a valid development `JWT_SECRET` still come from the ignored local `.env`. Do not add `DEV_FIXTURE_PASSWORD` or either confirmation value to `.env`, source, Postman data, screenshots, or documentation.
+`DATABASE_URL`, `DATABASE_SCHEMA=dbo`, and a valid development `JWT_SECRET` still come from the ignored local `.env`. Before running seed or cleanup, run `npm run dev:fixtures:verify` and compare the reported database, server address, port, and schema to the intended dedicated local database. Do not add `DEV_FIXTURE_PASSWORD` or either confirmation value to `.env`, source, Postman data, screenshots, or documentation.
 
 ## Test accounts
 
