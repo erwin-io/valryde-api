@@ -30,3 +30,67 @@ describe('CORS_ORIGINS', () => {
     },
   );
 });
+
+const emailBase = {
+  ...base,
+  EMAIL_DELIVERY_MODE: 'smtp',
+  EMAIL_FROM: 'VALRYDE <sender@example.com>',
+  APP_VERIFICATION_URL: 'https://app.example.com/auth/verify-email',
+  APP_PASSWORD_RESET_URL: 'https://app.example.com/auth/reset-password',
+  APP_EMAIL_CHANGE_URL: 'https://app.example.com/account/confirm-email-change',
+};
+
+describe('SMTP configuration profiles', () => {
+  it('loads an authenticated implicit-TLS provider profile', () => {
+    const config = loadConfig({
+      ...emailBase,
+      SMTP_HOST: 'smtp.example.com',
+      SMTP_PORT: '465',
+      SMTP_SECURE: 'true',
+      SMTP_USER: 'sender@example.com',
+      SMTP_PASSWORD: 'runtime-secret-not-used-by-this-test',
+    });
+
+    expect(config.email).toEqual({
+      deliveryMode: 'smtp',
+      from: 'VALRYDE <sender@example.com>',
+      verificationOrigin: 'https://app.example.com/auth/verify-email',
+      passwordResetOrigin: 'https://app.example.com/auth/reset-password',
+      emailChangeOrigin: 'https://app.example.com/account/confirm-email-change',
+      smtp: {
+        host: 'smtp.example.com',
+        port: 465,
+        secure: true,
+        user: 'sender@example.com',
+        password: 'runtime-secret-not-used-by-this-test',
+      },
+    });
+  });
+
+  it('keeps an unauthenticated Mailpit profile available for integration tests', () => {
+    const config = loadConfig({
+      ...emailBase,
+      SMTP_HOST: '127.0.0.1',
+      SMTP_PORT: '1025',
+      SMTP_SECURE: 'false',
+    });
+
+    expect(config.email).toMatchObject({
+      deliveryMode: 'smtp',
+      smtp: { host: '127.0.0.1', port: 1025, secure: false },
+    });
+  });
+
+  it.each([
+    { SMTP_USER: 'sender@example.com' },
+    { SMTP_PASSWORD: 'runtime-secret-not-used-by-this-test' },
+  ])('rejects incomplete SMTP authentication configuration', (partialAuth) => {
+    expect(() =>
+      loadConfig({
+        ...emailBase,
+        SMTP_HOST: 'smtp.example.com',
+        ...partialAuth,
+      }),
+    ).toThrow('SMTP_USER and SMTP_PASSWORD must either both be set or both be omitted');
+  });
+});

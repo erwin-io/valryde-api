@@ -38,7 +38,7 @@ Valryde-owned tables are stored in the `dbo` schema. PostgreSQL extensions remai
 
 ## Local setup
 
-1. Copy `.env.example` to `.env` and replace the placeholder database URL and JWT secret.
+1. Copy `.env.example` to `.env` and replace the placeholder database URL, JWT secret, and SMTP settings. Interactive development uses a real authenticated SMTP provider; keep credentials only in the ignored `.env`.
 2. Create an empty PostgreSQL database for Valryde.
 3. Install dependencies and apply migrations:
 
@@ -55,7 +55,15 @@ Valryde-owned tables are stored in the `dbo` schema. PostgreSQL extensions remai
 
 The health endpoint is `GET /api/health`. Interactive OpenAPI documentation is available at `/documentation`.
 
-### Local email with Mailpit
+### Email delivery
+
+Local development, preview/staging, and production all use the same provider-neutral SMTP implementation. Configure an authorized sender, provider host/port/TLS mode, credentials, and reachable application links through environment variables. See [Unified email delivery environments](docs/integration/AGENT_A_UNIFIED_EMAIL_DELIVERY.md) for the environment matrix, Gmail development example, frontend callback decision, seed exception, and validation gates.
+
+Do not commit `.env`, provider credentials, App Passwords, or challenge tokens. Preview and production must use separate secrets, databases, sender configuration, and public HTTPS callback URLs.
+
+### Optional Mailpit integration-test override
+
+Mailpit remains available for automated/integration testing. It is not the default interactive development transport.
 
 Start the local-only mail catcher:
 
@@ -65,9 +73,9 @@ docker compose -f compose.mailpit.yaml up -d
 
 On Windows without Docker, install the official package with `winget install --id axllent.mailpit --exact`, open a new terminal, and run `mailpit --listen 127.0.0.1:8025 --smtp 127.0.0.1:1025`.
 
-Copy the `EMAIL_*`, `APP_*_URL`, and `SMTP_*` settings from `.env.example` into the ignored `.env` file. Mailpit accepts SMTP on `127.0.0.1:1025`; captured messages are visible at `http://127.0.0.1:8025`.
+Temporarily override the SMTP host with `127.0.0.1`, port `1025`, and `SMTP_SECURE=false`; remove `SMTP_USER` and `SMTP_PASSWORD` unless the test server requires authentication. Captured messages are visible at `http://127.0.0.1:8025`. Restore the real SMTP profile before interactive development resumes.
 
-Production SMTP credentials must be supplied only through the runtime environment. Never place credentials or authentication challenge tokens in source files, logs, documentation, or Postman assets.
+Real SMTP credentials must be supplied only through the local ignored environment or deployment secret store. Never place credentials or authentication challenge tokens in source files, logs, documentation, Postman assets, screenshots, or command arguments.
 
 ## Create the first Admin
 
@@ -89,7 +97,7 @@ try {
 }
 ```
 
-The exact `ADMIN_BOOTSTRAP_CONFIRM` value is a deliberate one-time authorization guard. The password must contain 12 to 128 characters. The command creates a verified, active `ADMIN` account with an Argon2id password hash and an audit record. It is safe to rerun for the same active, verified Admin and will make no changes. It refuses to promote an existing non-Admin account or create a second initial Admin; additional Admin access must use a separately reviewed internal process.
+The exact `ADMIN_BOOTSTRAP_CONFIRM` value is a deliberate one-time authorization guard. The password must contain 12 to 128 characters. The command creates a verified, active `ADMIN` account with an Argon2id password hash and an `ADMIN_BOOTSTRAPPED` audit record. It does not use public registration and does not dispatch an email. It is safe to rerun for the same active, verified Admin and will make no changes. It refuses to promote an existing non-Admin account or create a second initial Admin; additional Admin access must use a separately reviewed internal process. Never use a predictable default password, especially in preview or production.
 
 ## Verification
 

@@ -2,25 +2,25 @@
 
 ## Current snapshot
 
-- Updated at (ISO 8601, Asia/Manila): 2026-10-21T06:30:00+08:00
+- Updated at (ISO 8601, Asia/Manila): 2026-10-21T16:55:00+08:00
 - Agent / module: A — Core Platform / Fastify API
 - Repository: `erwin-io/valryde-api`
-- Branch / head: canonical `main` / `4a9a152` (PRs #2, #4, #6 merged); D1/D2 fix branch `fix/1-2-error-status-and-capacitor-cors`
+- Branch / head: `docs/1-unified-real-email` / base `2e8cc4d36fe1066534e07863c3112ec95688f905`
 - Checklist IDs: 1–11
-- GitHub issues / PRs: [PR #1](https://github.com/erwin-io/valryde-api/pull/1), [#2](https://github.com/erwin-io/valryde-api/pull/2), [#6](https://github.com/erwin-io/valryde-api/pull/6) merged; [PR #5](https://github.com/erwin-io/valryde-api/pull/5) governance open (no conflicts); D1/D2 fix [PR #7](https://github.com/erwin-io/valryde-api/pull/7) (this branch); G1 proposal [PR #8](https://github.com/erwin-io/valryde-api/pull/8)
-- Implementation progress: DONE_AFTER_ACCEPTANCE
-- Tech Lead review decision (if actually issued): ACCEPTED — PR #1 merged to `main`
-- Current objective: Tech Lead post-merge release: (1) PR #5 conflict check, (2) D1/D2 fix PR, (3) G1 directory contract proposal (no implementation before approval).
-- Last confirmed result: 2026-10-21 D1/D2 branch on `main` `4a9a152`: lint, typecheck, build, audit PASSED; DB-enabled `npm test` 17 files / 88 tests PASSED (includes Agent B suites).
-- Next concrete action: Tech Lead reviews PR #7 (new public error code `RATE_LIMITED`) and the G1 contract in PR #8, and decides on Agent B's requested optional transaction executor for `resolveEffectiveRouteDirection`. Agent A does not merge or implement G1 before approval.
-- Blocked by / decision owner: No remaining Agent A source blocker. Real Google-client smoke test, production SMTP credentials/from-domain, permanent Admin credentials, and physical GPS/Traccar activation remain owner/operator-gated and do not invalidate acceptance.
+- GitHub issues / PRs: PRs [#1](https://github.com/erwin-io/valryde-api/pull/1), [#2](https://github.com/erwin-io/valryde-api/pull/2), [#4](https://github.com/erwin-io/valryde-api/pull/4), [#5](https://github.com/erwin-io/valryde-api/pull/5), [#6](https://github.com/erwin-io/valryde-api/pull/6), [#7](https://github.com/erwin-io/valryde-api/pull/7), and [#8](https://github.com/erwin-io/valryde-api/pull/8) merged; unified-email PR pending.
+- Implementation progress: IN_PROGRESS
+- Tech Lead review decision (if actually issued): Existing IDs 1–11 baseline ACCEPTED; unified real-email release authorized for implementation, not yet reviewed.
+- Current objective: Standardize real authenticated SMTP for all interactive environments, preserve Mailpit as a test override, verify seed-no-email behavior, and publish the Agent D readiness contract.
+- Last confirmed result: Existing provider-neutral SMTP source supports authenticated implicit TLS without modification. Gmail TCP/TLS certificate validation passed; full Mailpit registration/verification/recovery passed and cleaned all test rows; real provider authentication/delivery remains owner-gated.
+- Next concrete action: Complete the focused documentation/test gate, open the unified-email PR, then run controlled real-email validation after the owner privately configures SMTP credentials and a reachable callback.
+- Blocked by / decision owner: Owner must configure the authorized sender/SMTP secret and approve a reachable HTTPS callback/test inbox. Real Gmail authentication, external delivery, and Agent D credential handoff cannot be claimed before that evidence exists.
 - Dependencies / affected agents: B (tracking/latest state/realtime), C (public route/live APIs), D (driver invitation and operator APIs), E (Admin APIs), F (device runbooks), G (shared-contract review).
 
 ## Checklist coverage
 
 | Checklist ID | Feature / slice | Progress | Evidence (files/tests/PR) | Blocker / next action |
 |---:|---|---|---|---|
-| 1 | Authentication, JWT & Google Sign-In | DONE_AFTER_ACCEPTANCE | Provider-neutral SMTP/Mailpit delivery, resend/recovery safety, Google verifier fixtures, auth tests, merged PR #1 | Real Google client smoke test and production SMTP configuration are owner-gated. |
+| 1 | Authentication, JWT & Google Sign-In | IN_PROGRESS | Accepted provider-neutral SMTP/resend/recovery baseline plus unified environment documentation and SMTP profile tests on `docs/1-unified-real-email` | Real SMTP authentication/delivery and reachable callback remain owner-gated. |
 | 2 | Role-Based Access Control | DONE_AFTER_ACCEPTANCE | `src/plugins/authorization.ts`, negative RBAC integration tests, merged PR #1 | Downstream clients must preserve server authority. |
 | 3 | User/Profile and first Admin | DONE_AFTER_ACCEPTANCE | Admin CLI and unit/PostgreSQL tests; merged PR #1 | Permanent Admin credentials remain owner-supplied. |
 | 4 | Jeepney Management | DONE_AFTER_ACCEPTANCE | `src/routes/fleet-routes.ts`, migration 003, PostgreSQL fleet test, merged PR #1 | UI/client integration pending. |
@@ -36,6 +36,10 @@
 
 | Command / check | Environment | Result | Date/time | Evidence / notes |
 |---|---|---|---|---|
+| `npm run db:migrate`, `npm run lint`, `npm run typecheck`, `npm test`, `npm run build`, `npm audit --audit-level=high`, `git diff --check` | Unified-email branch; local PostgreSQL/PostGIS `dbo` | PASSED | 2026-10-21 17:24 +08:00 | 17 files / 92 tests, 0 skipped; zero vulnerabilities; Admin bootstrap test confirms zero auth challenges. |
+| Gmail port 465 TLS handshake | Local network; no credentials | PASSED | 2026-10-21 16:48 +08:00 | `smtp.gmail.com:465` reachable; certificate authorization true; authentication intentionally not attempted without owner secret. |
+| Live Mailpit registration → verification → login → recovery → reset | Local API/PostgreSQL/Mailpit | PASSED | 2026-10-21 16:44 +08:00 | Verification/reset messages captured; old password rejected, new password accepted; temporary DRIVER and related rows removed, residue zero. This is test-sink evidence, not real external delivery. |
+| Targeted auth/email/config tests | Local Node.js | PASSED | 2026-10-21 16:44 +08:00 | 3 files / 17 tests before documentation branch changes; full branch gate pending. |
 | `npm run lint`, `npm run typecheck`, `npm run build`, `npm audit --audit-level=high` | D1/D2 branch on `main` `4a9a152`; local Node.js | PASSED | 2026-10-21 06:05 +08:00 | 0 vulnerabilities; `git diff --check` clean. |
 | `npm test` (DB-enabled) | Local PostgreSQL/PostGIS, `dbo` | PASSED | 2026-10-21 06:05 +08:00 | 17 files / 88 tests, 0 skipped; new `test/http-errors.test.ts` (malformed JSON 400, rate limit 429 + `retry-after`, exact-origin CORS) and `test/config.test.ts` (origin validation). |
 | PR #5 trial merge (`git merge-tree`) against `main` `4a9a152` | Local git | PASSED | 2026-10-21 05:40 +08:00 | No conflicts; no merged file overlaps PR #5; no stale `valryde-mobile-operator` reference on `main`. PR #5 CI (verify, GitGuardian) passing. |
@@ -55,7 +59,7 @@
 
 ## Shared contract / risk changes
 
-- API/DTO/schema/migration changes: Added `POST /auth/resend-verification`, `POST /driver-associations`, `GET /transit-routes/{routeId}`, and `GET /jeepneys/{jeepneyId}/effective-route`. `GET /transit-routes` accepts `q`, `page`, and `pageSize` and returns `pagination`. No new SQL migration was required.
+- API/DTO/schema/migration changes: Unified-email work changes no endpoint, DTO, schema, migration, token, or RBAC contract. It standardizes environment documentation and verifies existing SMTP/bootstrap behavior. Previously accepted additions remain unchanged.
 - Auth/RBAC/data-isolation impact: Challenge delivery is provider-neutral SMTP with environment-only configuration, hashed tokens, cooldown, supersession, invalidation, generic public responses, and provider-failure recovery. Driver association requires a verified DRIVER email and transactionally rejects cross-Operator claims.
 - Realtime/Traccar/geospatial impact: No realtime or Traccar implementation changed. Agent B now has a server-authoritative effective-route contract: active direct assignment wins; otherwise exactly one active group assignment is inherited; zero returns no route; multiple inherited routes return `409 ROUTE_ASSIGNMENT_CONFLICT`.
 - Secrets/security/privacy impact: No credentials are tracked. Postman environment values remain blank; runtime E2E credentials were generated in memory and removed. SMTP credentials, JWTs, challenge tokens, and Admin passwords are absent from source, logs, docs, and checked-in Postman data.
@@ -63,12 +67,23 @@
 
 ## Operator / hardware / external gates
 
-- Gate: Production email delivery. Required actor: project owner. Requested evidence: approved SMTP provider credentials, sender/from-domain, and production link origins. State: OWNER_VERIFICATION_PENDING; local Mailpit delivery PASSED.
+- Gate: Unified real SMTP delivery. Required actor: project owner. Requested evidence: authorized sender and privately configured SMTP credentials, approved external test inbox, and reachable callback URL for each deployed environment. State: OWNER_VERIFICATION_PENDING; TLS reachability and Mailpit flow passed, real authentication/delivery not yet run.
 - Gate: Google sign-in. Required actor: project owner. Requested evidence: approved OAuth client IDs and a real ID-token smoke test. State: OWNER_VERIFICATION_PENDING.
 - Gate: First real Admin account. Required actor: project owner. Requested evidence: owner-chosen email/display name/password supplied only to the local bootstrap environment. State: OWNER_VERIFICATION_PENDING.
 - Gate: Physical GPS/Traccar mapping and activation. Required actor: operator/Agent F/Agent B. Requested evidence: power, SIM/APN, server connectivity, GPS fix, correct IMEI/uniqueId mapping. State: OWNER_VERIFICATION_PENDING.
 
 ## Activity log (newest first; preserve prior entries)
+
+### 2026-10-21 16:55 +08:00 — Unified real-email environment release started
+
+- Action / reason: Tech Lead authorized real authenticated SMTP for local, preview, and production while retaining Mailpit only as an explicit testing override. Recovered canonical `main` at `2e8cc4d`; confirmed PRs #5/#7/#8 merged; preserved Agent B worktrees and untracked files.
+- Checklist/issue: Agent A IDs 1 and 3; unified real-email delivery release.
+- Files/config/services affected: `.env.example`, `README.md`, `docs/integration/AGENT_A_UNIFIED_EMAIL_DELIVERY.md`, SMTP configuration tests, Admin-bootstrap integration evidence, and this status file. No runtime source, migration, API, RBAC, or Traccar change.
+- Observed result (success/failure/rollback): Existing Nodemailer adapter already supports provider-neutral authenticated implicit TLS and safe provider failure handling. Local `.env` remains Mailpit-configured and was not overwritten. Gmail TCP/TLS passed without credentials. Real provider authentication/delivery remains blocked by the owner gate.
+- Validation and evidence: Full local Mailpit registration/verification/recovery passed with zero database residue. Seeder audit found only the controlled first-Admin CLI; it directly creates a verified Admin, records `ADMIN_BOOTSTRAPPED`, and has no notification dependency. Added PostgreSQL assertion that it creates zero auth challenges.
+- Contracts / risks / dependencies: Existing single `APP_*_URL` set cannot target C/D/E independently. Current safe proposal is one role-neutral HTTPS callback; Agent C currently implements all three callback routes. No arbitrary client redirect or deep-link contract was added.
+- Commit/PR link or SHA (if available): Branch `docs/1-unified-real-email`; PR pending.
+- Next action / owner gate: Run the complete branch gate and open a focused PR. Owner then configures SMTP secrets and approved callback/inbox for real external validation.
 
 ### 2026-10-21 06:30 +08:00 — G1 contract proposal; Agent B resolver coordination
 
