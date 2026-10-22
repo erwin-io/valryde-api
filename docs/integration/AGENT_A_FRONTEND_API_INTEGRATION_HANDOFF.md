@@ -12,6 +12,7 @@ Companion files in this folder:
 | [AGENT_A_FRONTEND_ENDPOINT_INDEX.json](AGENT_A_FRONTEND_ENDPOINT_INDEX.json) | Same inventory, machine-readable. |
 | [AGENT_A_OPENAPI_AUDIT.json](AGENT_A_OPENAPI_AUDIT.json) | Exact OpenAPI 3.0.3 snapshot of `/documentation/json` at the audited SHA. Server is `/api`; paths are unprefixed. Use it for typed client generation or contract tests. |
 | [AGENT_A_OFFLINE_AUDIT_RESULTS.json](AGENT_A_OFFLINE_AUDIT_RESULTS.json) | Fastify `inject()` probe results (no database, no listener). |
+| [AGENT_A_G1_DIRECTORY_HANDOFF.md](AGENT_A_G1_DIRECTORY_HANDOFF.md) | Implemented G1 directory DTOs, RBAC, pagination, and remaining G2/G3 dependencies. |
 
 Related accepted context: `docs/AGENT_A_DOWNSTREAM_INTEGRATION_HANDOFF.md` (PR [#2](https://github.com/erwin-io/valryde-api/pull/2), accepted, not yet merged) holds the frozen effective-route, RBAC and GPS-workflow rules. This handoff does not restate them beyond what a client needs.
 
@@ -22,7 +23,7 @@ Related accepted context: `docs/AGENT_A_DOWNSTREAM_INTEGRATION_HANDOFF.md` (PR [
 3. **Error envelope:** `{ "error": { "code", "message", "requestId", "details"? } }`. Branch on `code`, never on `message`. Show `requestId` in support/diagnostic UI.
 4. **No endpoint, no feature.** Missing capabilities in §5 stay blocked/hidden. Do not synthesize them from other calls unless §4 says "requires composition".
 5. **After a mutation, re-read** the list endpoint before showing durable success. There are no detail `GET`s for fleet, application or GPS records (§5).
-6. **Collections other than `GET /transit-routes` are unpaginated, unfiltered and unsorted by contract** (current SQL orders by `created_at DESC`; do not rely on it). Filter/search client-side and expect full payloads.
+6. **Collections other than `GET /transit-routes`, `GET /drivers`, and `GET /operators` are unpaginated, unfiltered and unsorted by contract** (current SQL orders by `created_at DESC`; do not rely on it). Filter/search client-side and expect full payloads.
 
 ### 1.1 Session lifecycle
 
@@ -115,7 +116,7 @@ Migrations `001`–`005` apply to the Valryde application database only (`dbo` s
 
 There are no shared or seeded accounts, and none must be committed.
 - Commuter / Driver / Operator: self-register through `POST /api/auth/register`, then open the verification email in Mailpit and post the token to `/api/auth/verify-email`.
-- Operator → Driver link: the Operator calls `POST /api/driver-associations` with the verified Driver's email. Keep the returned `driverId`; there is no endpoint to list it again (gap G1).
+- Operator → Driver link: the Operator calls `POST /api/driver-associations` with the verified Driver's email, then refreshes `GET /api/drivers` for the current scoped directory and `driverId` values.
 - Admin: run `npm run admin:bootstrap` with `ADMIN_BOOTSTRAP_EMAIL`, `ADMIN_BOOTSTRAP_DISPLAY_NAME`, `ADMIN_BOOTSTRAP_PASSWORD` and `ADMIN_BOOTSTRAP_CONFIRM=CREATE_FIRST_ADMIN` set as **temporary shell variables** (never in `.env`). Only the first Admin can be created this way; the permanent Admin is owner-supplied.
 - Google sign-in requires owner-supplied `GOOGLE_CLIENT_IDS`; without it the endpoint returns `503 GOOGLE_SIGN_IN_UNAVAILABLE`.
 - Postman: `postman/Valryde-Agent-A.postman_collection.json` with the blank-valued local environment; `npm run postman:smoke` runs the safe, credential-free folder.
@@ -179,7 +180,7 @@ Classification (as instructed by the Tech Lead):
 | Route browse/detail | `GET /api/transit-routes[/{id}]` | 1 | |
 | Operator: list/create/update own jeepneys | `GET/POST /api/jeepneys`, `PATCH /api/jeepneys/{id}` | 1 | Non-Admin cannot change `status` (`403`). No jeepney detail `GET`; select from list. |
 | Operator: associate a Driver | `POST /api/driver-associations` `{email}` | 1 | Driver must be registered and verified. Response returns `driverId`. |
-| Operator: list associated Drivers | — | 4 | Needed to pick `driverId` for assignment and group membership (G1). Blocks O08–O11 except right after association. |
+| Operator: list associated Drivers | `GET /api/drivers` | 1 | Paginated own-Operator directory. Admin-only scope filters return `403` for OPERATOR. |
 | Operator: assign / change Driver on jeepney | `POST /api/jeepneys/{id}/driver-assignment` | 1 | Replaces the jeepney's active driver and ends the driver's other active assignment. |
 | Operator: unassign Driver | — | 4 | ID 5 "assign or change" — no unassign (G4). |
 | Operator: list/create/update groups | `GET/POST /api/fleet-groups`, `PATCH /api/fleet-groups/{id}` | 1 | |
@@ -201,9 +202,9 @@ Classification (as instructed by the Tech Lead):
 | Enable/disable user | `PATCH /api/admin/users/{id}/status` | 1 | Self-disable → `400`. |
 | User detail, role change, create Admin, delete user, server-side search | — | 4 / 6 | ID 3 asks for view/update/enable/disable; a detail view can be composed from the list (class 2). Role mutation, Admin creation via API and deletion are not approved (6). |
 | Jeepneys / groups (all operators) | `GET /api/jeepneys`, `GET /api/fleet-groups` | 1 | Admin sees everything. |
-| Create jeepney/group for an Operator | `POST /api/jeepneys`, `POST /api/fleet-groups` with `operatorId` | 2 | Admin must already know the `operatorId`; there is no operator list (G1). |
+| Create jeepney/group for an Operator | `GET /api/operators`, then `POST /api/jeepneys` or `POST /api/fleet-groups` with `operatorId` | 2 | Admin selects the target from the paginated Operator directory. |
 | Change jeepney status | `PATCH /api/jeepneys/{id}` `{status}` | 1 | Admin only. |
-| Operators / Drivers directory | — | 4 | G1. |
+| Operators / Drivers directory | `GET /api/operators`, `GET /api/drivers` | 1 | ADMIN global directory; Driver list supports `operatorId` and `associated` filters. |
 | Transit routes (all statuses) CRUD + directions | `/api/admin/transit-routes*`, `PATCH /api/admin/route-directions/{id}` | 1 | Geometry 2–10,000 points, corridor 1–5,000 m (default 100). No delete; archive via `status`. |
 | GeoJSON import | route-direction create/update | 2 | Parse the file client-side, send one `LineString` per direction. |
 | Route assignment by Admin | — | 6 | Merged contract is OPERATOR only. Changing it needs Tech Lead approval. |
@@ -228,9 +229,10 @@ No frontend capability is currently class 3.
 
 ## 5. Missing-capability assessment (Agent A scope, class 4)
 
+G1 is implemented. Its endpoint and DTO handoff is `AGENT_A_G1_DIRECTORY_HANDOFF.md`; G2–G9 below remain separate scope.
+
 | Gap | Approved basis | Blocks | Suggested contract shape (for Tech Lead decision, not implemented) |
 |---|---|---|---|
-| **G1** Operator's drivers list; Admin operators/drivers directory | IDs 3, 5, 7 (assignment and membership need a `driverId`/`operatorId` the client cannot otherwise obtain) | D O08–O11, O14/O16; E jeepney/group creation for an operator | `GET /api/drivers` (OPERATOR: own associated; ADMIN: all) and `GET /api/operators` (ADMIN). Read-only, existing tables. |
 | **G2** Group membership read and removal | ID 7 | D D07–D08, O14/O16; E group detail | `GET /api/fleet-groups/{id}/members`; `DELETE .../drivers/{driverId}`, `DELETE .../jeepneys/{jeepneyId}`. Driver sees member-safe fields only. |
 | **G3** Driver's active assignment marker | ID 5 | D D01–D02, D11 | Add `activeDriverAssignment` (or `GET /api/me/assignment`). DTO addition → Tech Lead. |
 | **G4** Unassign driver | ID 5 | D O11 | `DELETE /api/jeepneys/{id}/driver-assignment` (sets `active_to`). |
@@ -245,7 +247,7 @@ No frontend capability is currently class 3.
 | Capability area | Backend owner | Repo | Frontend consumers | Status |
 |---|---|---|---|---|
 | Auth, sessions, RBAC, profiles, Admin user status | A | valryde-api | C, D, E | Merged |
-| Operators, drivers, jeepneys, groups, assignments | A | valryde-api | D, E | Merged; G1–G4 open |
+| Operators, drivers, jeepneys, groups, assignments | A | valryde-api | D, E | G1 implemented; G2–G4 remain open |
 | Transit routes, directions, route assignment, effective route | A | valryde-api | C, D, E | Merged (frozen precedence) |
 | Vehicle application, GPS setup, device mapping, verification | A | valryde-api | D, E | Merged; physical activation operator-gated |
 | Route change requests, audit read, settings | A | valryde-api | D, E | Not implemented (G7, G8) |
@@ -258,12 +260,11 @@ No frontend capability is currently class 3.
 
 1. **D1 error mapping** — small, unblocks correct client error handling for all three apps. Needs approval of a `RATE_LIMITED` code.
 2. **D2 CORS example** — one-line `.env.example` update; unblocks native C/D builds. No code.
-3. **G1 drivers/operators directory** — read-only on existing tables; unblocks Operator assignment and Admin fleet creation, the biggest D/E functional gap.
-4. **G2 + G4 membership read/remove and driver unassign** — completes IDs 5 and 7.
-5. **G3 Driver active-assignment marker** — completes the Driver home screen.
-6. **G8 audit read, G9 Admin pagination** — Admin quality; read-only.
-7. **G7 route change requests** — needs a migration; schedule after the above.
-8. **G6 ID 37 backend** — after the Tech Lead assigns an owner.
+3. **G2 + G4 membership read/remove and driver unassign** — completes IDs 5 and 7.
+4. **G3 Driver active-assignment marker** — completes the Driver home screen.
+5. **G8 audit read, G9 Admin pagination** — Admin quality; read-only.
+6. **G7 route change requests** — needs a migration; schedule after the above.
+7. **G6 ID 37 backend** — after the Tech Lead assigns an owner.
 
 Each item is a separate focused PR with tests; none is started without Tech Lead approval because each adds to the public contract.
 
