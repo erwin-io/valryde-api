@@ -235,28 +235,36 @@ export class TransitService {
   ): Promise<RouteDirection> {
     await this.requireDirection(directionId, false);
     if (input.geometry !== undefined) validateLineString(input.geometry);
-    const result = await this.pool.query<DirectionRow>(
-      `UPDATE route_directions SET
-         direction_label = COALESCE($2, direction_label),
-         origin_name = COALESCE($3, origin_name),
-         destination_name = COALESCE($4, destination_name),
-         geometry = CASE WHEN $5::boolean
-           THEN ST_SetSRID(ST_GeomFromGeoJSON($6), 4326) ELSE geometry END,
-         corridor_m = COALESCE($7, corridor_m),
-         status = COALESCE($8::record_status, status),
-         updated_at = now()
-       WHERE id = $1 RETURNING ${directionReturning}`,
-      [
-        directionId,
-        input.directionLabel?.trim() ?? null,
-        input.originName?.trim() ?? null,
-        input.destinationName?.trim() ?? null,
-        input.geometry !== undefined,
-        input.geometry === undefined ? null : JSON.stringify(input.geometry),
-        input.corridorM ?? null,
-        input.status ?? null,
-      ],
-    );
+    let result: pg.QueryResult<DirectionRow>;
+    try {
+      result = await this.pool.query<DirectionRow>(
+        `UPDATE route_directions SET
+           direction_label = COALESCE($2, direction_label),
+           origin_name = COALESCE($3, origin_name),
+           destination_name = COALESCE($4, destination_name),
+           geometry = CASE WHEN $5::boolean
+             THEN ST_SetSRID(ST_GeomFromGeoJSON($6), 4326) ELSE geometry END,
+           corridor_m = COALESCE($7, corridor_m),
+           status = COALESCE($8::record_status, status),
+           updated_at = now()
+         WHERE id = $1 RETURNING ${directionReturning}`,
+        [
+          directionId,
+          input.directionLabel?.trim() ?? null,
+          input.originName?.trim() ?? null,
+          input.destinationName?.trim() ?? null,
+          input.geometry !== undefined,
+          input.geometry === undefined ? null : JSON.stringify(input.geometry),
+          input.corridorM ?? null,
+          input.status ?? null,
+        ],
+      );
+    } catch (error) {
+      if (isUniqueViolation(error)) {
+        throw new ApiError(409, 'CONFLICT', 'Direction label already exists for this route');
+      }
+      throw error;
+    }
     const direction = mapDirection(requireRow(result.rows[0]));
     await this.audit(actor.id, 'ROUTE_DIRECTION_UPDATED', 'ROUTE_DIRECTION', directionId, {
       fields: Object.keys(input),
