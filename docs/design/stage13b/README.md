@@ -25,6 +25,7 @@ Infrastructure status/evidence reviewed read-only: Windows Traccar6.16.0 develop
 | Five separately authorized implementation phases | [Release plan](IMPLEMENTATION_RELEASE_PLAN.md) |
 | Consolidated G decision package, A dependencies, C/D/E contracts (2026-10-23) | [Parallel readiness package](PARALLEL_READINESS_REVIEW_PACKAGE.md) |
 | A17 reconciliation X1–X8, final options, post-#19/#21 dependency order | [Final decision options](FINAL_DECISION_OPTIONS.md) |
+| Directive 006 B0 freeze: B vs A #17 Amendment 1, approval matrix M1–M8, phase gates | [B0 approval matrix](B0_APPROVAL_MATRIX.md) |
 
 ## Architecture
 
