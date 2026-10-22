@@ -163,8 +163,10 @@ export class TransitService {
     const result = await this.pool.query<DirectRouteCandidateRow>(
       `WITH input AS (
          SELECT ST_SetSRID(ST_MakePoint($2, $1), 4326) AS origin,
-                ST_SetSRID(ST_MakePoint($4, $3), 4326) AS destination
+                ST_SetSRID(ST_MakePoint($4, $3), 4326) AS destination,
+                $5::float8 AS max_walk_m
        )
+       SELECT * FROM (
        SELECT tr.id AS route_id, tr.route_code, tr.public_name, tr.route_color_hex,
          rd.id AS direction_id, rd.direction_label, rd.origin_name, rd.destination_name,
          round(ST_Distance(rd.geometry::geography, input.origin::geography))::int AS origin_distance_m,
@@ -175,13 +177,16 @@ export class TransitService {
        CROSS JOIN input
        WHERE tr.status = 'ACTIVE' AND rd.status = 'ACTIVE'
          -- Degree prefilter lets the GiST index apply; one degree is over 100 km inside the PH envelope.
-         AND ST_DWithin(rd.geometry, input.origin, $5 / 100000.0)
-         AND ST_DWithin(rd.geometry, input.destination, $5 / 100000.0)
-         AND ST_DWithin(rd.geometry::geography, input.origin::geography, $5)
-         AND ST_DWithin(rd.geometry::geography, input.destination::geography, $5)
+         AND ST_DWithin(rd.geometry, input.origin, input.max_walk_m / 100000)
+         AND ST_DWithin(rd.geometry, input.destination, input.max_walk_m / 100000)
+         AND ST_DWithin(rd.geometry::geography, input.origin::geography, input.max_walk_m)
+         AND ST_DWithin(rd.geometry::geography, input.destination::geography, input.max_walk_m)
          AND ST_LineLocatePoint(rd.geometry, input.origin)
            < ST_LineLocatePoint(rd.geometry, input.destination)
-       ORDER BY origin_distance_m + destination_distance_m, tr.route_code, rd.direction_label
+       ) candidate
+       -- Output aliases cannot appear inside ORDER BY expressions, hence the subquery.
+       ORDER BY candidate.origin_distance_m + candidate.destination_distance_m,
+         candidate.route_code, candidate.direction_label
        LIMIT $6`,
       [
         input.origin.lat,
