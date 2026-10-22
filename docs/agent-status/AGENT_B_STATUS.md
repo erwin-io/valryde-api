@@ -1,7 +1,7 @@
 # VALRYDE — Agent B Status
 
 ## Current snapshot
-- Updated at: 2026-10-22T21:50:44+08:00 (Asia/Singapore; same offset as Asia/Manila).
+- Updated at: 2026-10-22T21:53:51+08:00 (Asia/Singapore; same offset as Asia/Manila).
 - Agent / module: B — Traccar / Tracking Engine. Codex executor; prior Claude/Codex evidence and history preserved below.
 - Repository: erwin-io/valryde-api. Overall checklist IDs12–21 remain IN_PROGRESS.
 - Branch / baseline HEAD: test/b-tracking-independent-preparation, based on canonical origin/main **827738c0f2c33ad3082f6a4a38a8e35669d4b0ea** in C:/Development/valryde/.worktrees/agent-b-bridge. Documentation commit HEAD is recorded in Git/PR metadata, avoiding a self-referential SHA.
@@ -9,7 +9,7 @@
 - Accepted Stage13a: [PR #10](https://github.com/erwin-io/valryde-api/pull/10) ACCEPTED per Tech Lead release and MERGED; final head9d009d5a9467c498125d54c8f844dabacd3cc6c3, merge69deb572a9e323ce5cb2f0fb0f163dafe8df2bbd. Scoped progress DONE_AFTER_ACCEPTANCE; prior runtime/live evidence preserved, not rerun for design.
 - Current objective: VALRYDE-AGENT-B-TRACKING-COMPLETION-001 independent implementation/preparation; **AGENT_B_TRACKING_INDEPENDENT_SCOPE_COMPLETE**, independent scope READY_FOR_REVIEW; overall IDs12–21 IN_PROGRESS. Stage13b schema/runtime NOT_IMPLEMENTED; no migration or client contract authorized.
 - Current review: independent [PR22](https://github.com/erwin-io/valryde-api/pull/22) OPEN/sourcef97724b3fdaa4ba9556f08b82691889a5a41d230; G review pending. Earlier architecture direction ACCEPTED IN PRINCIPLE by current Tech Lead directive; exact D01–D12/migrations/runtime/gateway NOT_APPROVED. Continuing existing PR14; no new acceptance claim. [Design issue #13](https://github.com/erwin-io/valryde-api/issues/13), [documentation PR #14](https://github.com/erwin-io/valryde-api/pull/14) OPEN; initial design source head d4884c0fb2be831701d24254cd9f70ed6592c750; earlier [Issue #9](https://github.com/erwin-io/valryde-api/issues/9) / PR10 and [Issue #3](https://github.com/erwin-io/valryde-api/issues/3) / [PR #4](https://github.com/erwin-io/valryde-api/pull/4) retained as historical slices.
-- Last confirmed result:38new independent tests +2history regressions +1read-only isolated PostGIS dependency probe, two reproduced B parser/frame defects narrowly fixed. Lint/typecheck/build/audit PASSED; final local run139PASS/16explicit DB/live skips; initial PR22 API verify/security PASSED.42full13b cases BLOCKED, not PASS. Source/contract/gateway readiness report and machine-readable matrix prepared.
+- Last confirmed result:38new independent tests +2history regressions +1read-only isolated PostGIS dependency probe, two reproduced B parser/frame defects narrowly fixed. Lint/typecheck/build/audit PASSED; final local run139PASS/16explicit DB/live skips; SQL-inclusive CI39790513191 PASSED154tests/1live skip including actual read-only PostGIS probe; security PASSED.42full13b cases BLOCKED, not PASS. Source/contract/gateway readiness report and machine-readable matrix prepared.
 - Next concrete action: review published independent PR22/Issue18; G must approve D01–D12 and integrate released A interfaces before B007/B008/gateway work. Design merge alone does not authorize SQL/runtime.
 - Shared blockers: A proposed same-client resolver/auth, per-jeepney transaction advisory keys and additive context version/cutover are delivered as A17 proposal but need G approval/exact SQL/source integration (old row-lock candidate inverted request/application workflows); immutable remap protocol; invalid-observation adapter; timing/retention/temporal-history and gateway decisions.
 - Dependencies: A business eligibility/authorization/route precedence; C/D/E versioned DTOs and REST/Pusher reconciliation; Infrastructure/owner approved app test writer and later rollout; F stationary-reporting/physical GPS evidence.
@@ -33,6 +33,7 @@ Current design verification is separate from historical implementation results b
 |---|---|---|
 | Independent targeted suites | PASSED |38new parser/lifecycle/ordering/privacy cases +14history cases =52; broader initial tracking gate96passed |
 | Independent full local Vitest | PASSED WITH SKIPS |Final139passed/16skipped,12files passed/10skipped; TEST_DATABASE_URL/TRACCAR_LIVE_TEST cleared in test child; no DB/live evidence |
+| SQL-inclusive isolated GitHub CI | PASSED | Source00c8695;154tests passed/1live skipped; PostGIS probe PASS53ms; existing001–005 only; no durable13b implementation |
 | Independent lint/typecheck/build/audit | PASSED | Direct ESLint CLI excludes ignoredtmp; npm typecheck/build; audit0 |
 | Initial local lint | FAILED, ENVIRONMENT | Historical ignoredtmp live harness outside TS project; npm wrapper consumed exclusion flag; direct CLI succeeds, artifacts preserved |
 | B13B-01..42 current full-case execution | BLOCKED42 | D01–D12/A006/B007/B008/gateway approvals/source absent; partial independent evidence never upgrades full cases |
@@ -92,6 +93,11 @@ Current design verification is separate from historical implementation results b
 - Pusher configuration/hardware evidence are pending later slices. No physical verification claimed.
 
 ## Activity log (newest first; preserve prior entries)
+### 2026-10-22 21:53 +08:00 — Isolated PostGIS CI evidence recorded, independent handoff complete
+- PR22 source/test00c8695ea4d8a9a69c9f23c1efb3d2f7e2cf8101 API CI39790513191 and GitGuardian PASSED. Actual CI log:154tests passed/1live skipped,21files passed/1skipped; pg-tracking-geometry.integration.test.ts1test PASSED53ms. Existing migration001–005 runner/test fixtures used only the disposable CI PostGIS service; no B/A006–009 migration created or executed.
+- Read-only SQL probe validates dependency geometry/metric/inclusion only, no application tables/telemetry writes. B13B-11 partial evidence PASS recorded; all42 complete13b cases remain BLOCKED by their exact runtime/schema/gateway dependencies,0full-case PASS. No mocked concurrency or hardware claim.
+- Updated machine-readable ledger and technical handoff with source/fullSHA/CI evidence; this evidence-only follow-up does not change runtime/tests. Canonical current status/history complete; exact final HEAD/PR checks supplied by GitHub metadata. No self-merge; G/A approvals remain next.
+
 ### 2026-10-22 21:51 +08:00 — PR22 published and read-only PostGIS probe prepared
 - Published source/test/headf97724b3fdaa4ba9556f08b82691889a5a41d230 on independent branch, opened PR22 and attached it to this chat. GitGuardian SUCCESS; API verify job39789717778 SUCCESS on disposable CI PostGIS/legacy001–005. Design14/A17 still OPEN with no reviews; main still827738c. No main push/merge.
 - Added pg-tracking-geometry.integration.test.ts as an independent SQL dependency probe: BEGIN READ ONLY, constant SRID4326 point/line,99/100/101m distances,100/150m corridors and exact zero-distance inclusive boundary. Rollback/release/end in finally; no tables/fixtures/writes. This is not the unimplemented B compliance evaluator and does not upgrade B13B-11 from BLOCKED.

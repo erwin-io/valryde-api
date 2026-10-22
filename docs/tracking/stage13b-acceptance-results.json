@@ -85,7 +85,7 @@
       "status": "BLOCKED",
       "scenario": "Distance99/100/101m and configured corridor150m",
       "blocker": "COMPLIANCE_RUNTIME: exact evaluator/corridor configuration integration not released; independent SQL dependency probe is not full acceptance",
-      "partialEvidence": "Read-only PostGIS probe added in pg-tracking-geometry.integration.test.ts; isolated CI execution reported separately; full runtime evaluator NOT_RUN"
+      "partialEvidence": "PASS: read-only PostGIS dependency probe in isolated CI39790513191 at00c8695; no tables/fixtures/business writes; full runtime evaluator/config NOT_RUN"
     },
     {
       "id": "B13B-12",
@@ -304,5 +304,15 @@
       "blocker": "PERSISTENCE_RELEASE: D01-D07/D12 plus approved integrated A006 and B007/B008; isolated database authority",
       "partialEvidence": "No new migration or rollback executed; legacy001-005 CI is separate regression evidence"
     }
-  ]
+  ],
+  "independentVerification": {
+    "sourceHead": "00c8695ea4d8a9a69c9f23c1efb3d2f7e2cf8101",
+    "ciRunId": 39790513191,
+    "ciTestsPassed": 154,
+    "ciTestsSkipped": 1,
+    "ciEnvironment": "disposable GitHub Actions PostGIS; existing001-005 only",
+    "localTestsPassed": 139,
+    "localTestsSkipped": 16,
+    "newMigrations": 0
+  }
 }
