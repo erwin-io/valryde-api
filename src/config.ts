@@ -116,19 +116,19 @@ export function loadConfig(source: NodeJS.ProcessEnv = process.env): AppConfig {
       .split(',')
       .map((id) => id.trim())
       .filter(Boolean),
-    email: emailConfig(source),
+    email: emailConfig(source, environment(source.NODE_ENV)),
   };
 }
 
-function emailConfig(source: NodeJS.ProcessEnv): EmailConfig {
+function emailConfig(source: NodeJS.ProcessEnv, env: Environment): EmailConfig {
   const mode = source.EMAIL_DELIVERY_MODE ?? 'disabled';
   if (mode === 'disabled') return { deliveryMode: 'disabled' };
   if (mode !== 'smtp') throw new Error('EMAIL_DELIVERY_MODE must be disabled or smtp');
 
   const from = required(source, 'EMAIL_FROM');
-  const verificationOrigin = webUrl(required(source, 'APP_VERIFICATION_URL'), 'APP_VERIFICATION_URL');
-  const passwordResetOrigin = webUrl(required(source, 'APP_PASSWORD_RESET_URL'), 'APP_PASSWORD_RESET_URL');
-  const emailChangeOrigin = webUrl(required(source, 'APP_EMAIL_CHANGE_URL'), 'APP_EMAIL_CHANGE_URL');
+  const verificationOrigin = webUrl(required(source, 'APP_VERIFICATION_URL'), 'APP_VERIFICATION_URL', env);
+  const passwordResetOrigin = webUrl(required(source, 'APP_PASSWORD_RESET_URL'), 'APP_PASSWORD_RESET_URL', env);
+  const emailChangeOrigin = webUrl(required(source, 'APP_EMAIL_CHANGE_URL'), 'APP_EMAIL_CHANGE_URL', env);
   const host = required(source, 'SMTP_HOST');
   const user = source.SMTP_USER?.trim() || undefined;
   const password = source.SMTP_PASSWORD || undefined;
@@ -157,10 +157,17 @@ function required(source: NodeJS.ProcessEnv, name: string): string {
   return value;
 }
 
-function webUrl(value: string, name: string): string {
+// Emailed links carry a one-time token, so production callbacks must be HTTPS and never embed credentials.
+function webUrl(value: string, name: string, env: Environment): string {
   const url = new URL(value);
   if (url.protocol !== 'http:' && url.protocol !== 'https:') {
     throw new Error(`${name} must use http or https`);
+  }
+  if (env === 'production' && url.protocol !== 'https:') {
+    throw new Error(`${name} must use https in production`);
+  }
+  if (url.username || url.password) {
+    throw new Error(`${name} must not contain credentials`);
   }
   return url.toString();
 }

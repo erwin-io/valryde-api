@@ -75,6 +75,17 @@
 
 ## Activity log (newest first; preserve prior entries)
 
+### 2026-10-22 23:10 +08:00 — G5 email link audit and production callback guard
+
+- Action / reason: Phase 4 authorization (Claude Agent A). Audited verification, reset and email-change links against the approved unified-email contract (PR #11).
+- Checklist/issue: ID 1, gap G5.
+- Files/config/services affected: `src/config.ts` (production `APP_*_URL` must be HTTPS; embedded credentials rejected in all environments), `test/config.test.ts`, `docs/integration/AGENT_A_G5_EMAIL_LINK_AUDIT.md`.
+- Observed result: token hashing, single use, expiry, supersession and no-redirect behavior already pass. Two configuration gaps fixed. No endpoint, DTO, schema or migration change.
+- Validation and evidence: lint, typecheck, build, `npm audit --audit-level=high` (0), `git diff --check` passed; vitest 105 passed, 15 PostgreSQL-backed skipped locally (no proven-disposable database); CI runs them against PostGIS.
+- Contracts / risks / dependencies: a production deployment with an `http:` callback now fails at startup by design. App Links/Universal Links hosting, owner callback domain and per-role destinations remain owner/Tech Lead decisions.
+- Commit/PR link or SHA: branch `fix/1-g5-email-link-origin-guard`.
+- Next action / owner gate: Agent G review.
+
 ### 2026-10-21 16:55 +08:00 — Unified real-email environment release started
 
 - Action / reason: Tech Lead authorized real authenticated SMTP for local, preview, and production while retaining Mailpit only as an explicit testing override. Recovered canonical `main` at `2e8cc4d`; confirmed PRs #5/#7/#8 merged; preserved Agent B worktrees and untracked files.
