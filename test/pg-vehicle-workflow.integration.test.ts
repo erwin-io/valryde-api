@@ -145,6 +145,23 @@ describeDatabase('vehicle application and GPS workflow with PostgreSQL', () => {
     expect(gpsResponse.statusCode).toBe(201);
     const requestId = gpsResponse.json<{ request: { id: string } }>().request.id;
 
+    const missingMapping = await app.inject({
+      method: 'GET',
+      url: `/api/admin/gps-setup-requests/${requestId}/device-mapping`,
+      headers: auth(adminToken),
+    });
+    expect(missingMapping.statusCode).toBe(200);
+    expect(missingMapping.json<{ mapping: null }>().mapping).toBeNull();
+    expect(
+      (
+        await app.inject({
+          method: 'GET',
+          url: `/api/admin/gps-setup-requests/${requestId}/device-mapping`,
+          headers: auth(operatorAToken),
+        })
+      ).statusCode,
+    ).toBe(403);
+
     const invalidJump = await transition(requestId, adminToken, { status: 'INSTALLED' });
     expect(invalidJump.statusCode).toBe(409);
     const approvedTransition = await transition(requestId, adminToken, { status: 'APPROVED' });
@@ -169,6 +186,21 @@ describeDatabase('vehicle application and GPS workflow with PostgreSQL', () => {
       },
     });
     expect(mapping.statusCode).toBe(201);
+    const mappingBody = mapping.json<{ mapping: Record<string, unknown> }>().mapping;
+    const mappingRead = await app.inject({
+      method: 'GET',
+      url: `/api/admin/gps-setup-requests/${requestId}/device-mapping`,
+      headers: auth(adminToken),
+    });
+    expect(mappingRead.statusCode).toBe(200);
+    expect(mappingRead.json<{ mapping: Record<string, unknown> }>().mapping).toEqual(mappingBody);
+
+    const unknownRequest = await app.inject({
+      method: 'GET',
+      url: `/api/admin/gps-setup-requests/${randomUUID()}/device-mapping`,
+      headers: auth(adminToken),
+    });
+    expect(unknownRequest.statusCode).toBe(404);
     expect((await transition(requestId, adminToken, { status: 'INSTALLED' })).statusCode).toBe(200);
 
     const failedVerification = await verify(requestId, adminToken, false);

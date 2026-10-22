@@ -72,5 +72,6 @@ shared `TransitService.resolveEffectiveRouteDirection()` method instead of recre
 - `GET /gps-setup-requests` — `listGpsSetupRequests`
 - `POST /gps-setup-requests` — `submitGpsSetupRequest`
 - `PATCH /admin/gps-setup-requests/{requestId}/status` — `transitionGpsSetupStatus`
+- `GET /admin/gps-setup-requests/{requestId}/device-mapping` — `getGpsDeviceMapping`
 - `POST /admin/gps-setup-requests/{requestId}/device-mapping` — `mapGpsDevice`
 - `POST /admin/gps-setup-requests/{requestId}/verification` — `verifyGpsInstallation`

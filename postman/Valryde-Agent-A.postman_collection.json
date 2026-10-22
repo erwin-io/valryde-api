@@ -377,6 +377,15 @@
           }
         },
         {
+          "name": "Read GPS device mapping",
+          "event": [{ "listen": "prerequest", "script": { "type": "text/javascript", "exec": ["if (pm.environment.get('runPhysicalGpsWorkflow') !== 'true') pm.execution.skipRequest();"] } }, { "listen": "test", "script": { "type": "text/javascript", "exec": ["pm.test('GPS device mapping is readable by Admin', () => { pm.response.to.have.status(200); pm.expect(pm.response.json().mapping.gpsSetupRequestId).to.eql(pm.environment.get('gpsSetupRequestId')); });"] } }],
+          "request": {
+            "method": "GET",
+            "header": [{ "key": "Authorization", "value": "Bearer {{adminAccessToken}}" }],
+            "url": "{{baseUrl}}/admin/gps-setup-requests/{{gpsSetupRequestId}}/device-mapping"
+          }
+        },
+        {
           "name": "Mark GPS installed",
           "request": {
             "method": "PATCH",
