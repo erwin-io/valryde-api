@@ -40,6 +40,28 @@ export interface DriverAssignment {
   activeTo: Date | null;
 }
 
+export interface FleetGroupDriverMember {
+  memberType: 'DRIVER';
+  driverId: string;
+  displayName: string;
+  status: 'ACTIVE' | 'DISABLED';
+  activeJeepneyId: string | null;
+  joinedAt: Date;
+}
+
+export interface FleetGroupJeepneyMember {
+  memberType: 'JEEPNEY';
+  jeepneyId: string;
+  plateNo: string;
+  colorHex: string;
+  description: string | null;
+  status: JeepneyStatus;
+  activeDriverId: string | null;
+  joinedAt: Date;
+}
+
+export type FleetGroupMember = FleetGroupDriverMember | FleetGroupJeepneyMember;
+
 export function serializeJeepney(jeepney: Jeepney) {
   return {
     id: jeepney.id,
@@ -75,4 +97,8 @@ export function serializeDriverAssignment(assignment: DriverAssignment) {
     activeFrom: assignment.activeFrom.toISOString(),
     activeTo: assignment.activeTo?.toISOString() ?? null,
   };
+}
+
+export function serializeFleetGroupMember(member: FleetGroupMember) {
+  return { ...member, joinedAt: member.joinedAt.toISOString() };
 }

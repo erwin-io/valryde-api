@@ -2,18 +2,18 @@
 
 ## Current snapshot
 
-- Updated at (ISO 8601, Asia/Manila): 2026-10-21T16:55:00+08:00
+- Updated at (ISO 8601, Asia/Manila): 2026-10-22T21:38:03+08:00
 - Agent / module: A — Core Platform / Fastify API
 - Repository: `erwin-io/valryde-api`
-- Branch / head: `docs/1-unified-real-email` / base `2e8cc4d36fe1066534e07863c3112ec95688f905`
+- Branch / head: `feat/6-7-group-membership-management` / base `827738c0f2c33ad3082f6a4a38a8e35669d4b0ea`; implementation commit pending
 - Checklist IDs: 1–11
-- GitHub issues / PRs: PRs [#1](https://github.com/erwin-io/valryde-api/pull/1), [#2](https://github.com/erwin-io/valryde-api/pull/2), [#4](https://github.com/erwin-io/valryde-api/pull/4), [#5](https://github.com/erwin-io/valryde-api/pull/5), [#6](https://github.com/erwin-io/valryde-api/pull/6), [#7](https://github.com/erwin-io/valryde-api/pull/7), and [#8](https://github.com/erwin-io/valryde-api/pull/8) merged; unified-email [PR #11](https://github.com/erwin-io/valryde-api/pull/11) open.
+- GitHub issues / PRs: G1 [PR #12](https://github.com/erwin-io/valryde-api/pull/12), fixtures [PR #15](https://github.com/erwin-io/valryde-api/pull/15), mobile policy [PR #16](https://github.com/erwin-io/valryde-api/pull/16), and Stage 13b interfaces [PR #17](https://github.com/erwin-io/valryde-api/pull/17) are open, green, mergeable, and remain separate. G2 PR pending.
 - Implementation progress: IN_PROGRESS
-- Tech Lead review decision (if actually issued): Existing IDs 1–11 baseline ACCEPTED; unified real-email release authorized for implementation, not yet reviewed.
-- Current objective: Standardize real authenticated SMTP for all interactive environments, preserve Mailpit as a test override, verify seed-no-email behavior, and publish the Agent D readiness contract.
-- Last confirmed result: Existing provider-neutral SMTP source supports authenticated implicit TLS without modification. Gmail TCP/TLS certificate validation passed; full Mailpit registration/verification/recovery passed and cleaned all test rows; real provider authentication/delivery remains owner-gated.
-- Next concrete action: Complete the focused documentation/test gate, open the unified-email PR, then run controlled real-email validation after the owner privately configures SMTP credentials and a reachable callback.
-- Blocked by / decision owner: Owner must configure the authorized sender/SMTP secret and approve a reachable HTTPS callback/test inbox. Real Gmail authentication, external delivery, and Agent D credential handoff cannot be claimed before that evidence exists.
+- Tech Lead review decision (if actually issued): Existing IDs 1–11 baseline ACCEPTED; full independent backend completion release authorized. New G2 work is not yet reviewed.
+- Current objective: Complete G2 scoped group-member reads and atomic Driver/jeepney removal without implementing unreleased Stage 13b schema or Agent B tracking behavior.
+- Last confirmed result: G2 member listing, pagination, privacy-minimized DTOs, removal, ownership checks, audit records, OpenAPI and Postman coverage pass the local PostgreSQL/PostGIS gate.
+- Next concrete action: Commit/push the focused G2 branch, open a PR without merging, then continue the next independently reviewable Agent A backend gap.
+- Blocked by / decision owner: No G2 source blocker. A006 context generation and mutation invalidation remain Tech Lead/Agent G gated; G2 jeepney removal is recorded as a required future retrofit point.
 - Dependencies / affected agents: B (tracking/latest state/realtime), C (public route/live APIs), D (driver invitation and operator APIs), E (Admin APIs), F (device runbooks), G (shared-contract review).
 
 ## Checklist coverage
@@ -26,7 +26,7 @@
 | 4 | Jeepney Management | DONE_AFTER_ACCEPTANCE | `src/routes/fleet-routes.ts`, migration 003, PostgreSQL fleet test, merged PR #1 | UI/client integration pending. |
 | 5 | Driver-to-Jeepney Assignment | DONE_AFTER_ACCEPTANCE | Verified-email Driver association plus same-operator assignment integration tests, merged PR #1 | Downstream integration pending. |
 | 6 | Fleet Group Management | DONE_AFTER_ACCEPTANCE | Fleet group API, migration 003, PostgreSQL test, merged PR #1 | Downstream integration pending. |
-| 7 | Group Membership & Visibility | DONE_AFTER_ACCEPTANCE | Cross-operator denial, membership visibility, multi-group DRIVER authorization tests, merged PR #1 | Downstream clients must preserve scope. |
+| 7 | Group Membership & Visibility | READY_FOR_REVIEW | G2 `GET /fleet-groups/{groupId}/members` plus scoped Driver/jeepney removal, PostgreSQL RBAC/pagination/privacy tests on current branch | Tech Lead review; later A006 context invalidation retrofit after Stage 13b release. |
 | 8 | Transit Route Management API | DONE_AFTER_ACCEPTANCE | Search, detail, pagination, OpenAPI, Postman and PostgreSQL/PostGIS tests, merged PR #1 | Downstream clients must adopt the pagination envelope. |
 | 9 | Route Direction Management | DONE_AFTER_ACCEPTANCE | GeoJSON/WGS84 validation, SRID 4326, GiST index, tests, merged PR #1 | Admin UI integration pending. |
 | 10 | Jeepney-to-Transit Assignment | DONE_AFTER_ACCEPTANCE | Frozen effective-route contract, transactional ambiguity guards, PostgreSQL coverage, merged PR #1 | Agent B must consume the shared resolver/endpoint. |
@@ -36,6 +36,9 @@
 
 | Command / check | Environment | Result | Date/time | Evidence / notes |
 |---|---|---|---|---|
+| `npm run db:migrate`, `npm run lint`, `npm run typecheck`, `npm test`, `npm run build`, `npm audit --audit-level=high`, `git diff --check` | G2 branch; local PostgreSQL/PostGIS `valrydedb`, `dbo,public` | PASSED | 2026-10-22 21:37 +08:00 | 19 files / 112 tests passed; 2 owner/live checks skipped; zero vulnerabilities. |
+| PostgreSQL G2 + OpenAPI focused tests | Local PostgreSQL/PostGIS | PASSED | 2026-10-22 21:36 +08:00 | 2 files / 6 tests; Operator/Admin/member Driver success, cross-Operator/unrelated Driver/Commuter denial, pagination/privacy, atomic removals and audit evidence. |
+| `npm run postman:smoke` equivalent with branch server on port 3100 | Live local API + PostgreSQL | PASSED | 2026-10-22 21:38 +08:00 | 2 requests / 5 assertions; API/database healthy and public route pagination passed. Cloud run publishing skipped because Postman login is not configured. |
 | GitHub API CI and GitGuardian | PR #11 head `b77e491` | PASSED | 2026-10-21 17:26 +08:00 | API `verify` passed in 59 seconds; GitGuardian passed. |
 | `npm run db:migrate`, `npm run lint`, `npm run typecheck`, `npm test`, `npm run build`, `npm audit --audit-level=high`, `git diff --check` | Unified-email branch; local PostgreSQL/PostGIS `dbo` | PASSED | 2026-10-21 17:24 +08:00 | 17 files / 92 tests, 0 skipped; zero vulnerabilities; Admin bootstrap test confirms zero auth challenges. |
 | Gmail port 465 TLS handshake | Local network; no credentials | PASSED | 2026-10-21 16:48 +08:00 | `smtp.gmail.com:465` reachable; certificate authorization true; authentication intentionally not attempted without owner secret. |
@@ -60,9 +63,9 @@
 
 ## Shared contract / risk changes
 
-- API/DTO/schema/migration changes: Unified-email work changes no endpoint, DTO, schema, migration, token, or RBAC contract. It standardizes environment documentation and verifies existing SMTP/bootstrap behavior. Previously accepted additions remain unchanged.
+- API/DTO/schema/migration changes: G2 adds one paginated membership read and two `DELETE` operations. No migration. The member DTO is a discriminated DRIVER/JEEPNEY union and excludes email/account `userId`.
 - Auth/RBAC/data-isolation impact: Challenge delivery is provider-neutral SMTP with environment-only configuration, hashed tokens, cooldown, supersession, invalidation, generic public responses, and provider-failure recovery. Driver association requires a verified DRIVER email and transactionally rejects cross-Operator claims.
-- Realtime/Traccar/geospatial impact: No realtime or Traccar implementation changed. Agent B now has a server-authoritative effective-route contract: active direct assignment wins; otherwise exactly one active group assignment is inherited; zero returns no route; multiple inherited routes return `409 ROUTE_ASSIGNMENT_CONFLICT`.
+- Realtime/Traccar/geospatial impact: No realtime or Traccar implementation changed. Removing a jeepney membership can change its inherited effective route immediately under the frozen resolver. The operation must acquire the shared lock and bump context generation when the separately approved A006 foundation exists; this PR does not guess that unreleased interface.
 - Secrets/security/privacy impact: No credentials are tracked. Postman environment values remain blank; runtime E2E credentials were generated in memory and removed. SMTP credentials, JWTs, challenge tokens, and Admin passwords are absent from source, logs, docs, and checked-in Postman data.
 - Required Tech Lead or owner decision: Agent A contracts are accepted and frozen at merge SHA `711f4c4`. Agent B must consume the effective-route endpoint or shared service resolver rather than reproduce precedence logic.
 
@@ -74,6 +77,17 @@
 - Gate: Physical GPS/Traccar mapping and activation. Required actor: operator/Agent F/Agent B. Requested evidence: power, SIM/APN, server connectivity, GPS fix, correct IMEI/uniqueId mapping. State: OWNER_VERIFICATION_PENDING.
 
 ## Activity log (newest first; preserve prior entries)
+
+### 2026-10-22 21:38 +08:00 — G2 group membership management implemented
+
+- Action / reason: Implemented the Tech Lead-authorized G2 read/removal gap that blocked Agent D group detail and Agent E monitoring workflows.
+- Checklist/issue: IDs 6–7; G2.
+- Files/config/services affected: Fleet domain/service/routes, PostgreSQL fleet integration coverage, OpenAPI endpoint map, Postman collection, and this status file. No migration or dependency change.
+- Observed result (success/failure/rollback): Added a paginated, optionally type-filtered member list with privacy-minimized DRIVER/JEEPNEY DTOs; added transactionally audited Driver and jeepney removal. Missing membership returns `404`; cross-Operator and unrelated-Driver access remains `403`.
+- Validation and evidence: Migrations, lint, typecheck, 112-test DB-enabled suite, build, high-severity audit, Postman smoke, JSON validation and diff check passed. Test rows use existing scoped cleanup.
+- Contracts / risks / dependencies: Membership removal does not weaken direct-over-group route precedence. Jeepney removal can change inherited route context and is explicitly listed for later A006 advisory-lock/version retrofit; Stage 13b SQL/runtime remains unauthorized.
+- Commit/PR link or SHA (if available): Pending focused commit/PR.
+- Next action / owner gate: Push for Tech Lead/Agent G review; do not merge. Continue independent backend gaps on separate focused branches.
 
 ### 2026-10-21 16:55 +08:00 — Unified real-email environment release started
 

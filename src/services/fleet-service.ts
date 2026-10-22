@@ -4,6 +4,7 @@ import type { User } from '../domain/identity.js';
 import type {
   DriverAssignment,
   FleetGroup,
+  FleetGroupMember,
   Jeepney,
   JeepneyStatus,
 } from '../domain/fleet.js';
@@ -47,6 +48,20 @@ interface DriverAssociationRow {
   email: string;
   display_name: string;
   operator_id: string | null;
+}
+
+interface GroupMemberRow {
+  member_type: 'DRIVER' | 'JEEPNEY';
+  member_id: string;
+  display_name: string | null;
+  driver_status: 'ACTIVE' | 'DISABLED' | null;
+  active_jeepney_id: string | null;
+  plate_no: string | null;
+  color_hex: string | null;
+  description: string | null;
+  jeepney_status: JeepneyStatus | null;
+  active_driver_id: string | null;
+  joined_at: Date;
 }
 
 export class FleetService {
@@ -284,6 +299,68 @@ export class FleetService {
     return updated;
   }
 
+  async listGroupMembers(
+    actor: User,
+    groupId: string,
+    input: { memberType?: 'DRIVER' | 'JEEPNEY'; page: number; pageSize: number },
+  ): Promise<{ members: FleetGroupMember[]; total: number }> {
+    const group = await this.requireGroup(groupId);
+    await this.assertCanReadGroupMembers(actor, group);
+    const offset = (input.page - 1) * input.pageSize;
+    const memberType = input.memberType ?? null;
+    const members = await this.pool.query<GroupMemberRow>(
+      `WITH group_members AS (
+         SELECT 'DRIVER'::text AS member_type, d.id AS member_id,
+                u.display_name, d.status::text AS driver_status,
+                dja.jeepney_id AS active_jeepney_id,
+                NULL::text AS plate_no, NULL::text AS color_hex,
+                NULL::text AS description, NULL::text AS jeepney_status,
+                NULL::uuid AS active_driver_id, fgd.created_at AS joined_at
+         FROM fleet_group_drivers fgd
+         JOIN drivers d ON d.id = fgd.driver_id
+         JOIN users u ON u.id = d.user_id
+         LEFT JOIN driver_jeepney_assignments dja
+           ON dja.driver_id = d.id AND dja.active_to IS NULL
+         WHERE fgd.group_id = $1
+         UNION ALL
+         SELECT 'JEEPNEY'::text AS member_type, j.id AS member_id,
+                NULL::text AS display_name, NULL::text AS driver_status,
+                NULL::uuid AS active_jeepney_id,
+                j.plate_no::text, j.color_hex, j.description,
+                j.status::text AS jeepney_status,
+                dja.driver_id AS active_driver_id, fgj.created_at AS joined_at
+         FROM fleet_group_jeepneys fgj
+         JOIN jeepneys j ON j.id = fgj.jeepney_id
+         LEFT JOIN driver_jeepney_assignments dja
+           ON dja.jeepney_id = j.id AND dja.active_to IS NULL
+         WHERE fgj.group_id = $1
+       )
+       SELECT member_type, member_id, display_name, driver_status,
+              active_jeepney_id, plate_no, color_hex, description,
+              jeepney_status, active_driver_id, joined_at
+       FROM group_members
+       WHERE ($2::text IS NULL OR member_type = $2)
+       ORDER BY member_type, COALESCE(display_name, plate_no), member_id
+       LIMIT $3 OFFSET $4`,
+      [groupId, memberType, input.pageSize, offset],
+    );
+    const count = await this.pool.query<{ total: string }>(
+      `SELECT (
+         CASE WHEN $2::text IS NULL OR $2 = 'DRIVER'
+           THEN (SELECT count(*) FROM fleet_group_drivers WHERE group_id = $1)
+           ELSE 0 END
+         + CASE WHEN $2::text IS NULL OR $2 = 'JEEPNEY'
+           THEN (SELECT count(*) FROM fleet_group_jeepneys WHERE group_id = $1)
+           ELSE 0 END
+       )::text AS total`,
+      [groupId, memberType],
+    );
+    return {
+      members: members.rows.map(mapGroupMember),
+      total: Number(count.rows[0]?.total ?? 0),
+    };
+  }
+
   async addGroupDriver(actor: User, groupId: string, driverId: string): Promise<void> {
     const group = await this.requireGroup(groupId);
     await this.assertOperatorScope(actor, group.operatorId);
@@ -340,6 +417,69 @@ export class FleetService {
       await this.audit(
         actor.id,
         'FLEET_GROUP_JEEPNEY_ADDED',
+        'FLEET_GROUP',
+        groupId,
+        { jeepneyId },
+        client,
+      );
+      await client.query('COMMIT');
+    } catch (error) {
+      await client.query('ROLLBACK');
+      throw error;
+    } finally {
+      client.release();
+    }
+  }
+
+  async removeGroupDriver(actor: User, groupId: string, driverId: string): Promise<void> {
+    const group = await this.requireGroup(groupId);
+    await this.assertOperatorScope(actor, group.operatorId);
+    const client = await this.pool.connect();
+    try {
+      await client.query('BEGIN');
+      await client.query('SELECT 1 FROM fleet_groups WHERE id = $1 FOR UPDATE', [groupId]);
+      const removed = await client.query(
+        'DELETE FROM fleet_group_drivers WHERE group_id = $1 AND driver_id = $2 RETURNING 1',
+        [groupId, driverId],
+      );
+      if (removed.rowCount !== 1) {
+        throw new ApiError(404, 'NOT_FOUND', 'Driver membership not found');
+      }
+      await this.audit(
+        actor.id,
+        'FLEET_GROUP_DRIVER_REMOVED',
+        'FLEET_GROUP',
+        groupId,
+        { driverId },
+        client,
+      );
+      await client.query('COMMIT');
+    } catch (error) {
+      await client.query('ROLLBACK');
+      throw error;
+    } finally {
+      client.release();
+    }
+  }
+
+  async removeGroupJeepney(actor: User, groupId: string, jeepneyId: string): Promise<void> {
+    const group = await this.requireGroup(groupId);
+    await this.assertOperatorScope(actor, group.operatorId);
+    const client = await this.pool.connect();
+    try {
+      await client.query('BEGIN');
+      await client.query('SELECT 1 FROM fleet_groups WHERE id = $1 FOR UPDATE', [groupId]);
+      await client.query('SELECT 1 FROM jeepneys WHERE id = $1 FOR UPDATE', [jeepneyId]);
+      const removed = await client.query(
+        'DELETE FROM fleet_group_jeepneys WHERE group_id = $1 AND jeepney_id = $2 RETURNING 1',
+        [groupId, jeepneyId],
+      );
+      if (removed.rowCount !== 1) {
+        throw new ApiError(404, 'NOT_FOUND', 'Jeepney membership not found');
+      }
+      await this.audit(
+        actor.id,
+        'FLEET_GROUP_JEEPNEY_REMOVED',
         'FLEET_GROUP',
         groupId,
         { jeepneyId },
@@ -481,6 +621,23 @@ export class FleetService {
     }
   }
 
+  private async assertCanReadGroupMembers(actor: User, group: FleetGroup): Promise<void> {
+    if (actor.roles.includes('ADMIN')) return;
+    if (actor.roles.includes('OPERATOR')) {
+      await this.assertOperatorScope(actor, group.operatorId);
+      return;
+    }
+    if (actor.roles.includes('DRIVER')) {
+      const driverId = await this.requireActorDriver(actor.id);
+      const membership = await this.pool.query(
+        'SELECT 1 FROM fleet_group_drivers WHERE group_id = $1 AND driver_id = $2 LIMIT 1',
+        [group.id, driverId],
+      );
+      if (membership.rowCount === 1) return;
+    }
+    throw new ApiError(403, 'FORBIDDEN', 'Fleet group members are outside the permitted scope');
+  }
+
   private async audit(
     actorUserId: string,
     action: string,
@@ -532,6 +689,35 @@ function mapAssignment(row: AssignmentRow): DriverAssignment {
     assignedByUserId: row.assigned_by_user_id,
     activeFrom: row.active_from,
     activeTo: row.active_to,
+  };
+}
+
+function mapGroupMember(row: GroupMemberRow): FleetGroupMember {
+  if (row.member_type === 'DRIVER') {
+    if (row.display_name === null || row.driver_status === null) {
+      throw new Error('Driver group membership returned incomplete data');
+    }
+    return {
+      memberType: 'DRIVER',
+      driverId: row.member_id,
+      displayName: row.display_name,
+      status: row.driver_status,
+      activeJeepneyId: row.active_jeepney_id,
+      joinedAt: row.joined_at,
+    };
+  }
+  if (row.plate_no === null || row.color_hex === null || row.jeepney_status === null) {
+    throw new Error('Jeepney group membership returned incomplete data');
+  }
+  return {
+    memberType: 'JEEPNEY',
+    jeepneyId: row.member_id,
+    plateNo: row.plate_no,
+    colorHex: row.color_hex,
+    description: row.description,
+    status: row.jeepney_status,
+    activeDriverId: row.active_driver_id,
+    joinedAt: row.joined_at,
   };
 }
 

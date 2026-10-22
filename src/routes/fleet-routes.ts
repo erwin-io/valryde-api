@@ -5,6 +5,7 @@ import { Type } from 'typebox';
 import {
   serializeDriverAssignment,
   serializeFleetGroup,
+  serializeFleetGroupMember,
   serializeJeepney,
 } from '../domain/fleet.js';
 import type { User } from '../domain/identity.js';
@@ -73,6 +74,32 @@ const DriverAssociationSchema = Type.Object({
 
 const JeepneyIdParams = Type.Object({ jeepneyId: Uuid });
 const GroupIdParams = Type.Object({ groupId: Uuid });
+const GroupDriverParams = Type.Object({ groupId: Uuid, driverId: Uuid });
+const GroupJeepneyParams = Type.Object({ groupId: Uuid, jeepneyId: Uuid });
+const PaginationSchema = Type.Object({
+  page: Type.Integer({ minimum: 1 }),
+  pageSize: Type.Integer({ minimum: 1 }),
+  total: Type.Integer({ minimum: 0 }),
+  totalPages: Type.Integer({ minimum: 0 }),
+});
+const GroupDriverMemberSchema = Type.Object({
+  memberType: Type.Literal('DRIVER'),
+  driverId: Uuid,
+  displayName: Type.String(),
+  status: Type.Union([Type.Literal('ACTIVE'), Type.Literal('DISABLED')]),
+  activeJeepneyId: Type.Union([Uuid, Type.Null()]),
+  joinedAt: DateTimeString,
+});
+const GroupJeepneyMemberSchema = Type.Object({
+  memberType: Type.Literal('JEEPNEY'),
+  jeepneyId: Uuid,
+  plateNo: Type.String(),
+  colorHex: ColorHex,
+  description: NullableString,
+  status: JeepneyStatusSchema,
+  activeDriverId: Type.Union([Uuid, Type.Null()]),
+  joinedAt: DateTimeString,
+});
 
 function currentUser(request: { currentUser: User | null }) {
   if (request.currentUser === null) {
@@ -208,6 +235,62 @@ export const fleetRoutes: FastifyPluginAsync<FleetRoutesOptions> = async (instan
     }),
   );
 
+  fastify.get(
+    '/fleet-groups/:groupId/members',
+    {
+      preHandler: fastify.requireRoles('DRIVER', 'OPERATOR', 'ADMIN'),
+      schema: {
+        tags: [OpenApiTags.fleetGroups],
+        operationId: 'listFleetGroupMembers',
+        summary: 'List permitted fleet-group members',
+        description:
+          'Returns privacy-minimized Driver and jeepney membership details. Operators are limited to owned groups; Drivers must be members of the requested group; Admin has platform scope.',
+        security: [{ bearerAuth: [] }],
+        params: GroupIdParams,
+        querystring: Type.Object(
+          {
+            memberType: Type.Optional(Type.Union([Type.Literal('DRIVER'), Type.Literal('JEEPNEY')])),
+            page: Type.Optional(Type.Integer({ minimum: 1, default: 1 })),
+            pageSize: Type.Optional(Type.Integer({ minimum: 1, maximum: 100, default: 20 })),
+          },
+          { additionalProperties: false },
+        ),
+        response: {
+          200: Type.Object({
+            members: Type.Array(Type.Union([GroupDriverMemberSchema, GroupJeepneyMemberSchema])),
+            pagination: PaginationSchema,
+          }),
+          400: ErrorSchema,
+          401: ErrorSchema,
+          403: ErrorSchema,
+          404: ErrorSchema,
+        },
+      },
+    },
+    async (request) => {
+      const page = request.query.page ?? 1;
+      const pageSize = request.query.pageSize ?? 20;
+      const result = await options.fleetService.listGroupMembers(
+        currentUser(request),
+        request.params.groupId,
+        {
+          ...(request.query.memberType === undefined ? {} : { memberType: request.query.memberType }),
+          page,
+          pageSize,
+        },
+      );
+      return {
+        members: result.members.map(serializeFleetGroupMember),
+        pagination: {
+          page,
+          pageSize,
+          total: result.total,
+          totalPages: Math.ceil(result.total / pageSize),
+        },
+      };
+    },
+  );
+
   fastify.post(
     '/jeepneys/:jeepneyId/driver-assignment',
     {
@@ -237,6 +320,67 @@ export const fleetRoutes: FastifyPluginAsync<FleetRoutesOptions> = async (instan
         request.body.driverId,
       );
       return reply.code(201).send({ assignment: serializeDriverAssignment(assignment) });
+    },
+  );
+
+  fastify.delete(
+    '/fleet-groups/:groupId/drivers/:driverId',
+    {
+      preHandler: fastify.requireRoles('OPERATOR', 'ADMIN'),
+      schema: {
+        tags: [OpenApiTags.fleetGroups],
+        operationId: 'removeDriverFromFleetGroup',
+        summary: 'Remove a driver from a fleet group',
+        description: 'Atomically removes an existing membership within Operator ownership scope.',
+        security: [{ bearerAuth: [] }],
+        params: GroupDriverParams,
+        response: {
+          204: Type.Null(),
+          400: ErrorSchema,
+          401: ErrorSchema,
+          403: ErrorSchema,
+          404: ErrorSchema,
+        },
+      },
+    },
+    async (request, reply) => {
+      await options.fleetService.removeGroupDriver(
+        currentUser(request),
+        request.params.groupId,
+        request.params.driverId,
+      );
+      return reply.code(204).send(null);
+    },
+  );
+
+  fastify.delete(
+    '/fleet-groups/:groupId/jeepneys/:jeepneyId',
+    {
+      preHandler: fastify.requireRoles('OPERATOR', 'ADMIN'),
+      schema: {
+        tags: [OpenApiTags.fleetGroups],
+        operationId: 'removeJeepneyFromFleetGroup',
+        summary: 'Remove a jeepney from a fleet group',
+        description:
+          'Atomically removes an existing membership. The jeepney effective route is resolved from the remaining direct/group assignments after commit.',
+        security: [{ bearerAuth: [] }],
+        params: GroupJeepneyParams,
+        response: {
+          204: Type.Null(),
+          400: ErrorSchema,
+          401: ErrorSchema,
+          403: ErrorSchema,
+          404: ErrorSchema,
+        },
+      },
+    },
+    async (request, reply) => {
+      await options.fleetService.removeGroupJeepney(
+        currentUser(request),
+        request.params.groupId,
+        request.params.jeepneyId,
+      );
+      return reply.code(204).send(null);
     },
   );
 
