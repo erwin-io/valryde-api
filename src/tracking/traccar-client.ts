@@ -202,11 +202,14 @@ export function parseDevice(value: unknown): TraccarDevice {
 export function parsePosition(value: unknown): TraccarPosition {
   const row = object(value);
   if (typeof row.valid !== 'boolean') throw new TraccarError('INVALID_RESPONSE');
+  const speed = number(row.speed, 0, Number.MAX_VALUE);
+  // A finite provider value must also remain finite after the shared knots-to-km/h conversion.
+  if (!Number.isFinite(speed * 1.852)) throw new TraccarError('INVALID_RESPONSE');
   return {
     id: id(row.id), deviceId: id(row.deviceId), valid: row.valid,
     latitude: number(row.latitude, -90, 90), longitude: number(row.longitude, -180, 180),
     fixTime: timestamp(row.fixTime), deviceTime: timestamp(row.deviceTime), serverTime: timestamp(row.serverTime),
-    speed: number(row.speed, 0, Number.MAX_VALUE), course: number(row.course, 0, 360),
+    speed, course: number(row.course, 0, 360),
   };
 }
 export function parseEvent(value: unknown): TraccarEvent {
