@@ -2,42 +2,87 @@
 
 ## Current snapshot
 
-- Updated at (ISO 8601, Asia/Manila): 2026-10-22T02:40:47+08:00
-- Agent / module: A — Core Platform / Fastify API
+- Updated at (ISO 8601, Asia/Manila): 2026-10-23T09:00:00+08:00
+- Agent / module: A — Core Platform / Fastify API (execution owner: Claude, taken over from Codex under `VALRYDE-CLAUDE-A-CODEX-RECOVERY-AND-COMPLETION-003`)
 - Repository: `erwin-io/valryde-api`
-- Branch / implementation commit: `feat/3-5-7-g1-directory` / `100359d`
-- Checklist IDs: 1–11
-- GitHub issues / PRs: Accepted G1 proposal [PR #8](https://github.com/erwin-io/valryde-api/pull/8), Agent B foundation [PR #10](https://github.com/erwin-io/valryde-api/pull/10), and unified-email [PR #11](https://github.com/erwin-io/valryde-api/pull/11) are merged on `main`; G1 implementation [PR #12](https://github.com/erwin-io/valryde-api/pull/12) is open for Tech Lead review.
+- Branch / head: canonical copy carried identically by every PR branch prepared under `VALRYDE-AGENT-A-PR-INTEGRATION-005` and by local `docs/agent-a-independent-completion`; base `origin/main` `827738c0f2c33ad3082f6a4a38a8e35669d4b0ea`
+- Checklist IDs: 1–11 (gap slices G1–G11, D3)
+- GitHub issues / PRs: PRs #1, #2, #4–#8, #10, #11 merged. Open Agent A PRs, none reviewed: [#12](https://github.com/erwin-io/valryde-api/pull/12) G1, [#15](https://github.com/erwin-io/valryde-api/pull/15) fixtures, [#16](https://github.com/erwin-io/valryde-api/pull/16) mobile testing policy, [#17](https://github.com/erwin-io/valryde-api/pull/17) Stage 13b design, [#19](https://github.com/erwin-io/valryde-api/pull/19) G2, [#20](https://github.com/erwin-io/valryde-api/pull/20) G3, [#21](https://github.com/erwin-io/valryde-api/pull/21) G4, [#23](https://github.com/erwin-io/valryde-api/pull/23) D3, [#24](https://github.com/erwin-io/valryde-api/pull/24) G10 read, [#25](https://github.com/erwin-io/valryde-api/pull/25) G11, [#26](https://github.com/erwin-io/valryde-api/pull/26) G5, [#27](https://github.com/erwin-io/valryde-api/pull/27) G6/G7 proposals.
 - Implementation progress: IN_PROGRESS
-- Tech Lead review decision (if actually issued): Existing IDs 1–11 baseline ACCEPTED; G1 directory contract approved for implementation. Implementation is not yet Tech Lead-reviewed.
-- Current objective: Publish the approved read-only G1 Driver and Operator directories with exact RBAC, pagination, ownership, and DTO contracts.
-- Last confirmed result: `GET /api/drivers` and `GET /api/operators` pass the full local PostgreSQL-enabled gate; 7 G1 integration cases cover isolation, RBAC, empty results, multi-role ADMIN behavior, assignment/group aggregates, validation, disabled sessions, and response privacy. Generated G1 users were cleaned (`0` residue).
-- Next concrete action: Commit, push the focused G1 branch, open a PR to `main`, and await Tech Lead review without merging.
-- Blocked by / decision owner: No implementation blocker. G2 group-membership read/removal and G3 Driver self-assignment remain explicitly outside this release and require separate Tech Lead authorization.
+- Tech Lead review decision (if actually issued): IDs 1–11 baseline ACCEPTED (PR #1). PR #25 (G11) ACCEPTED at `c4c8b7f6edd83c80d8ab6a47536929e1f4c9423d`, not merged; PR #26 (G5) ACCEPTED at source-review level; PR #27 DESIGN REVIEW READY. No decision issued on PRs #12, #15–#17, #19–#21, #23, #24.
+- Current objective: controlled PR integration preparation under `VALRYDE-AGENT-A-PR-INTEGRATION-005` (checkpoint `AGENT_A_CONTROLLED_PR_MERGE_READY`).
+- Last confirmed result: G5 fix PR #26 and G6/G7 proposal PR #27 opened; both green on `verify` (PostGIS) and GitGuardian.
+- Next concrete action: owner/Agent G merges in order #26, #23, #25, #24, #15, #16, #12, #20, #19, #21 using merge commits (not squash or rebase merge). G6/G7 only after decisions on PR #27.
+- Blocked by / decision owner: Agent G review of PRs #12–#25 and Stage 13b D01–D12; owner for production domain/app scheme (G5), geocoding provider terms (G6), and G7 lifecycle approval.
 - Dependencies / affected agents: B (tracking/latest state/realtime), C (public route/live APIs), D (driver invitation and operator APIs), E (Admin APIs), F (device runbooks), G (shared-contract review).
 
 ## Checklist coverage
 
 | Checklist ID | Feature / slice | Progress | Evidence (files/tests/PR) | Blocker / next action |
 |---:|---|---|---|---|
-| 1 | Authentication, JWT & Google Sign-In | IN_PROGRESS | Accepted provider-neutral SMTP/resend/recovery baseline plus unified environment documentation and SMTP profile tests on `docs/1-unified-real-email` | Real SMTP authentication/delivery and reachable callback remain owner-gated. |
+| 1 | Authentication, JWT & Google Sign-In | IN_PROGRESS | Accepted provider-neutral SMTP/resend/recovery baseline; unified environment documentation merged in PR #11 | Real SMTP authentication/delivery and reachable callback remain owner-gated; G5 mobile link audit pending. |
 | 2 | Role-Based Access Control | DONE_AFTER_ACCEPTANCE | `src/plugins/authorization.ts`, negative RBAC integration tests, merged PR #1 | Downstream clients must preserve server authority. |
-| 3 | User/Profile and first Admin | IN_PROGRESS | Accepted baseline plus G1 Driver/Operator directory implementation and PostgreSQL tests on `feat/3-5-7-g1-directory` | Tech Lead review of G1 implementation pending. |
+| 3 | User/Profile and first Admin | DONE_AFTER_ACCEPTANCE | Admin CLI and unit/PostgreSQL tests; merged PR #1 | Permanent Admin credentials remain owner-supplied. |
 | 4 | Jeepney Management | DONE_AFTER_ACCEPTANCE | `src/routes/fleet-routes.ts`, migration 003, PostgreSQL fleet test, merged PR #1 | UI/client integration pending. |
-| 5 | Driver-to-Jeepney Assignment | IN_PROGRESS | Accepted assignment baseline plus G1 Operator Driver picker (`GET /api/drivers`) | G3 Driver self-assignment contract remains separate. |
+| 5 | Driver-to-Jeepney Assignment | DONE_AFTER_ACCEPTANCE | Verified-email Driver association plus same-operator assignment integration tests, merged PR #1 | Downstream integration pending. |
 | 6 | Fleet Group Management | DONE_AFTER_ACCEPTANCE | Fleet group API, migration 003, PostgreSQL test, merged PR #1 | Downstream integration pending. |
-| 7 | Group Membership & Visibility | IN_PROGRESS | Accepted membership baseline plus scoped G1 Driver directory and cross-operator PostgreSQL coverage | G2 membership read/removal remains separate. |
+| 7 | Group Membership & Visibility | DONE_AFTER_ACCEPTANCE | Cross-operator denial, membership visibility, multi-group DRIVER authorization tests, merged PR #1 | Downstream clients must preserve scope. |
 | 8 | Transit Route Management API | DONE_AFTER_ACCEPTANCE | Search, detail, pagination, OpenAPI, Postman and PostgreSQL/PostGIS tests, merged PR #1 | Downstream clients must adopt the pagination envelope. |
 | 9 | Route Direction Management | DONE_AFTER_ACCEPTANCE | GeoJSON/WGS84 validation, SRID 4326, GiST index, tests, merged PR #1 | Admin UI integration pending. |
 | 10 | Jeepney-to-Transit Assignment | DONE_AFTER_ACCEPTANCE | Frozen effective-route contract, transactional ambiguity guards, PostgreSQL coverage, merged PR #1 | Agent B must consume the shared resolver/endpoint. |
 | 11 | Vehicle Application/GPS workflow | DONE_AFTER_ACCEPTANCE | Migration 005, state-machine integration test, E2E through Admin GPS approval, merged PR #1 | Physical tracker/Traccar verification is operator-gated. |
 
+| Gap slice | Scope | Progress | PR / full HEAD | Blocker / next action |
+|---|---|---|---|---|
+| G1 | Driver/Operator directories | READY_FOR_REVIEW | #12 `92ad34158e1c9fe840b7264b4c3912aec5eeb25b` | Agent G review; conflicts with #19 in `src/domain/fleet.ts`, `src/services/fleet-service.ts`. |
+| G2 | Group membership list/removal | READY_FOR_REVIEW | #19 `1daad9a4ab74ce03ac0519300271ec2ecdf3a64b` | Agent G review; conflicts with #12, and with #21 in `src/routes/fleet-routes.ts`. |
+| G3 | `GET /api/me/assignment` | READY_FOR_REVIEW | #20 `4c58f2d2e750f79605512b070a96dfa4f0b7cedf` | Agent G review; conflicts with #21 in `src/services/fleet-service.ts`, `docs/OPENAPI_ENDPOINT_TAGS.md`. |
+| G4 | Driver unassignment | READY_FOR_REVIEW | #21 `6f1c789c0b53511e81c54619a7030091b7afb243` | Agent G review; rebase after #19/#20. |
+| D3 | Duplicate direction label → 409 | READY_FOR_REVIEW | #23 `ccdb700f29e2f4de2ea6a4731d5c5401a750d3a9` | Agent G review. |
+| G5 | Mobile email links (backend portion) | READY_FOR_REVIEW | #26 `407acde276517ae7543e885ecfb8eca9e671460a` | App Links/Universal Links hosting, callback domain and per-role destinations owner-gated. |
+| G6 | Place discovery | BLOCKED (proposal READY_FOR_REVIEW) | #27 `0ccd69c5f95a923231913e15442e517617698410` | Decisions G6-D1…D6; provider terms owner-gated. |
+| G7 | Route-change requests | BLOCKED (proposal READY_FOR_REVIEW) | #27 `0ccd69c5f95a923231913e15442e517617698410` | Decisions G7-D1…D7; migration numbering vs A006. |
+| G10 | Admin mapping read | READY_FOR_REVIEW | #24 `e555033872373d836e8ea60392fd339f0e1bbda6` | Remap/unmap gated on Stage 13b context invalidation/locking approval. |
+| G11 | Assignment reads + impact preview | READY_FOR_REVIEW (re-review) | #25 `c4c8b7f6edd83c80d8ab6a47536929e1f4c9423d` | CHANGES REQUIRED at `22b6462` addressed; Agent G re-review. |
+| Stage 13b | Shared interface design (A006 proposed) | READY_FOR_REVIEW | #17 `fd76cb54000ec47c383c6641359f3e3cf59e4340` | Agent G D01–D12 approval before any A006 migration. |
+
 ## Latest verification
 
 | Command / check | Environment | Result | Date/time | Evidence / notes |
 |---|---|---|---|---|
+| GitHub `verify` (PostGIS 16-3.4: migrate, lint, typecheck, test, build) and GitGuardian | PR #25 head `c4c8b7f6edd83c80d8ab6a47536929e1f4c9423d` | PASSED | 2026-10-23 00:28 +08:00 | 19 files / 115 tests passed, 1 live-Traccar skipped; MERGEABLE. |
+| GitHub `verify` (PostGIS) and GitGuardian | PR #26 head `407acde`, PR #27 head `0ccd69c` | PASSED | 2026-10-22 23:45 +08:00 | Both MERGEABLE against `main` `827738c`. |
+| `npm run lint`, `npm run typecheck`, `npm run build`, `vitest run`, `npm audit --audit-level=high`, `git diff --check` | G5 branch; local Node.js, no `TEST_DATABASE_URL` | PASSED | 2026-10-22 23:05 +08:00 | 105 passed, 15 PostgreSQL-backed skipped locally; 0 vulnerabilities. |
+| `npm run lint`, `npm run typecheck`, `npm run build`, `vitest run` (no `TEST_DATABASE_URL`) | All 8 Agent A code worktrees (#12, #15, #19, #20, #21, #23, #24, #25 heads); local Node.js | PASSED | 2026-10-22 22:35 +08:00 | 99–100 tests passed per branch; PostgreSQL suites skipped locally because the only local database (`valrydedb`) is not proven disposable. Worktrees still clean after the run. |
+| GitHub `verify` (PostGIS 16-3.4 service; migrate, lint, typecheck, full test, build) and GitGuardian | PRs #12, #15, #16, #17, #19, #20, #21, #23, #24, #25 at the recorded heads | PASSED | 2026-10-22 22:30 +08:00 | Re-read via `gh pr checks`; all mergeable against `main` `827738c`. |
+| GitHub API CI and GitGuardian | PR #15 head `aa989254f62a7d7dab899fd1b4eb78171598ccb5` | PASSED | 2026-10-22 03:36 +08:00 | API `verify` passed in 63 seconds; GitGuardian passed; PR is open and mergeable. |
+| `npm run db:migrate`, `npm run lint`, `npm run typecheck`, `npm test`, `npm run build`, `npm audit --audit-level=high`, `git diff --check` | Final fixture-boundary changes; local PostgreSQL/PostGIS `valrydedb`, `dbo,public` | PASSED | 2026-10-22 03:35 +08:00 | 20 test files / 119 tests passed; 2 pre-existing owner/live checks skipped; zero vulnerabilities. |
+| `test/pg-development-fixtures.integration.test.ts` | PostgreSQL fixture boundary | PASSED | 2026-10-22 03:33 +08:00 | 7/7; strict shared-user refusal and external-business-relationship refusal both roll back before deleting fixture or sentinel rows. |
+| `npm run db:migrate`, `npm run lint`, `npm run typecheck`, `npm test`, `npm run build`, `npm audit --audit-level=high`, `git diff --check` | Development-fixture branch; local PostgreSQL/PostGIS `valrydedb`, `dbo,public` | PASSED | 2026-10-22 03:12 +08:00 | 20 test files / 118 tests passed; 2 pre-existing owner/live checks skipped; zero vulnerabilities. |
+| `dev:fixtures:seed` → `verify` → `cleanup` → `verify` | Local loopback `valrydedb` with temporary in-memory password | PASSED | 2026-10-22 03:08 +08:00 | Boundary reported PostgreSQL loopback, schema `dbo`; tracked fixture rows `41` after seed and `0` after cleanup. No email or Traccar operation. |
+| `test/pg-development-fixtures.integration.test.ts` | Fastify inject + local PostgreSQL/PostGIS | PASSED | 2026-10-22 03:06 +08:00 | 6/6: boundary refusal, idempotency, 7 verified Argon2 accounts, refresh/logout, linked scenarios, cross-operator denial, route conflict, scoped cleanup. |
 | `npm run db:migrate`, `npm run lint`, `npm run typecheck`, `npm test`, `npm run build`, `npm audit --audit-level=high`, `git diff --check` | G1 branch; local PostgreSQL/PostGIS `valrydedb`, `dbo,public` | PASSED | 2026-10-22 02:39 +08:00 | 20 test files passed, 121 tests passed; one pre-existing live/external test file skipped; zero vulnerabilities; G1 test residue `0`. |
 | Targeted `test/pg-directory.integration.test.ts` | Fastify inject + local PostgreSQL | PASSED | 2026-10-22 02:37 +08:00 | 7/7 tests; OPERATOR tenant isolation, ADMIN filters, empty results, multi-role ADMIN, reassignment, counts, RBAC, disabled session, exact DTO fields. |
+| GitHub API CI and GitGuardian | PR #16 head `53edc9a` | PASSED | 2026-10-22 03:23 +08:00 | API `verify` passed in 57 seconds; GitGuardian passed. Documentation-only scope. |
+| GitHub API CI and GitGuardian | PR #17 complete design/status content head `36af1c6cb7cd1e749f4d8d2eff15183e40e578fd` | PASSED | 2026-10-22 08:43 +08:00 | API `verify` passed in 56 seconds; GitGuardian passed. |
+| `npm run lint`, `npm run typecheck`, `npm test`, `npm run build`, `npm audit --audit-level=high`, Markdown fence check, `git diff --check` | Stage 13b documentation branch; no database test URL injected | PASSED | 2026-10-22 08:41 +08:00 | 11 test files / 99 tests passed; 9 PostgreSQL/live-provider files (15 tests) skipped by their existing environment gates; zero vulnerabilities; both new documents have balanced code fences. |
+| PR #15 final environment-boundary gate | Isolated local PostgreSQL/PostGIS plus GitHub CI | PASSED | 2026-10-22 03:36 +08:00 | 20 files / 119 tests locally; 7/7 fixture tests; API CI and GitGuardian passed at implementation head `aa989254f62a7d7dab899fd1b4eb78171598ccb5`. |
+| `npm run db:migrate`, `npm run lint`, `npm run typecheck`, `npm test`, `npm run build`, `npm audit --audit-level=high`, `git diff --check` | G2 branch; local PostgreSQL/PostGIS `valrydedb`, `dbo,public` | PASSED | 2026-10-22 21:37 +08:00 | 19 files / 112 tests passed; 2 owner/live checks skipped; zero vulnerabilities. |
+| PostgreSQL G2 + OpenAPI focused tests | Local PostgreSQL/PostGIS | PASSED | 2026-10-22 21:36 +08:00 | 2 files / 6 tests; Operator/Admin/member Driver success, cross-Operator/unrelated Driver/Commuter denial, pagination/privacy, atomic removals and audit evidence. |
+| `npm run postman:smoke` equivalent with branch server on port 3100 | Live local API + PostgreSQL | PASSED | 2026-10-22 21:38 +08:00 | 2 requests / 5 assertions; API/database healthy and public route pagination passed. Cloud run publishing skipped because Postman login is not configured. |
+| `npm run db:migrate`, `npm run lint`, `npm run typecheck`, `npm test`, `npm run build`, `npm audit --audit-level=high`, `git diff --check` | G3 branch; local PostgreSQL/PostGIS `valrydedb`, `dbo,public` | PASSED | 2026-10-22 21:41 +08:00 | 20 files / 113 tests passed; 2 owner/live checks skipped; zero vulnerabilities. |
+| G3 PostgreSQL + OpenAPI focused tests | Local PostgreSQL/PostGIS | PASSED | 2026-10-22 21:40 +08:00 | 2 files / 5 tests; active assignment, visible-only null state, business identifier privacy and role denial. |
+| Postman safe smoke against branch port 3101 | Live local API + PostgreSQL | PASSED | 2026-10-22 21:41 +08:00 | 2 requests / 5 assertions. Postman cloud publishing skipped because CLI login is not configured. |
+| `npm run db:migrate`, `npm run lint`, `npm run typecheck`, `npm test`, `npm run build`, `npm audit --audit-level=high`, `git diff --check` | G4 branch; local PostgreSQL/PostGIS `valrydedb`, `dbo,public` | PASSED | 2026-10-22 21:44 +08:00 | 19 files / 112 tests passed; 2 owner/live checks skipped; zero vulnerabilities. |
+| G4 PostgreSQL + OpenAPI focused tests | Local PostgreSQL/PostGIS | PASSED | 2026-10-22 21:43 +08:00 | 2 files / 6 tests; successful close, repeated-unassign conflict, cross-Operator denial, persisted closed state and audit evidence. |
+| Postman safe smoke against branch port 3102 | Live local API + PostgreSQL | PASSED | 2026-10-22 21:44 +08:00 | 2 requests / 5 assertions; cloud publication skipped because Postman CLI is not logged in. |
+| `npm run postman:smoke` | D3 branch; live local API + PostgreSQL/PostGIS | PASSED | 2026-10-22 21:49 +08:00 | 2 requests / 5 assertions; Postman Cloud publication skipped because CLI login is intentionally not configured. |
+| `npm run db:migrate`, `npm run lint`, `npm run typecheck`, `npm test`, `npm run build`, `npm audit --audit-level=high`, `git diff --check` | D3 branch; local PostgreSQL/PostGIS `valrydedb`, `dbo,public` | PASSED | 2026-10-22 21:46 +08:00 | 19 files / 112 tests passed; 2 owner/live checks skipped; zero vulnerabilities. |
+| `test/pg-transit.integration.test.ts` | Local PostgreSQL/PostGIS | PASSED | 2026-10-22 21:46 +08:00 | Duplicate update returns `409 CONFLICT` with approved message and leaves the original direction label unchanged. |
+| `npm run db:migrate`, `npm run lint`, `npm run typecheck`, `npm test`, `npm run build`, `npm run postman:smoke`, `npm audit --audit-level=high`, `git diff --check` | G10 branch; local PostgreSQL/PostGIS `valrydedb`, `dbo,public` | PASSED | 2026-10-22 21:54 +08:00 | 19 test files / 112 tests passed; 2 owner/live checks skipped; Postman 2 requests / 5 assertions; zero vulnerabilities. |
+| `test/pg-vehicle-workflow.integration.test.ts` | Local PostgreSQL/PostGIS | PASSED | 2026-10-22 21:52 +08:00 | ADMIN mapped/unmapped/unknown reads and non-ADMIN denial passed; fixture cleanup remains scoped to generated users. |
+| `npm run db:migrate`, `npm run lint`, `npm run typecheck`, `npm test`, `npm run build`, `npm run postman:smoke`, `npm audit --audit-level=high`, `git diff --check` | G11 branch; local PostgreSQL/PostGIS `valrydedb`, `dbo,public` | PASSED | 2026-10-22 22:00 +08:00 | 19 test files / 114 tests passed; 2 owner/live checks skipped; Postman 2 requests / 5 assertions; zero vulnerabilities. |
+| `test/pg-effective-route.integration.test.ts` | Local PostgreSQL/PostGIS | PASSED | 2026-10-22 21:58 +08:00 | 8 tests: scoped/paginated reads, cross-Operator isolation, DRIVER denial, direct precedence, bounded impact and legacy ambiguity conflict. |
 | GitHub API CI and GitGuardian | PR #11 head `b77e491` | PASSED | 2026-10-21 17:26 +08:00 | API `verify` passed in 59 seconds; GitGuardian passed. |
 | `npm run db:migrate`, `npm run lint`, `npm run typecheck`, `npm test`, `npm run build`, `npm audit --audit-level=high`, `git diff --check` | Unified-email branch; local PostgreSQL/PostGIS `dbo` | PASSED | 2026-10-21 17:24 +08:00 | 17 files / 92 tests, 0 skipped; zero vulnerabilities; Admin bootstrap test confirms zero auth challenges. |
 | Gmail port 465 TLS handshake | Local network; no credentials | PASSED | 2026-10-21 16:48 +08:00 | `smtp.gmail.com:465` reachable; certificate authorization true; authentication intentionally not attempted without owner secret. |
@@ -62,8 +107,7 @@
 
 ## Shared contract / risk changes
 
-- API/DTO/schema/migration changes: Implements approved G1 `GET /api/drivers` (`listDrivers`) and `GET /api/operators` (`listOperators`) contracts. Adds no migration and changes no existing endpoint. Both return stable paginated envelopes and only approved fields.
-- G1 RBAC/data-isolation impact: OPERATOR Driver results are derived only from the caller's active Operator profile; `operatorId` and `associated` are ADMIN-only filters. ADMIN can read global directories. DRIVER/COMMUTER are denied. A multi-role ADMIN receives ADMIN semantics. User IDs, Driver IDs, and Operator IDs remain distinct.
+- API/DTO/schema/migration changes: Unified-email work changes no endpoint, DTO, schema, migration, token, or RBAC contract. It standardizes environment documentation and verifies existing SMTP/bootstrap behavior. Previously accepted additions remain unchanged.
 - Auth/RBAC/data-isolation impact: Challenge delivery is provider-neutral SMTP with environment-only configuration, hashed tokens, cooldown, supersession, invalidation, generic public responses, and provider-failure recovery. Driver association requires a verified DRIVER email and transactionally rejects cross-Operator claims.
 - Realtime/Traccar/geospatial impact: No realtime or Traccar implementation changed. Agent B now has a server-authoritative effective-route contract: active direct assignment wins; otherwise exactly one active group assignment is inherited; zero returns no route; multiple inherited routes return `409 ROUTE_ASSIGNMENT_CONFLICT`.
 - Secrets/security/privacy impact: No credentials are tracked. Postman environment values remain blank; runtime E2E credentials were generated in memory and removed. SMTP credentials, JWTs, challenge tokens, and Admin passwords are absent from source, logs, docs, and checked-in Postman data.
@@ -77,6 +121,204 @@
 - Gate: Physical GPS/Traccar mapping and activation. Required actor: operator/Agent F/Agent B. Requested evidence: power, SIM/APN, server connectivity, GPS fix, correct IMEI/uniqueId mapping. State: OWNER_VERIFICATION_PENDING.
 
 ## Activity log (newest first; preserve prior entries)
+
+### 2026-10-23 09:00 +08:00 — Controlled PR integration preparation (no merges)
+
+- Action / reason: directive `VALRYDE-AGENT-A-PR-INTEGRATION-005`. Work done in dedicated worktree `.worktrees/agent-a-integration`; Agent B worktrees and PRs #14/#22 untouched.
+- Checklist/issue: IDs 1–11 (G1–G5, G10, G11, D3, fixtures, mobile testing policy).
+- Files/config/services affected: this status file on PRs #26, #23, #25, #24, #15, #16, #12, #20, #19 and #21; reconciled fleet sources on #19 (`src/domain/fleet.ts`, `src/services/fleet-service.ts`, `postman/Valryde-Agent-A.postman_collection.json`) and #21 (`src/routes/fleet-routes.ts`, `src/services/fleet-service.ts`, `docs/OPENAPI_ENDPOINT_TAGS.md`, Postman).
+- Observed result: one canonical status file now merges every PR's activity entries (the G5 23:10, G6/G7 23:30 and G11 00:20 entries were missing from the consolidated copy and are restored), and every prepared PR carries it byte-for-byte, so status-file conflicts disappear in any merge order. #19 merges #12 and #20 and #21 merges #19, through merge commits with manual keep-both resolution. History is not rewritten and nothing is force-pushed.
+- Validation and evidence: per branch, lint, strict typecheck, build, unit tests, unique OpenAPI operationIds and Postman JSON parse checks run locally; the full PostgreSQL/PostGIS suite and GitGuardian run in CI on each new HEAD. No local PostgreSQL test was run (no verified-disposable database).
+- Contracts / risks / dependencies: no endpoint, DTO, schema or migration change beyond the already-reviewed PR content. Until #12 and #20 merge, PR #19's diff also shows their commits, and #21's diff also shows #12, #20 and #19. A squash or rebase merge would reintroduce conflicts, so merge commits are required.
+- Commit/PR link or SHA: see the checkpoint `AGENT_A_CONTROLLED_PR_MERGE_READY` for each new HEAD.
+- Next action / owner gate: owner/Agent G merge decisions; G6/G7 decision register; Stage 13b D01–D12.
+
+### 2026-10-23 01:10 +08:00 — Integration readiness (read-only) for open Agent A PRs
+
+- Action / reason: directive `VALRYDE-AGENT-A-INTEGRATION-READINESS-004`. Simulated merges using `git merge-tree` and dangling commits only; no branch, ref, PR or Agent B checkout was changed.
+- Checklist/issue: IDs 1–11 (G1–G5, G10, G11, D3).
+- Files/config/services affected: this status file only.
+- Observed result: all 14 open PRs MERGEABLE against `827738c`, with green `verify` and GitGuardian checks. No PR adds a migration (main ends at 005). Every Agent A PR conflicts with every other on `AGENT_A_STATUS.md`. Real source conflicts exist only in #12×#19 (`fleet.ts`, `fleet-service.ts`), #19×#21 (`fleet-routes.ts`), #20×#21 (`fleet-service.ts`, `OPENAPI_ENDPOINT_TAGS.md`), and Postman for #19×#20, #19×#21 and #20×#21; all are additive keep-both. A combined tree of #26, #23, #25, #24, #15, #16, #17, #27, #12 and #20 had only the status-file conflict and passed lint, typecheck, unit tests (106 passed, PostgreSQL suites skipped) and build; its Postman JSON is valid. Mechanical union resolution of #19/#21 broke syntax, so a manual reconciliation is required.
+- Validation and evidence: local simulation only; the PostgreSQL suites for the combined tree have not been run (no disposable local database).
+- Contracts / risks / dependencies: recommended order is #26, #23, #25, #24, #12, #20, then #19 (rebase), then #21 (rebase). Docs PRs #15, #16 and #17 are independent; #27 is design-only.
+- Commit/PR link or SHA: simulation commit `d1ded2c` (dangling, local only).
+- Next action / owner gate: Agent G merge decisions; G6/G7 and Stage 13b D01–D12 approvals.
+
+### 2026-10-23 00:30 +08:00 — Agent G review AGENT_A_PHASE4_REVIEW_001 recorded; PR #25 corrected
+
+- Action / reason: Agent G decisions: PR #26 (G5) ACCEPTED at source-review level; PR #27 (G6/G7) DESIGN REVIEW READY, no implementation until the decision register is approved; PR #25 (G11) CHANGES REQUIRED at `22b6462`.
+- Checklist/issue: IDs 1, 10, 37, 52.
+- Files/config/services affected: PR #25 only (`src/services/transit-service.ts`, `test/pg-effective-route.integration.test.ts`, status entry). PRs #26/#27 unchanged.
+- Observed result: shared `effectiveRouteDecisions` SQL boundary used by the resolver and impact preview; single-statement impact query (one snapshot) with counts preserved on out-of-range pages; new assertions for out-of-range page, unknown direction 404, Commuter 403 on list and impact, and resolver conflict via the shared decision.
+- Validation and evidence: local lint/typecheck/build/audit passed; CI PostGIS 19 files / 115 tests passed.
+- Contracts / risks / dependencies: no endpoint, DTO, schema or migration change; resolver signature unchanged for Agent B.
+- Commit/PR link or SHA: PR #25 `c4c8b7f6edd83c80d8ab6a47536929e1f4c9423d`.
+- Next action / owner gate: Agent G re-review of #25; decision register G6-D1…D6, G7-D1…D7.
+
+### 2026-10-23 00:20 +08:00 — G11 PR #25 corrections for AGENT_A_PHASE4_REVIEW_001
+
+- Action / reason: Agent G returned CHANGES REQUIRED on `22b6462f2bb6da4ef18c7cfaf2cee7638b191297`. Claude Agent A applied corrective commits on the same branch.
+- Checklist/issue: ID 10, gap G11.
+- Files/config/services affected: `src/services/transit-service.ts`, `test/pg-effective-route.integration.test.ts`.
+- Observed result: one canonical SQL decision boundary (`effectiveRouteDecisions`) now serves both `resolveEffectiveRouteDirection` and the impact preview, preserving direct override, single inherited route and CONFLICT rules. The impact preview's conflict check, counts and page now run in one statement, which shares one snapshot. Counts survive out-of-range pages. No schema, endpoint or DTO change; no Stage 13b interface.
+- Validation and evidence: lint, typecheck, build, audit (0), `git diff --check` passed locally; PostgreSQL suites run in CI's disposable PostGIS.
+- Contracts / risks / dependencies: Agent B consumers of `resolveEffectiveRouteDirection` keep the same signature and results.
+- Commit/PR link or SHA: PR #25 (corrective commit on `feat/10-g11-route-assignment-reads`).
+- Next action / owner gate: Agent G re-review.
+
+### 2026-10-22 23:50 +08:00 — Phase 4 independent gaps submitted for review
+
+- Action / reason: Tech Lead Phase 4 authorization after recovery checkpoint.
+- Checklist/issue: IDs 1 (G5), 37 (G6), 52 (G7), 10 (G11 review).
+- Files/config/services affected: PR #26 (`src/config.ts`, `test/config.test.ts`, `docs/integration/AGENT_A_G5_EMAIL_LINK_AUDIT.md`); PR #27 (`docs/integration/AGENT_A_G6_PLACE_DISCOVERY_CONTRACT_PROPOSAL.md`, `docs/integration/AGENT_A_G7_ROUTE_CHANGE_REQUEST_CONTRACT_PROPOSAL.md`). New worktrees `.worktrees/agent-a-g5-email-links`, `.worktrees/agent-a-g6-g7-proposals`.
+- Observed result: G5 token lifecycle already compliant; fixed production HTTP callbacks and credential-bearing callback URLs. G6/G7 proposals list exact DTOs, RBAC, errors, fixtures and decisions; no unapproved code. G10 remains create-only; no A006/B007/B008 work.
+- G11 review (PR #25, not modified): RBAC negatives cover Driver list (403), non-Admin impact (403) and cross-Operator list scoping; inherited ambiguity returns 409 rather than guessing. The impact query re-encodes the resolver's precedence in set-based SQL; semantics match `resolveEffectiveRouteDirection` today (direct wins; >1 active inherited group assignment conflicts) but the rule now lives in two places. Minor gaps: no test for unknown direction (404) or COMMUTER denial; conflict check and listing run as two queries without a shared snapshot (read-only, low impact).
+- Validation and evidence: see verification rows dated 2026-10-22 23:05 and 23:45. No local PostgreSQL run (no proven-disposable database); CI PostGIS passed.
+- Contracts / risks / dependencies: production startup now requires HTTPS `APP_*_URL`. G6-D1…D6, G7-D1…D7 await Agent G/owner.
+- Commit/PR link or SHA: #26 `407acde276517ae7543e885ecfb8eca9e671460a`; #27 `0ccd69c5f95a923231913e15442e517617698410`.
+- Next action / owner gate: Agent G review/decisions; this status branch stays local until Agent G directs how to land it.
+
+### 2026-10-22 23:30 +08:00 — G6 and G7 contract proposals submitted for review
+
+- Action / reason: Phase 4 authorization (Claude Agent A) asked for exact API/DTO/RBAC/error/fixture proposals for G6 and G7 without implementation.
+- Checklist/issue: IDs 37 (G6, Agent C consumer) and 52 (G7, Agents D/E consumers).
+- Files/config/services affected: `docs/integration/AGENT_A_G6_PLACE_DISCOVERY_CONTRACT_PROPOSAL.md`, `docs/integration/AGENT_A_G7_ROUTE_CHANGE_REQUEST_CONTRACT_PROPOSAL.md`. No source, migration or configuration change.
+- Observed result: proposals derived from the V1 system documentation (§4.5, C.3, D.5, §14.3) and existing repository conventions. Findings recorded: Fastify default request logs would capture place queries/coordinates unless redacted; Admin geometry validation enforces WGS84 bounds only, not the Philippines policy.
+- Validation and evidence: documentation only; `git diff --check` clean.
+- Contracts / risks / dependencies: decisions G6-D1…D6 and G7-D1…D7 await Agent G/owner. G7 migration numbering must be ordered against proposed A006.
+- Commit/PR link or SHA: branch `docs/agent-a-g6-g7-contract-proposals`.
+- Next action / owner gate: Agent G decisions; implement only the approved contract.
+
+### 2026-10-22 23:10 +08:00 — G5 email link audit and production callback guard
+
+- Action / reason: Phase 4 authorization (Claude Agent A). Audited verification, reset and email-change links against the approved unified-email contract (PR #11).
+- Checklist/issue: ID 1, gap G5.
+- Files/config/services affected: `src/config.ts` (production `APP_*_URL` must be HTTPS; embedded credentials rejected in all environments), `test/config.test.ts`, `docs/integration/AGENT_A_G5_EMAIL_LINK_AUDIT.md`.
+- Observed result: token hashing, single use, expiry, supersession and no-redirect behavior already pass. Two configuration gaps fixed. No endpoint, DTO, schema or migration change.
+- Validation and evidence: lint, typecheck, build, `npm audit --audit-level=high` (0), `git diff --check` passed; vitest 105 passed, 15 PostgreSQL-backed skipped locally (no proven-disposable database); CI runs them against PostGIS.
+- Contracts / risks / dependencies: a production deployment with an `http:` callback now fails at startup by design. App Links/Universal Links hosting, owner callback domain and per-role destinations remain owner/Tech Lead decisions.
+- Commit/PR link or SHA: branch `fix/1-g5-email-link-origin-guard`.
+- Next action / owner gate: Agent G review.
+
+### 2026-10-22 22:45 +08:00 — Codex → Claude takeover recovery
+
+- Action / reason: Codex Agent A hit its usage limit. Claude became sole Agent A writer under `VALRYDE-CLAUDE-A-CODEX-RECOVERY-AND-COMPLETION-003`. Read `C:\Development\valryde\AGENT_A_CODEX_TO_CLAUDE_TAKEOVER_20261022.md` (outside the repository; left in place), AGENTS.md, CLAUDE.md, and policy v1.2.
+- Checklist/issue: IDs 1–11; gap slices G1–G11, D3.
+- Recovered worktrees (all clean, nothing staged/untracked, none ahead/behind remote): `agent-a-g1` (#12), `agent-a-dev-fixtures` (#15), `mobile-testing-policy` (#16), `agent-a-stage13b` (#17), `agent-a-g2-membership` (#19), `agent-a-g3-assignment` (#20), `agent-a-g4-unassign` (#21), `agent-a-d3-direction-conflict` (#23), `agent-a-g10-mapping-read` (#24), `agent-a-g11-assignment-reads` (#25), `agent-a-completion-handoff` (`docs/agent-a-independent-completion` = `origin/main` `827738c`, untouched by Codex). Merged-PR worktrees `agent-a-unified-email`, `g1`, `d1-d2`, `frontend-api-handoff`, `policy-agent-d-repository`, `valryde-api-agent-a-handoff` are also clean.
+- Recovered uncommitted files: none in any Agent A worktree, so no backup was needed. The primary checkout (`docs/13-tracking-bridge-contract`, 22 behind `main`) holds untracked Agent B files (`docs/TRACKING_BRIDGE_CONTRACT_PROPOSAL.md`, `docs/TRACKING_INTEGRATION_PREPARATION.md`, `docs/agent-status/AGENT_B_STATUS.md`) and `filestructure.txt`; preserved untouched. Agent B worktree `agent-b-bridge` (#22) not modified.
+- Files/config/services affected: this status file only. It consolidates every activity entry and verification row from all 10 open Agent A PR branches (append-only; no prior line removed).
+- Observed result: PR heads match the takeover record exactly; no PR has reviews or comments. Pairwise `git merge-tree` shows every branch conflicts on this status file. Source conflicts: #12×#19 (`src/domain/fleet.ts`, `src/services/fleet-service.ts`), #19×#21 (`src/routes/fleet-routes.ts`), #20×#21 (`src/services/fleet-service.ts`, `docs/OPENAPI_ENDPOINT_TAGS.md`), #19/#20/#21 Postman collection. They must be rebased in merge order.
+- Validation and evidence: see the two 2026-10-22 22:3x verification rows. Local PostgreSQL tests were not rerun (no proven-disposable database); CI PostGIS runs are the database evidence.
+- Contracts / risks / dependencies: G5, G6, G7, and G10 remap/unmap are not implemented. A006/B007/B008 remain proposed; no migration executed.
+- Commit/PR link or SHA: branch `docs/agent-a-independent-completion` (this entry).
+- Next action / owner gate: checkpoint `AGENT_A_CLAUDE_TAKEOVER_RECOVERY_COMPLETE` reported; continue with G5 audit and G6/G7 proposals; Agent G review of #12–#25.
+
+### 2026-10-22 21:59 +08:00 — G11 route-assignment reads and impact preview implemented
+
+- Action / reason: Added authorized assignment history/read access and an Admin-only bounded preview for route-direction change warnings.
+- Checklist/issue: ID 10; G11.
+- Files/config/services affected: Transit domain/service/routes, effective-route PostgreSQL tests, OpenAPI endpoint map, Postman collection and this status file.
+- Observed result (success/failure/rollback): OPERATOR sees only owned jeepney/group assignments; ADMIN can read global assignments and preview effective affected jeepneys. Direct assignments override group inheritance; legacy inherited ambiguity returns `409 ROUTE_ASSIGNMENT_CONFLICT`.
+- Validation and evidence: Complete gate passed: migrations, lint, typecheck, 114-test DB-enabled suite, build, safe Postman smoke, high-severity audit and diff check. Eight targeted PostgreSQL tests cover pagination, isolation, RBAC, precedence and legacy conflict.
+- Contracts / risks / dependencies: No schema or mutation change. Preview is bounded to 100 records/page and reports total effective vehicles plus active direct/group assignment counts.
+- Commit/PR link or SHA (if available): Pending focused commit/PR.
+- Next action / owner gate: Run the full release gate and submit for Tech Lead/Agent G review without merging.
+
+### 2026-10-22 21:53 +08:00 — G10 independent GPS mapping read implemented
+
+- Action / reason: Added the approved read-only portion of G10 without enabling remap or unmap mutations.
+- Checklist/issue: ID 11; G10.
+- Files/config/services affected: Vehicle workflow service/routes, PostgreSQL workflow test, OpenAPI endpoint map, Postman collection and this status file.
+- Observed result (success/failure/rollback): `GET /api/admin/gps-setup-requests/{requestId}/device-mapping` returns the existing mapping DTO, `mapping: null` for a valid unmapped request, `404` for an unknown request and `403` outside ADMIN scope.
+- Validation and evidence: Complete gate passed: migrations, lint, typecheck, 112-test DB-enabled suite, build, safe Postman smoke, high-severity audit and diff check. Targeted mapping/RBAC assertions passed.
+- Contracts / risks / dependencies: No migration. Raw Traccar numeric IDs are not exposed. Existing create-only mapping remains unchanged; remap/unmap stays blocked on Stage 13b mapping-generation and invalidation approval.
+- Commit/PR link or SHA (if available): Pending focused commit/PR.
+- Next action / owner gate: Run the full release gate, publish for Tech Lead/Agent G review and do not merge.
+
+### 2026-10-22 21:47 +08:00 — D3 direction-label conflict corrected
+
+- Action / reason: Reproduced the asymmetric error handling: create mapped duplicate labels to `409`, while update allowed the database error to become `500`. Added the missing update mapping.
+- Checklist/issue: ID 9; D3.
+- Files/config/services affected: Transit service, PostgreSQL transit regression and this status file.
+- Observed result (success/failure/rollback): Duplicate update now returns `409 CONFLICT` and persists neither the requested duplicate nor an audit entry. Original direction data remains intact.
+- Validation and evidence: Migrations, lint, typecheck, 112-test DB-enabled suite, build, safe Postman smoke (2 requests / 5 assertions), high-severity audit and diff check passed.
+- Contracts / risks / dependencies: Public success DTO and route ownership remain unchanged; this is deterministic error-semantic repair only.
+- Commit/PR link or SHA (if available): Pending focused commit/PR.
+- Next action / owner gate: Submit for Tech Lead/Agent G review without merging.
+
+### 2026-10-22 21:44 +08:00 — G4 Driver unassignment implemented
+
+- Action / reason: Added the missing controlled unassignment workflow for Operator/Admin clients.
+- Checklist/issue: ID 5; G4.
+- Files/config/services affected: Fleet service/routes/test, OpenAPI endpoint map, Postman collection and this status file. No migration.
+- Observed result (success/failure/rollback): The active assignment is closed with database time and audited in one transaction. Cross-Operator callers receive `403`; absent active assignment receives deterministic `409 CONFLICT`; repeated calls cannot create partial state.
+- Validation and evidence: Migrations, lint, typecheck, 112-test DB-enabled suite, build, audit, Postman smoke, JSON validation and diff check passed.
+- Contracts / risks / dependencies: Effective route is unchanged. Stage 13b context generation is not required for Driver identity changes; realtime recipient invalidation remains a later Agent B/gateway dependency.
+- Commit/PR link or SHA (if available): Pending focused commit/PR.
+- Next action / owner gate: Submit for Tech Lead/Agent G review without merging.
+
+### 2026-10-22 21:41 +08:00 — G3 current Driver assignment implemented
+
+- Action / reason: Added the missing server-authoritative identity that distinguishes a Driver's active assignment from jeepneys merely visible through draft ownership or group membership.
+- Checklist/issue: ID 5; G3.
+- Files/config/services affected: Fleet service/routes, a dedicated PostgreSQL integration test, OpenAPI endpoint map, Postman collection and this status file. No migration.
+- Observed result (success/failure/rollback): DRIVER receives its active assignment with explicit business `driverId`, or `null`; OPERATOR and COMMUTER receive `403`; no account `userId` enters the DTO.
+- Validation and evidence: Migrations, lint, typecheck, 113-test DB-enabled suite, build, audit, Postman smoke, Postman JSON validation and diff check passed.
+- Contracts / risks / dependencies: This endpoint does not imply tracking visibility or current GPS state. It preserves existing assignment replacement, RBAC and group visibility contracts.
+- Commit/PR link or SHA (if available): Pending focused commit/PR.
+- Next action / owner gate: Submit for Tech Lead/Agent G review without merging; implement G4 separately after confirming Stage 13b mutation boundary.
+
+### 2026-10-22 21:38 +08:00 — G2 group membership management implemented
+
+- Action / reason: Implemented the Tech Lead-authorized G2 read/removal gap that blocked Agent D group detail and Agent E monitoring workflows.
+- Checklist/issue: IDs 6–7; G2.
+- Files/config/services affected: Fleet domain/service/routes, PostgreSQL fleet integration coverage, OpenAPI endpoint map, Postman collection, and this status file. No migration or dependency change.
+- Observed result (success/failure/rollback): Added a paginated, optionally type-filtered member list with privacy-minimized DRIVER/JEEPNEY DTOs; added transactionally audited Driver and jeepney removal. Missing membership returns `404`; cross-Operator and unrelated-Driver access remains `403`.
+- Validation and evidence: Migrations, lint, typecheck, 112-test DB-enabled suite, build, high-severity audit, Postman smoke, JSON validation and diff check passed. Test rows use existing scoped cleanup.
+- Contracts / risks / dependencies: Membership removal does not weaken direct-over-group route precedence. Jeepney removal can change inherited route context and is explicitly listed for later A006 advisory-lock/version retrofit; Stage 13b SQL/runtime remains unauthorized.
+- Commit/PR link or SHA (if available): Pending focused commit/PR.
+- Next action / owner gate: Push for Tech Lead/Agent G review; do not merge. Continue independent backend gaps on separate focused branches.
+
+### 2026-10-22 08:45 +08:00 — Stage 13b shared interfaces and UI handoff prepared
+
+- Action / reason: Coordinated D05/D06/D07 boundaries with Agent B and documented a transaction-owned, executor-aware integration contract without implementing persistence. Prepared one consolidated G1/fixture handoff for Agents C, D, and E.
+- Files/config/services affected: `docs/design/stage13b/AGENT_A_SHARED_INTERFACE_SPECIFICATION.md`, `docs/integration/AGENT_A_G1_FIXTURE_UI_HANDOFF.md`, and this status file only.
+- Shared-contract result: Direct assignment still overrides group assignment. Private telemetry eligibility is independent from route usability; unassigned/inactive/conflicting route context remains private with compliance/public availability UNKNOWN. A monotonic context version is the primary proposed fence, with a post-lock `clock_timestamp()` cutover marker.
+- Test / review evidence: Lint, typecheck, 99 non-database tests, production build, high-severity audit, Markdown fence validation, and diff check passed. API CI and GitGuardian passed on PR #17's complete design/status content. Database-enabled behavior was already verified on PR #15; this documentation branch makes no runtime change. No migration, database write, Traccar write, runtime behavior, or client repository changed.
+- Review / next action: PR #17 is published at design commit `4a654c1beda0d4d7ddc7ae4938b53a470bacae11`. Await the Tech Lead decisions listed in the interface specification. Do not implement Stage 13b persistence from this proposal alone.
+
+### 2026-10-22 03:35 +08:00 — Fixture environment and ownership boundary finalized
+
+- Action / reason: Addressed the Tech Lead's final PR #15 boundary checkpoint. Audited all seed/cleanup preconditions and found that loopback/name/schema checks did not independently prove absence of shared users, while only fleet memberships had an explicit cross-boundary relationship assertion.
+- Checklist/issue: Agent A support for IDs 1–11 and downstream Agents C, D, E; PR #15 final environment-boundary verification.
+- Files/config/services affected: Development fixture service, PostgreSQL integration tests, fixture runbook, README, and this status file. G1 PR #12 history remains separate and unchanged.
+- Observed result (success/failure/rollback): Production CLI seed/cleanup now refuses every non-manifest user and all detected cross-boundary roles, identities, profiles, routes, fleet records, assignments, applications, GPS records, mappings, memberships, and audit rows. Assertions run under the fixture advisory lock before the first delete/insert; rejection rolls back without changing fixture or sentinel rows. The shared-test-database allowance is service-only, requires `environment=test`, and is not exposed by the CLI or environment variables.
+- Validation and evidence: Targeted fixture test 7/7 passed. Full migration/lint/typecheck/test/build/audit/diff gate passed with PostgreSQL enabled: 20 files / 119 tests, 2 pre-existing owner/live skips, zero vulnerabilities.
+- Contracts / risks / dependencies: No runtime endpoint, DTO, migration, RBAC, Traccar, or production behavior changed. Dedicated database identity is the exact database name + server address + port + active `dbo` schema, plus PostGIS/migration/Traccar/user-isolation checks documented in the fixture runbook.
+- Commit/PR link or SHA (if available): [PR #15](https://github.com/erwin-io/valryde-api/pull/15); final correction commit pending.
+- Next action / owner gate: Commit/push to PR #15, verify API CI/GitGuardian, and await Tech Lead re-review. Do not merge.
+
+### 2026-10-22 03:19 +08:00 — Permanent mobile testing policy registration
+
+- Action / reason: Implemented the owner/Tech Lead directive to register `VALRYDE-MOBILE-TESTING-POLICY-001` as authoritative project governance while preserving the independently active G1 and development-fixture assignments.
+- Checklist/issue: Cross-project mobile governance supporting Agent C IDs 22–37 and Agent D IDs 38–55; no runtime checklist implementation changed.
+- Files/config/services affected: New mobile testing policy, `AGENTS.md`, Tech Lead repository-management handoff, and this Agent A status record. No application source, migration, database, security control, API contract, or infrastructure changed.
+- Observed result (success/failure/rollback): Policy now separates development acceptance from exclusively owner-managed physical Android-device acceptance; defines mandatory automated/native/API/security evidence; and registers the four required reporting classifications.
+- Validation and evidence: Required policy marker/reference checks passed; `git diff --check` passed after correcting Markdown whitespace; changed-path audit confirms documentation-only scope. API `verify` and GitGuardian both passed on PR #16.
+- Contracts / risks / dependencies: Agents C and D must use the canonical policy path and an identified accepted commit. No agent or Tech Lead may use `OWNER_DEVICE_ACCEPTED` without explicit owner confirmation. Owner-discovered device defects require tracked hotfix work and regression coverage.
+- Commit/PR link or SHA (if available): Policy commit `89ef973162096c959d6ad6fa4eec1da04ab4ea74`; [PR #16](https://github.com/erwin-io/valryde-api/pull/16), open and not merged.
+- Next action / owner gate: Provide the final PR head SHA and canonical policy path to Agents C and D, then await Tech Lead review without self-merging.
+
+### 2026-10-22 03:12 +08:00 — Controlled development business fixtures implemented
+
+- Action / reason: Implemented the Tech Lead-authorized, development-only seed/verify/cleanup workflow on a separate branch from G1. Verified the target first as local PostgreSQL 16.3, database `valrydedb`, schema `dbo`, PostGIS enabled, with no Traccar table markers.
+- Checklist/issue: Agent A support for IDs 1–11 and downstream Agents C, D, E; development business-data provisioning authorization.
+- Files/config/services affected: Development fixture manifest, safety/service layer, CLI scripts, package commands, PostgreSQL integration test, README/environment guidance, detailed downstream manifest, and this status file. No migration or runtime API route changed.
+- Observed result (success/failure/rollback): Deterministic seed provides 7 verified accounts, 3 Operators, 3 Drivers, 2 routes/3 directions, 5 jeepneys, 3 groups, assignments, 4 applications, 3 GPS requests, and one synthetic app-DB mapping. Seed is idempotent; cleanup returned the stable manifest from 41 tracked rows to zero and preserved unrelated data.
+- Validation and evidence: Full gate passed with PostgreSQL enabled; 6 dedicated integration tests exercise normal authentication/session behavior, successful/failed/no-assignment scenarios, cross-operator denial, route conflict, and cleanup. Two initial full-suite runs exposed and resolved a test-prefix collision; the clean rerun passed.
+- Contracts / risks / dependencies: G1 remains independently available in PR #12. Fixture tooling does not implement G2/G3 or change RBAC. Developers must choose a temporary password and use only an isolated loopback application database.
+- Commit/PR link or SHA (if available): Implementation commit `54ce7f1`; [PR #15](https://github.com/erwin-io/valryde-api/pull/15), open and not merged.
+- Next action / owner gate: Commit, push, open a separate PR, then Tech Lead review. Do not merge.
 
 ### 2026-10-22 02:40 +08:00 — Approved G1 Driver/Operator directories implemented
 
