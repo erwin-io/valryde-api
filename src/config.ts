@@ -20,7 +20,11 @@ export interface AppConfig {
   authResendCooldownSeconds: number;
   googleClientIds: string[];
   email: EmailConfig;
+  /** Absent means place search is disabled. */
+  geocoder?: GeocoderConfig;
 }
+
+export type GeocoderConfig = { provider: 'disabled' } | { provider: 'photon'; photonBaseUrl: string };
 
 export type EmailConfig =
   | { deliveryMode: 'disabled' }
@@ -117,7 +121,20 @@ export function loadConfig(source: NodeJS.ProcessEnv = process.env): AppConfig {
       .map((id) => id.trim())
       .filter(Boolean),
     email: emailConfig(source, environment(source.NODE_ENV)),
+    geocoder: geocoderConfig(source, environment(source.NODE_ENV)),
   };
+}
+
+// The live provider stays off until the owner approves its terms and usage (G6-D4).
+function geocoderConfig(source: NodeJS.ProcessEnv, env: Environment): GeocoderConfig {
+  const bias = source.GEOCODER_COUNTRY_BIAS ?? 'ph';
+  if (bias !== 'ph') throw new Error('GEOCODER_COUNTRY_BIAS must be ph');
+  const provider = source.GEOCODER_PROVIDER ?? 'disabled';
+  if (provider === 'disabled') return { provider: 'disabled' };
+  if (provider !== 'photon') throw new Error('GEOCODER_PROVIDER must be disabled or photon');
+  const baseUrl = source.PHOTON_BASE_URL?.trim();
+  if (!baseUrl) throw new Error('PHOTON_BASE_URL is required when GEOCODER_PROVIDER=photon');
+  return { provider: 'photon', photonBaseUrl: webUrl(baseUrl, 'PHOTON_BASE_URL', env) };
 }
 
 function emailConfig(source: NodeJS.ProcessEnv, env: Environment): EmailConfig {
@@ -157,7 +174,7 @@ function required(source: NodeJS.ProcessEnv, name: string): string {
   return value;
 }
 
-// Emailed links carry a one-time token, so production callbacks must be HTTPS and never embed credentials.
+// Emailed links carry a one-time token and provider calls carry user queries, so production URLs must be HTTPS and never embed credentials.
 function webUrl(value: string, name: string, env: Environment): string {
   const url = new URL(value);
   if (url.protocol !== 'http:' && url.protocol !== 'https:') {

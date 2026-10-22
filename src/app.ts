@@ -21,11 +21,17 @@ import { PgIdentityRepository } from './repositories/pg-identity-repository.js';
 import { adminUserRoutes } from './routes/admin-user-routes.js';
 import { authRoutes } from './routes/auth-routes.js';
 import { fleetRoutes } from './routes/fleet-routes.js';
+import { placeRoutes } from './routes/place-routes.js';
 import { transitRoutes } from './routes/transit-routes.js';
 import { vehicleWorkflowRoutes } from './routes/vehicle-workflow-routes.js';
 import { AuthService } from './services/auth-service.js';
 import { SmtpEmailService } from './services/email-service.js';
 import { FleetService } from './services/fleet-service.js';
+import {
+  DisabledGeocoderService,
+  PhotonGeocoderService,
+  type GeocoderService,
+} from './services/geocoder-service.js';
 import { TransitService } from './services/transit-service.js';
 import { VehicleWorkflowService } from './services/vehicle-workflow-service.js';
 import {
@@ -43,7 +49,26 @@ export interface BuildAppOptions {
   repository?: IdentityRepository;
   notificationService?: NotificationService;
   googleIdentityService?: GoogleIdentityService;
+  geocoderService?: GeocoderService;
   logger?: boolean;
+}
+
+// Location queries are private: these paths are logged without their query string.
+const locationQueryPaths = new Set(['/api/places/search', '/api/transit-routes/discover']);
+
+export function requestLogSerializer(request: {
+  method: string;
+  url: string;
+  hostname: string;
+  ip: string;
+}) {
+  const path = request.url.split('?', 1)[0] ?? '';
+  return {
+    method: request.method,
+    url: locationQueryPaths.has(path) ? path : request.url,
+    hostname: request.hostname,
+    remoteAddress: request.ip,
+  };
 }
 
 export async function buildApp(options: BuildAppOptions) {
@@ -53,6 +78,7 @@ export async function buildApp(options: BuildAppOptions) {
         ? false
         : {
             level: options.config.logLevel,
+            serializers: { req: requestLogSerializer },
             redact: {
               paths: [
                 'req.headers.authorization',
@@ -206,6 +232,10 @@ export async function buildApp(options: BuildAppOptions) {
 
   await app.register(authRoutes, { prefix: '/api/auth', authService, repository });
   await app.register(adminUserRoutes, { prefix: '/api/admin/users', repository });
+  await app.register(placeRoutes, {
+    prefix: '/api',
+    geocoderService: options.geocoderService ?? geocoderService(options.config),
+  });
   if (pool !== undefined) {
     await app.register(fleetRoutes, {
       prefix: '/api',
@@ -228,6 +258,12 @@ export async function buildApp(options: BuildAppOptions) {
   }
 
   return app;
+}
+
+function geocoderService(config: AppConfig): GeocoderService {
+  return config.geocoder?.provider === 'photon'
+    ? new PhotonGeocoderService(config.geocoder.photonBaseUrl)
+    : new DisabledGeocoderService();
 }
 
 function notificationService(config: AppConfig): NotificationService {
