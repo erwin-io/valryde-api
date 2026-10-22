@@ -518,6 +518,15 @@
           }
         },
         {
+          "name": "Unassign Driver from jeepney",
+          "event": [{ "listen": "prerequest", "script": { "type": "text/javascript", "exec": ["if (!pm.environment.get('driverId') || !pm.environment.get('runDriverUnassignment')) pm.execution.skipRequest();"] } }],
+          "request": {
+            "method": "DELETE",
+            "header": [{ "key": "Authorization", "value": "Bearer {{operatorAccessToken}}" }],
+            "url": "{{baseUrl}}/jeepneys/{{jeepneyId}}/driver-assignment"
+          }
+        },
+        {
           "name": "Remove verified Driver from group",
           "event": [{ "listen": "prerequest", "script": { "type": "text/javascript", "exec": ["if (!pm.environment.get('driverId') || !pm.environment.get('runMembershipRemoval')) pm.execution.skipRequest();"] } }],
           "request": {

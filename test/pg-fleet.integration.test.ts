@@ -233,6 +233,44 @@ describeDatabase('fleet API with PostgreSQL', () => {
     );
     expect(assignmentState.rows[0]).toMatchObject({ active_count: '1', closed_count: '1' });
 
+    const deniedUnassign = await app.inject({
+      method: 'DELETE',
+      url: `/api/jeepneys/${jeepneyAId}/driver-assignment`,
+      headers: authorization(operatorBToken),
+    });
+    expect(deniedUnassign.statusCode).toBe(403);
+
+    const unassigned = await app.inject({
+      method: 'DELETE',
+      url: `/api/jeepneys/${jeepneyAId}/driver-assignment`,
+      headers: authorization(operatorAToken),
+    });
+    expect(unassigned.statusCode).toBe(200);
+    expect(unassigned.json()).toMatchObject({
+      assignment: {
+        driverId: driverA2Id,
+        jeepneyId: jeepneyAId,
+      },
+    });
+    expect(unassigned.json<{ assignment: { activeTo: string | null } }>().assignment.activeTo).not.toBeNull();
+
+    const noActiveAssignment = await app.inject({
+      method: 'DELETE',
+      url: `/api/jeepneys/${jeepneyAId}/driver-assignment`,
+      headers: authorization(operatorAToken),
+    });
+    expect(noActiveAssignment.statusCode).toBe(409);
+    expect(noActiveAssignment.json<{ error: { code: string } }>().error.code).toBe('CONFLICT');
+
+    const closedState = await pool.query<{ active_count: string; closed_count: string }>(
+      `SELECT
+         count(*) FILTER (WHERE active_to IS NULL)::text AS active_count,
+         count(*) FILTER (WHERE active_to IS NOT NULL)::text AS closed_count
+       FROM driver_jeepney_assignments WHERE jeepney_id = $1`,
+      [jeepneyAId],
+    );
+    expect(closedState.rows[0]).toMatchObject({ active_count: '0', closed_count: '2' });
+
     const driverAJeepneys = await app.inject({
       method: 'GET',
       url: '/api/jeepneys',
@@ -262,6 +300,13 @@ describeDatabase('fleet API with PostgreSQL', () => {
     expect(
       driverBJeepneys.json<{ jeepneys: { id: string }[] }>().jeepneys.map((item) => item.id),
     ).not.toContain(jeepneyAId);
+
+    const unassignAudit = await pool.query<{ metadata: { driverId?: string } }>(
+      `SELECT metadata FROM audit_logs
+       WHERE actor_user_id = $1 AND action = 'DRIVER_JEEPNEY_UNASSIGNED' AND entity_id = $2`,
+      [operatorA.id, jeepneyAId],
+    );
+    expect(unassignAudit.rows[0]?.metadata.driverId).toBe(driverA2Id);
 
     const driverBGroups = await app.inject({
       method: 'GET',

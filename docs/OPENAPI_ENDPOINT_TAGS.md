@@ -34,7 +34,12 @@ The OpenAPI server URL is `/api`; paths below are relative to that base. Categor
 - `POST /jeepneys` — `createJeepney`
 - `PATCH /jeepneys/{jeepneyId}` — `updateJeepney`
 - `POST /jeepneys/{jeepneyId}/driver-assignment` — `assignDriverToJeepney`
+- `DELETE /jeepneys/{jeepneyId}/driver-assignment` — `unassignDriverFromJeepney`
 - `GET /me/assignment` — `getCurrentDriverAssignment`
+
+Driver unassignment closes the active assignment atomically and returns the closed assignment. Repeating
+the operation when no active assignment exists returns deterministic `409 CONFLICT`; it does not alter
+broader group visibility or the vehicle's effective-route precedence.
 
 `GET /me/assignment` is the server-authoritative current assignment identity for a DRIVER and returns
 an explicit business `driverId`. A `null` assignment is different from `GET /jeepneys`: group-visible or
