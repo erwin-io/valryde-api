@@ -34,6 +34,11 @@ The OpenAPI server URL is `/api`; paths below are relative to that base. Categor
 - `POST /jeepneys` — `createJeepney`
 - `PATCH /jeepneys/{jeepneyId}` — `updateJeepney`
 - `POST /jeepneys/{jeepneyId}/driver-assignment` — `assignDriverToJeepney`
+- `GET /me/assignment` — `getCurrentDriverAssignment`
+
+`GET /me/assignment` is the server-authoritative current assignment identity for a DRIVER and returns
+an explicit business `driverId`. A `null` assignment is different from `GET /jeepneys`: group-visible or
+Driver-created jeepneys do not become the Driver's active assignment.
 
 ## 05 — Fleet Groups & Membership
 

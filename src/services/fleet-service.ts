@@ -725,6 +725,20 @@ export class FleetService {
     }
   }
 
+  async getCurrentDriverAssignment(actor: User): Promise<DriverAssignment | null> {
+    const driverId = await this.requireActorDriver(actor.id);
+    const result = await this.pool.query<AssignmentRow>(
+      `SELECT id, driver_id, jeepney_id, assigned_by_user_id, active_from, active_to
+       FROM driver_jeepney_assignments
+       WHERE driver_id = $1 AND active_to IS NULL
+       ORDER BY active_from DESC, id
+       LIMIT 1`,
+      [driverId],
+    );
+    const row = result.rows[0];
+    return row === undefined ? null : mapAssignment(row);
+  }
+
   private async requireActorOperator(userId: string): Promise<string> {
     const result = await this.pool.query<{ id: string }>(
       `SELECT id FROM operators WHERE owner_user_id = $1 AND status = 'ACTIVE'`,

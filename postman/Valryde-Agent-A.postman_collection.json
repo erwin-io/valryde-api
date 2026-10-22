@@ -482,6 +482,15 @@
           }
         },
         {
+          "name": "Get current Driver assignment",
+          "event": [{ "listen": "prerequest", "script": { "type": "text/javascript", "exec": ["if (!pm.environment.get('driverAccessToken')) pm.execution.skipRequest();"] } }],
+          "request": {
+            "method": "GET",
+            "header": [{ "key": "Authorization", "value": "Bearer {{driverAccessToken}}" }],
+            "url": "{{baseUrl}}/me/assignment"
+          }
+        },
+        {
           "name": "Remove verified Driver from group",
           "event": [{ "listen": "prerequest", "script": { "type": "text/javascript", "exec": ["if (!pm.environment.get('driverId') || !pm.environment.get('runMembershipRemoval')) pm.execution.skipRequest();"] } }],
           "request": {
