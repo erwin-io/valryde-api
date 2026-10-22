@@ -1,7 +1,7 @@
 # VALRYDE — Agent B Status
 
 ## Current snapshot
-- Updated at: 2026-10-22T21:53:51+08:00 (Asia/Singapore; same offset as Asia/Manila).
+- Updated at: 2026-10-22T21:55:54+08:00 (Asia/Singapore; same offset as Asia/Manila).
 - Agent / module: B — Traccar / Tracking Engine. Codex executor; prior Claude/Codex evidence and history preserved below.
 - Repository: erwin-io/valryde-api. Overall checklist IDs12–21 remain IN_PROGRESS.
 - Branch / baseline HEAD: test/b-tracking-independent-preparation, based on canonical origin/main **827738c0f2c33ad3082f6a4a38a8e35669d4b0ea** in C:/Development/valryde/.worktrees/agent-b-bridge. Documentation commit HEAD is recorded in Git/PR metadata, avoiding a self-referential SHA.
@@ -10,7 +10,7 @@
 - Current objective: VALRYDE-AGENT-B-TRACKING-COMPLETION-001 independent implementation/preparation; **AGENT_B_TRACKING_INDEPENDENT_SCOPE_COMPLETE**, independent scope READY_FOR_REVIEW; overall IDs12–21 IN_PROGRESS. Stage13b schema/runtime NOT_IMPLEMENTED; no migration or client contract authorized.
 - Current review: independent [PR22](https://github.com/erwin-io/valryde-api/pull/22) OPEN/sourcef97724b3fdaa4ba9556f08b82691889a5a41d230; G review pending. Earlier architecture direction ACCEPTED IN PRINCIPLE by current Tech Lead directive; exact D01–D12/migrations/runtime/gateway NOT_APPROVED. Continuing existing PR14; no new acceptance claim. [Design issue #13](https://github.com/erwin-io/valryde-api/issues/13), [documentation PR #14](https://github.com/erwin-io/valryde-api/pull/14) OPEN; initial design source head d4884c0fb2be831701d24254cd9f70ed6592c750; earlier [Issue #9](https://github.com/erwin-io/valryde-api/issues/9) / PR10 and [Issue #3](https://github.com/erwin-io/valryde-api/issues/3) / [PR #4](https://github.com/erwin-io/valryde-api/pull/4) retained as historical slices.
 - Last confirmed result:38new independent tests +2history regressions +1read-only isolated PostGIS dependency probe, two reproduced B parser/frame defects narrowly fixed. Lint/typecheck/build/audit PASSED; final local run139PASS/16explicit DB/live skips; SQL-inclusive CI39790513191 PASSED154tests/1live skip including actual read-only PostGIS probe; security PASSED.42full13b cases BLOCKED, not PASS. Source/contract/gateway readiness report and machine-readable matrix prepared.
-- Next concrete action: review published independent PR22/Issue18; G must approve D01–D12 and integrate released A interfaces before B007/B008/gateway work. Design merge alone does not authorize SQL/runtime.
+- Next concrete action: review independent PR22/Issue18; after G approves D01–D12 and required A interfaces integrate, Completion-001 already authorizes Stage3 within approved DB/SQL scope. Gateway approvals enable Stages4–5;009/deployment remain separate gates. No redundant general confirmation required.
 - Shared blockers: A proposed same-client resolver/auth, per-jeepney transaction advisory keys and additive context version/cutover are delivered as A17 proposal but need G approval/exact SQL/source integration (old row-lock candidate inverted request/application workflows); immutable remap protocol; invalid-observation adapter; timing/retention/temporal-history and gateway decisions.
 - Dependencies: A business eligibility/authorization/route precedence; C/D/E versioned DTOs and REST/Pusher reconciliation; Infrastructure/owner approved app test writer and later rollout; F stationary-reporting/physical GPS evidence.
 - Missing references: complete Version1.0 DOCX and standalone checklist unavailable in workspace; frozen handoffs/owner directives used, no requirements invented.
@@ -66,6 +66,7 @@ Current design verification is separate from historical implementation results b
 | Codex takeover: documentation/diff | PASSED | New validation report, bounded13b proposal and canonical status fences/links; git diff --check |
 
 ## Shared contract / risk changes
+- Completion-001 is conditional authority for Stage3 after G D01–D12 approval/A integration, and Stages4–5 after gateway/authorization approval. Do not invent a second general implementation permission once those conditions hold. Exact SQL/environment/009 and deployment restrictions still apply; current conditions remain unmet.
 - Independent release: source corrections only for finite normalization overflow and actual UTF8 byte admission. No new SQL/API/DTO/Pusher/A-owned interface. [Technical readiness and C/D/E inventory](../tracking/INDEPENDENT_VERIFICATION_AND_GATEWAY_HANDOFF.md), [42-case ledger](../tracking/stage13b-acceptance-results.json). Full durable/gateway implementation still gated; designs remain recommendations.
 - Current refinement: architecture accepted in principle only. DECISION_REGISTER.md records12 explicit recommended resolutions, mapped42 planned cases and named gates; no approved migration/runtime/gateway contract. IMPLEMENTATION_RELEASE_PLAN.md separates P1 exact schema, P2 latest UNKNOWN-compliance writer, P3 compliance/events, P4 recovery/readiness and P5 separately released gateway.
 - A coordination authorized by human B2 directive: sent transaction/scope/global-lock/mapping/cutover/privilege request to Agent: A — Fastify API. A has delivered unapproved advisory-lock/context-version specification PR17/head36af1c6cb7cd1e749f4d8d2eff15183e40e578fd; G approval/exact SQL/runtime remain pending. Proposed boundary remains documentation only; no speculative adapter or cross-worktree edit.
@@ -93,6 +94,10 @@ Current design verification is separate from historical implementation results b
 - Pusher configuration/hardware evidence are pending later slices. No physical verification claimed.
 
 ## Activity log (newest first; preserve prior entries)
+### 2026-10-22 21:55 +08:00 — Completion release conditional authority clarified
+- Explicitly recorded that Completion-001 authorizes subsequent development when its stated G/A/gateway approvals/integration conditions are met; no redundant general owner reconfirmation is required. Current approvals/integration remain absent, so this session completes independent scope only. Exact schema/target/migration009, deployment/infrastructure/physical acceptance restrictions remain as specified by the owner.
+- Technical handoff/current snapshot clarified; prior activity preserved. No source/test change after verified00c8695, no new migration/DB/process action. Final evidence-only PR HEAD is reported in metadata.
+
 ### 2026-10-22 21:53 +08:00 — Isolated PostGIS CI evidence recorded, independent handoff complete
 - PR22 source/test00c8695ea4d8a9a69c9f23c1efb3d2f7e2cf8101 API CI39790513191 and GitGuardian PASSED. Actual CI log:154tests passed/1live skipped,21files passed/1skipped; pg-tracking-geometry.integration.test.ts1test PASSED53ms. Existing migration001–005 runner/test fixtures used only the disposable CI PostGIS service; no B/A006–009 migration created or executed.
 - Read-only SQL probe validates dependency geometry/metric/inclusion only, no application tables/telemetry writes. B13B-11 partial evidence PASS recorded; all42 complete13b cases remain BLOCKED by their exact runtime/schema/gateway dependencies,0full-case PASS. No mocked concurrency or hardware claim.

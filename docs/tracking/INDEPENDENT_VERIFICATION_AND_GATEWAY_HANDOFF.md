@@ -67,13 +67,16 @@ Hardware ~60s stationary behavior is not changed/configured; F/owner must choose
 
 ## Exact Agent A and approval dependencies
 
+Completion-001 itself conditionally authorizes later development: when G approves D01–D12 and the required A interfaces are integrated, proceed with Stage3 within the approved database/migration scope; when gateway contracts/authorization are approved, proceed with Stages4–5. Do not require a redundant new owner confirmation merely to restate this release. These conditions are currently unmet. Migration009 still requires its separate release; deployment, real infrastructure/production credentials and physical acceptance remain excluded unless separately authorized.
+
+
 1. G accepts D01–D12 exact schema/state/retention/privacy/limits, not only architecture direction.
 2. A publishes approved source interfaces: same caller-owned PoolClient/executor, canonical route resolver, existence-based private visibility and separate telemetryEligible/routeUsability. A17 is design only.
 3. A006 context version/cutover and advisory-lock/mutation protocol must be approved and integrated (or G approves a concrete dependency approach). Positive monotonic generation, post-lock DB clock, sorted key acquisition, affected-set expansion rollback, max synchronous mutation size, no privileged manual bypass and all mutations need SQL proof.
-4. B007 latest+lease/B008 compliance exact migration/runtime release follows A compatibility. No executable migration exists here. Rollback preserves additive tables/audit and disables consumer/readers; destructive restore/drop requires its own authorization.
-5. Gateway TypeBox/OpenAPI DTO/path/history/window/channel/signer model requires approval before implementation;009publication intents explicitly separate if chosen. Physical hardware, secure credentials, permanent services and production rollout remain owner/operator gates.
+4. B007 latest+lease/B008 compliance implementation follows the conditional authority above once G decisions and A compatibility/integration are satisfied. No executable migration exists here. Rollback preserves additive tables/audit and disables consumer/readers; destructive restore/drop requires its own authorization.
+5. Gateway TypeBox/OpenAPI DTO/path/history/window/channel/signer model requires approval before implementation under Completion-001;009publication intents explicitly separate if chosen. Physical hardware, secure credentials, permanent services and production rollout remain owner/operator gates.
 
-The [five-phase design](https://github.com/erwin-io/valryde-api/blob/149cefc82d0ccea3c1efe06aebaf157a607c1d8e/docs/design/stage13b/IMPLEMENTATION_RELEASE_PLAN.md) remains the phase test/rollback/authorization plan. None of its gated phases is enabled by this independent completion checkpoint.
+The [five-phase design](https://github.com/erwin-io/valryde-api/blob/149cefc82d0ccea3c1efe06aebaf157a607c1d8e/docs/design/stage13b/IMPLEMENTATION_RELEASE_PLAN.md) remains the phase test/rollback/authorization plan. The independent checkpoint alone does not satisfy phase prerequisites; Completion-001 supplies conditional implementation authority once its stated G/A/gateway conditions hold. Earlier design-only requests for an extra general implementation release are superseded to that extent, not the exact contract/schema/environment approvals.
 
 ## Gateway/API/Pusher contract inventory for C/D/E
 
