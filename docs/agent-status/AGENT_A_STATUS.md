@@ -5,7 +5,7 @@
 - Updated at (ISO 8601, Asia/Manila): 2026-10-22T08:45:00+08:00
 - Agent / module: A — Core Platform / Fastify API
 - Repository: `erwin-io/valryde-api`
-- Branch / design commit: `docs/stage13b-shared-interfaces` / `4a654c1bc95a2a92b431e1683ebf6417c5b44869`
+- Branch / design commit: `docs/stage13b-shared-interfaces` / `4a654c1beda0d4d7ddc7ae4938b53a470bacae11`
 - Checklist IDs: 1–11
 - GitHub issues / PRs: Unified-email [PR #11](https://github.com/erwin-io/valryde-api/pull/11) is merged. G1 [PR #12](https://github.com/erwin-io/valryde-api/pull/12) and mobile-policy [PR #16](https://github.com/erwin-io/valryde-api/pull/16) are accepted but unmerged. Fixture [PR #15](https://github.com/erwin-io/valryde-api/pull/15) has its final isolation correction at implementation commit `aa989254f62a7d7dab899fd1b4eb78171598ccb5` plus status follow-up. Stage 13b interface [PR #17](https://github.com/erwin-io/valryde-api/pull/17) is open for review.
 - Implementation progress: READY_FOR_REVIEW — documentation/design only
@@ -83,7 +83,7 @@
 - Files/config/services affected: `docs/design/stage13b/AGENT_A_SHARED_INTERFACE_SPECIFICATION.md`, `docs/integration/AGENT_A_G1_FIXTURE_UI_HANDOFF.md`, and this status file only.
 - Shared-contract result: Direct assignment still overrides group assignment. Private telemetry eligibility is independent from route usability; unassigned/inactive/conflicting route context remains private with compliance/public availability UNKNOWN. A monotonic context version is the primary proposed fence, with a post-lock `clock_timestamp()` cutover marker.
 - Test / review evidence: Lint, typecheck, 99 non-database tests, production build, high-severity audit, Markdown fence validation, and diff check passed. Database-enabled behavior was already verified on PR #15; this documentation branch makes no runtime change. PR #17 CI pending. No migration, database write, Traccar write, runtime behavior, or client repository changed.
-- Review / next action: PR #17 is published at design commit `4a654c1bc95a2a92b431e1683ebf6417c5b44869`. Await the Tech Lead decisions listed in the interface specification. Do not implement Stage 13b persistence from this proposal alone.
+- Review / next action: PR #17 is published at design commit `4a654c1beda0d4d7ddc7ae4938b53a470bacae11`. Await the Tech Lead decisions listed in the interface specification. Do not implement Stage 13b persistence from this proposal alone.
 
 ### 2026-10-21 16:55 +08:00 — Unified real-email environment release started
 
