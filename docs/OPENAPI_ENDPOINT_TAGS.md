@@ -34,6 +34,11 @@ The OpenAPI server URL is `/api`; paths below are relative to that base. Categor
 - `POST /jeepneys` — `createJeepney`
 - `PATCH /jeepneys/{jeepneyId}` — `updateJeepney`
 - `POST /jeepneys/{jeepneyId}/driver-assignment` — `assignDriverToJeepney`
+- `DELETE /jeepneys/{jeepneyId}/driver-assignment` — `unassignDriverFromJeepney`
+
+Driver unassignment closes the active assignment atomically and returns the closed assignment. Repeating
+the operation when no active assignment exists returns deterministic `409 CONFLICT`; it does not alter
+broader group visibility or the vehicle's effective-route precedence.
 
 ## 05 — Fleet Groups & Membership
 

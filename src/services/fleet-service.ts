@@ -396,6 +396,46 @@ export class FleetService {
     }
   }
 
+  async unassignDriver(actor: User, jeepneyId: string): Promise<DriverAssignment> {
+    const jeepney = await this.requireJeepney(jeepneyId);
+    if (jeepney.operatorId === null) {
+      throw new ApiError(409, 'CONFLICT', 'Jeepney must belong to an operator before unassignment');
+    }
+    await this.assertOperatorScope(actor, jeepney.operatorId);
+
+    const client = await this.pool.connect();
+    try {
+      await client.query('BEGIN');
+      await client.query('SELECT 1 FROM jeepneys WHERE id = $1 FOR UPDATE', [jeepneyId]);
+      const result = await client.query<AssignmentRow>(
+        `UPDATE driver_jeepney_assignments
+         SET active_to = clock_timestamp()
+         WHERE jeepney_id = $1 AND active_to IS NULL
+         RETURNING id, driver_id, jeepney_id, assigned_by_user_id, active_from, active_to`,
+        [jeepneyId],
+      );
+      const row = result.rows[0];
+      if (row === undefined) {
+        throw new ApiError(409, 'CONFLICT', 'Jeepney has no active Driver assignment');
+      }
+      await this.audit(
+        actor.id,
+        'DRIVER_JEEPNEY_UNASSIGNED',
+        'JEEPNEY',
+        jeepneyId,
+        { driverId: row.driver_id, assignmentId: row.id },
+        client,
+      );
+      await client.query('COMMIT');
+      return mapAssignment(row);
+    } catch (error) {
+      await client.query('ROLLBACK');
+      throw error;
+    } finally {
+      client.release();
+    }
+  }
+
   private async requireActorOperator(userId: string): Promise<string> {
     const result = await this.pool.query<{ id: string }>(
       `SELECT id FROM operators WHERE owner_user_id = $1 AND status = 'ACTIVE'`,

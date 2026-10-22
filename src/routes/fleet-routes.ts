@@ -240,6 +240,38 @@ export const fleetRoutes: FastifyPluginAsync<FleetRoutesOptions> = async (instan
     },
   );
 
+  fastify.delete(
+    '/jeepneys/:jeepneyId/driver-assignment',
+    {
+      preHandler: fastify.requireRoles('OPERATOR', 'ADMIN'),
+      schema: {
+        tags: [OpenApiTags.jeepneys],
+        operationId: 'unassignDriverFromJeepney',
+        summary: 'Unassign the current Driver from a jeepney',
+        description:
+          'Atomically closes the active Driver assignment within Operator ownership scope. A jeepney without an active assignment returns 409 CONFLICT.',
+        security: [{ bearerAuth: [] }],
+        params: JeepneyIdParams,
+        response: {
+          200: Type.Object({ assignment: DriverAssignmentSchema }),
+          400: ErrorSchema,
+          401: ErrorSchema,
+          403: ErrorSchema,
+          404: ErrorSchema,
+          409: ErrorSchema,
+        },
+      },
+    },
+    async (request) => ({
+      assignment: serializeDriverAssignment(
+        await options.fleetService.unassignDriver(
+          currentUser(request),
+          request.params.jeepneyId,
+        ),
+      ),
+    }),
+  );
+
   fastify.get(
     '/fleet-groups',
     {
