@@ -1,6 +1,6 @@
 # Agent A backend release — API handoff for Agents C, D and E
 
-**Released backend:** `main` at `99f4cb13e875c0145b3e676e3c8d457300c5603c`, which includes Agent A PRs #12, #15, #16, #19, #20, #21, #23, #24, #25 and #26, and Agent B PR #22.
+**Released backend:** `main` at `810c8a13356ddbf0e28a4faf5ad7f86ce0a30479`, which includes Agent A PRs #12, #15, #16, #17 (design document only), #19, #20, #21, #23, #24, #25, #26, #27 (proposals only) and #28 (G6), and Agent B PR #22.
 **Owner:** Agent A — Core Platform / Fastify API (checklist IDs 1–11). Directive `VALRYDE-AGENT-A-FINAL-BACKEND-RELEASE-008`, Phase E.
 **Status:** describes merged contracts only. Anything marked *pending* is not callable on `main`.
 
@@ -8,7 +8,7 @@ This document replaces §4–§7 of [AGENT_A_FRONTEND_API_INTEGRATION_HANDOFF.md
 
 | File | Contents |
 |---|---|
-| [AGENT_A_FRONTEND_ENDPOINT_MATRIX.md](AGENT_A_FRONTEND_ENDPOINT_MATRIX.md) | All 54 operations / 45 paths with method, guard, consumers, path/query/body fields and limits, success envelope, pagination, declared statuses and source line |
+| [AGENT_A_FRONTEND_ENDPOINT_MATRIX.md](AGENT_A_FRONTEND_ENDPOINT_MATRIX.md) | All 56 operations / 47 paths with method, guard, consumers, path/query/body fields and limits, success envelope, pagination, declared statuses and source line |
 | [AGENT_A_FRONTEND_ENDPOINT_INDEX.json](AGENT_A_FRONTEND_ENDPOINT_INDEX.json) | The same inventory, machine-readable |
 | [AGENT_A_OPENAPI_AUDIT.json](AGENT_A_OPENAPI_AUDIT.json) | Exact OpenAPI 3 snapshot (server `/api`, unprefixed paths) for typed clients and contract tests |
 | `scripts/generate-api-handoff.ts` | Regenerates the three files above offline: `npx tsx scripts/generate-api-handoff.ts` |
@@ -55,10 +55,10 @@ All other collections are unpaginated and unfiltered by contract. Filter them cl
 | 409 | `ROUTE_ASSIGNMENT_CONFLICT` | More than one inherited group route |
 | 409 | `VEHICLE_NOT_APPROVED`, `GPS_NOT_INSTALLED`, `DEVICE_MAPPING_CONFLICT` | GPS workflow ordering |
 | 429 | `RATE_LIMITED` | Wait `retry-after` seconds |
-| 503 | `GOOGLE_SIGN_IN_UNAVAILABLE`, `EMAIL_DELIVERY_UNAVAILABLE` | Provider not configured or down |
+| 503 | `GOOGLE_SIGN_IN_UNAVAILABLE`, `EMAIL_DELIVERY_UNAVAILABLE`, `GEOCODER_UNAVAILABLE` | Provider not configured or down. Place search returns `GEOCODER_UNAVAILABLE` while the provider is disabled (the default). |
 | 500 | `INTERNAL_ERROR` | Unexpected; show `requestId` |
 
-*Pending, not on `main`:* `503 GEOCODER_UNAVAILABLE` (PR #28); `422 TRACKING_CONTEXT_MUTATION_TOO_LARGE` and `503 TRACKING_CONTEXT_BUSY` (Stage 13b proposal, PR #17).
+*Proposed, not implemented:* `422 TRACKING_CONTEXT_MUTATION_TOO_LARGE` and `503 TRACKING_CONTEXT_BUSY` (Stage 13b design, merged as a document in PR #17 and still marked proposed).
 
 ### 1.3 Rate limits (per client IP unless stated)
 
@@ -68,8 +68,8 @@ All other collections are unpaginated and unfiltered by contract. Filter them cl
 | Register, login, Google sign-in | 10/min each |
 | Refresh | 30/min |
 | Resend verification, forgot password | 5 per 15 min each |
-| *Pending (#28):* place search | 20/min per user |
-| *Pending (#28):* discovery | 30/min per IP |
+| Place search | 20/min per user |
+| Direct-route discovery | 30/min |
 
 ### 1.4 Frozen rules
 
@@ -103,8 +103,8 @@ Classes:
 | Auth, session, profile, recovery | `/api/auth/*` (`role: "COMMUTER"`) | 1 |
 | Route list/search/pagination, route detail with geometry | `GET /api/transit-routes`, `GET /api/transit-routes/{routeId}` | 1 |
 | Draw routes on the map | route detail `direction.geometry` (GeoJSON `[lon, lat]`) and `routeColorHex` | 2 |
-| Place search (ID 37) | `GET /api/places/search` | 3 — PR #28; provider disabled by default (`503 GEOCODER_UNAVAILABLE`) until the owner approves one |
-| Direct-route discovery (ID 37) | `GET /api/transit-routes/discover` | 3 — PR #28; public; returns `directRouteFound:false` with no candidates when no single route serves both points |
+| Place search (ID 37) | `GET /api/places/search` | 3 — merged (#28); provider disabled by default (`503 GEOCODER_UNAVAILABLE`) until the owner approves one. Show a fallback to route search on 503. |
+| Direct-route discovery (ID 37) | `GET /api/transit-routes/discover` | 3 — merged (#28); public; returns `directRouteFound:false` with no candidates when no single route serves both points |
 | Live jeepneys, availability, freshness, Pusher | — | 5 |
 | Favorites, stops, fares, ETA, transfers | — | 6 |
 
@@ -146,10 +146,10 @@ Classes:
 
 | Item | Blocked on | Owner |
 |---|---|---|
-| G6 contract (paths, access, radius, error code) | Agent G review of PR #28: G6-D1, D2, D3, D5 | Agent G |
+| G6 contract record | #28 is merged; no explicit G6-D1, D2, D3, D5 decision is recorded. Clients may build against the merged contract. | Agent G (confirm) |
 | G6 live provider and caching | Provider terms and usage approval (G6-D4) | Owner |
 | G7 route-change requests | G7-D1, D3, D4, D5, D6, D7 (D2 resolved: migration 010 or later) | Agent G |
-| A006 tracking context generation, G10 remap/unmap, every tracking dependency (class 5) | Agent G approval of amended PR #17 (X1–X8, §13 constants) and Stage 13b D01–D12; then the A006 PR, then Agent B 007/008 | Agent G, then A, then B |
+| A006 tracking context generation, G10 remap/unmap, every tracking dependency (class 5) | Agent G's formal approval of the Stage 13b design (X1–X8, §13 constants, D01–D12). #17 is merged as a document but still reads "PROPOSED FOR TECH LEAD REVIEW"; Agent B #14 is open; then the A006 PR, then Agent B 007/008 | Agent G, then A, then B |
 | G8 audit read, G9 Admin pagination | No approved contract | Agent G |
 | Email links on phones (G5 remainder) | Callback domain, App Links / Universal Links hosting | Owner |
 | Google sign-in, real SMTP delivery, first Admin, physical GPS/Traccar | Owner credentials and hardware | Owner / Agent F |
@@ -158,8 +158,9 @@ Classes:
 
 | Check | Environment | Result |
 |---|---|---|
-| All 11 PR heads are ancestors of `99f4cb1` | `git merge-base --is-ancestor` | PASSED |
+| All 11 PR heads are ancestors of `99f4cb1`; #17, #28, #27 heads are ancestors of `810c8a1` | `git merge-base --is-ancestor` | PASSED |
 | API CI `verify` on `main` `99f4cb1` (migrate 001–005, lint, typecheck, full test, build) | GitHub, disposable `postgis/postgis:16-3.4`; run 39825022429 | PASSED — 24 files, 178 tests passed, 1 live-Traccar skipped |
-| Lint, typecheck, build, unit tests, Postman JSON parse, `git diff --check` | Local, `TEST_DATABASE_URL` unset | PASSED — 146 tests; 33 PostgreSQL tests skipped locally by design |
+| API CI `verify` on #28 head `aead06a`, then on `main` `0670bcb`, `08193b8`, `810c8a1` | Same; runs 39828704164, 39829442004, 39829465115, 39829599328 | PASSED — #28 head: 206 passed, 1 skipped |
+| Lint, typecheck, build, unit tests, Postman JSON parse, `git diff --check` | Local, `TEST_DATABASE_URL` unset | PASSED — 165 tests; 42 PostgreSQL tests skipped locally by design |
 | Duplicate `operationId` check | All route files | None |
-| Matrix regeneration | `scripts/generate-api-handoff.ts` at `99f4cb1` | 54 operations / 45 paths; every operation has a source guard |
+| Matrix regeneration | `scripts/generate-api-handoff.ts` after merging `810c8a1` | 56 operations / 47 paths; every operation has a source guard |

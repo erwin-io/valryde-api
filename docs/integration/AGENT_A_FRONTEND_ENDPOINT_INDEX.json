@@ -1,5 +1,5 @@
 {
-  "sourceCommit": "99f4cb13e875c0145b3e676e3c8d457300c5603c",
+  "sourceCommit": "fbfa43c2c7187428b1f9a208196ab3f399dbe406",
   "operations": [
     {
       "method": "GET",
@@ -23,7 +23,7 @@
         "503"
       ],
       "file": "src/app.ts",
-      "line": 169
+      "line": 195
     },
     {
       "method": "POST",
@@ -466,6 +466,38 @@
       ],
       "file": "src/routes/admin-user-routes.ts",
       "line": 41
+    },
+    {
+      "method": "GET",
+      "path": "/api/places/search",
+      "operationId": "searchPlaces",
+      "guard": "ANY_VERIFIED_ACTIVE_ROLE",
+      "consumers": [
+        "C",
+        "D",
+        "E"
+      ],
+      "pathParams": [],
+      "query": [
+        "q: string (len 2–120)",
+        "lat?: number (4–21.5)",
+        "lng?: number (116–127)",
+        "limit?: integer (1–10, default 5)"
+      ],
+      "body": "none",
+      "success": [
+        "200 {places, attribution}"
+      ],
+      "paginated": false,
+      "statuses": [
+        "200",
+        "400",
+        "401",
+        "429",
+        "503"
+      ],
+      "file": "src/routes/place-routes.ts",
+      "line": 25
     },
     {
       "method": "GET",
@@ -964,7 +996,39 @@
         "200"
       ],
       "file": "src/routes/transit-routes.ts",
-      "line": 102
+      "line": 122
+    },
+    {
+      "method": "GET",
+      "path": "/api/transit-routes/discover",
+      "operationId": "discoverDirectTransitRoutes",
+      "guard": "PUBLIC",
+      "consumers": [
+        "C",
+        "D",
+        "E"
+      ],
+      "pathParams": [],
+      "query": [
+        "lat: number (4–21.5)",
+        "lng: number (116–127)",
+        "destinationLat: number (4–21.5)",
+        "destinationLng: number (116–127)",
+        "maxWalkM?: integer (50–1000, default 500)",
+        "limit?: integer (1–10, default 5)"
+      ],
+      "body": "none",
+      "success": [
+        "200 {candidates, directRouteFound}"
+      ],
+      "paginated": false,
+      "statuses": [
+        "200",
+        "400",
+        "429"
+      ],
+      "file": "src/routes/transit-routes.ts",
+      "line": 159
     },
     {
       "method": "GET",
@@ -990,7 +1054,7 @@
         "404"
       ],
       "file": "src/routes/transit-routes.ts",
-      "line": 139
+      "line": 202
     },
     {
       "method": "GET",
@@ -1013,7 +1077,7 @@
         "403"
       ],
       "file": "src/routes/transit-routes.ts",
-      "line": 162
+      "line": 225
     },
     {
       "method": "POST",
@@ -1038,7 +1102,7 @@
         "409"
       ],
       "file": "src/routes/transit-routes.ts",
-      "line": 187
+      "line": 250
     },
     {
       "method": "PATCH",
@@ -1065,7 +1129,7 @@
         "404"
       ],
       "file": "src/routes/transit-routes.ts",
-      "line": 221
+      "line": 284
     },
     {
       "method": "POST",
@@ -1093,7 +1157,7 @@
         "409"
       ],
       "file": "src/routes/transit-routes.ts",
-      "line": 261
+      "line": 324
     },
     {
       "method": "PATCH",
@@ -1121,7 +1185,7 @@
         "409"
       ],
       "file": "src/routes/transit-routes.ts",
-      "line": 302
+      "line": 365
     },
     {
       "method": "POST",
@@ -1146,7 +1210,7 @@
         "409"
       ],
       "file": "src/routes/transit-routes.ts",
-      "line": 345
+      "line": 408
     },
     {
       "method": "GET",
@@ -1177,7 +1241,7 @@
         "403"
       ],
       "file": "src/routes/transit-routes.ts",
-      "line": 381
+      "line": 444
     },
     {
       "method": "GET",
@@ -1207,7 +1271,7 @@
         "409"
       ],
       "file": "src/routes/transit-routes.ts",
-      "line": 433
+      "line": 496
     },
     {
       "method": "GET",
@@ -1235,7 +1299,7 @@
         "409"
       ],
       "file": "src/routes/transit-routes.ts",
-      "line": 489
+      "line": 552
     },
     {
       "method": "GET",
