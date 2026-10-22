@@ -27,6 +27,8 @@
 4. Tech Lead-approved issues/ADRs/contracts and CI/PR evidence.
 5. Official upstream documentation for external dependencies.
 
+Mobile development and physical-device acceptance must additionally follow the owner-approved `docs/governance/VALRYDE_MOBILE_TESTING_POLICY_001.md`. That policy defines the mandatory mobile validation boundary and the exact `DEVELOPMENT_ACCEPTED`, `OWNER_DEVICE_TEST_PENDING`, `DEVICE_HOTFIX_REQUIRED`, and `OWNER_DEVICE_ACCEPTED` classifications. Only the owner may authorize `OWNER_DEVICE_ACCEPTED`.
+
 ID 37 is **Destination Place Search & Direct Transit Discovery**. Anonymous Public Tracking/Share Link is Phase 2/out of MVP.
 
 
@@ -63,6 +65,7 @@ The following decisions are already approved for the Version 1.0 MVP baseline an
 - **History retention:** raw Traccar telemetry is temporarily 30 days for MVP. Production retention must be reviewed before commercial go-live.
 - **MVP cloud demo:** Fastify API + Valryde Admin on Vercel, Valryde app DB on Neon, client realtime on Pusher, Traccar/Traccar PostgreSQL/Tracking Bridge on a temporary always-on server laptop.
 - **Tests/CI:** Vitest where appropriate, Fastify `inject()` integration tests, Playwright where practical, lint/typecheck/test/build on PRs. Physical GPS/device tests are owner-operated and should be labeled separately from automated evidence.
+- **Mobile device acceptance:** Physical Android-device integration testing is exclusively owner-managed. Mobile development remains subject to the automated, native-build, Capacitor/plugin, real development-API, security, and defect-resolution requirements in `VALRYDE-MOBILE-TESTING-POLICY-001`; absence of owner device access does not prevent submission of otherwise validated work.
 
 
 ## 4. Master 71-item MVP responsibility matrix
@@ -316,3 +319,5 @@ Documentation/checklist/handoff updated?:
 ```
 
 The Tech Lead must update this handoff and the Complete System Documentation whenever a merged change materially alters a DTO, endpoint, table, role permission, route-compliance threshold, realtime contract, map/geocoder provider, GPS setup state or MVP checklist meaning.
+
+For mobile work, the Tech Lead must also record the applicable `VALRYDE-MOBILE-TESTING-POLICY-001` classification separately from the ordinary PR review outcome. `DEVELOPMENT_ACCEPTED` never implies physical-device acceptance; `OWNER_DEVICE_ACCEPTED` requires explicit owner confirmation tied to an identified build or commit. Owner-discovered device defects are tracked as `DEVICE_HOTFIX_REQUIRED` work with regression coverage before owner retest.

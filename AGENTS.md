@@ -16,8 +16,9 @@ Read in this order:
 4. `handoffs/` — the relevant agent-specific implementation handoff.
 5. `handoffs/G_Tech_Lead_Repository_Management_Handoff.md` — shared integration, architecture, PR, and contract governance.
 6. `docs/00_SHARED_AGENT_STATUS_REPORTING_POLICY.md` — mandatory reporting policy.
-7. `docs/agent-status/` — the assigned agent's existing status file.
-8. Current repository source, README, package manifests, lockfiles, migrations, tests, and CI configuration.
+7. `docs/governance/VALRYDE_MOBILE_TESTING_POLICY_001.md` — mandatory mobile development and owner physical-device acceptance policy for Agents C and D and their reviewers.
+8. `docs/agent-status/` — the assigned agent's existing status file.
+9. Current repository source, README, package manifests, lockfiles, migrations, tests, and CI configuration.
 
 If a document is unavailable, report the missing reference. Do not invent its requirements.
 
