@@ -5,14 +5,14 @@
 - Updated at (ISO 8601, Asia/Manila): 2026-10-22T08:45:00+08:00
 - Agent / module: A — Core Platform / Fastify API
 - Repository: `erwin-io/valryde-api`
-- Branch / head: `docs/stage13b-shared-interfaces` / base `827738c0f2c33ad3082f6a4a38a8e35669d4b0ea`; documentation commit pending
+- Branch / design commit: `docs/stage13b-shared-interfaces` / `4a654c1bc95a2a92b431e1683ebf6417c5b44869`
 - Checklist IDs: 1–11
-- GitHub issues / PRs: Unified-email [PR #11](https://github.com/erwin-io/valryde-api/pull/11) is merged. G1 [PR #12](https://github.com/erwin-io/valryde-api/pull/12) and mobile-policy [PR #16](https://github.com/erwin-io/valryde-api/pull/16) are accepted but unmerged. Fixture [PR #15](https://github.com/erwin-io/valryde-api/pull/15) has its final isolation correction at implementation commit `aa989254f62a7d7dab899fd1b4eb78171598ccb5` plus status follow-up; Stage 13b interface PR pending.
-- Implementation progress: IN_PROGRESS — documentation/design only
+- GitHub issues / PRs: Unified-email [PR #11](https://github.com/erwin-io/valryde-api/pull/11) is merged. G1 [PR #12](https://github.com/erwin-io/valryde-api/pull/12) and mobile-policy [PR #16](https://github.com/erwin-io/valryde-api/pull/16) are accepted but unmerged. Fixture [PR #15](https://github.com/erwin-io/valryde-api/pull/15) has its final isolation correction at implementation commit `aa989254f62a7d7dab899fd1b4eb78171598ccb5` plus status follow-up. Stage 13b interface [PR #17](https://github.com/erwin-io/valryde-api/pull/17) is open for review.
+- Implementation progress: READY_FOR_REVIEW — documentation/design only
 - Tech Lead review decision (if actually issued): IDs 1–11 remain ACCEPTED; G1 PR #12 and policy PR #16 accepted; PR #15 awaiting final boundary re-review; Stage 13b persistence remains unauthorized.
 - Current objective: Publish the Agent A-owned Stage 13b transaction/interface proposal and a consolidated G1/fixture handoff for Agents C, D, and E without implementing tracking persistence or changing another agent's repository.
 - Last confirmed result: Fixture boundary validation passed locally (20 files / 119 tests) and on PR #15 CI. The shared design now separates private telemetry eligibility from route usability, preserves the frozen effective-route contract, and proposes a single cross-agent advisory-lock/context-generation protocol.
-- Next concrete action: Validate and publish this documentation branch for Tech Lead and Agent B review; await explicit decisions on locks, context schema/migration ownership, fanout bounds, privileges, and runtime implementation authorization.
+- Next concrete action: Tech Lead, Agent B, and Agent G review of PR #17; await explicit decisions on locks, context schema/migration ownership, fanout bounds, privileges, and runtime implementation authorization.
 - Blocked by / decision owner: Stage 13b schema and runtime work require Tech Lead approval. Owner-only SMTP, Google, permanent Admin, and physical GPS gates remain separate and do not block this design checkpoint.
 - Dependencies / affected agents: B (tracking/latest state/realtime), C (public route/live APIs), D (driver invitation and operator APIs), E (Admin APIs), F (device runbooks), G (shared-contract review).
 
@@ -82,8 +82,8 @@
 - Action / reason: Coordinated D05/D06/D07 boundaries with Agent B and documented a transaction-owned, executor-aware integration contract without implementing persistence. Prepared one consolidated G1/fixture handoff for Agents C, D, and E.
 - Files/config/services affected: `docs/design/stage13b/AGENT_A_SHARED_INTERFACE_SPECIFICATION.md`, `docs/integration/AGENT_A_G1_FIXTURE_UI_HANDOFF.md`, and this status file only.
 - Shared-contract result: Direct assignment still overrides group assignment. Private telemetry eligibility is independent from route usability; unassigned/inactive/conflicting route context remains private with compliance/public availability UNKNOWN. A monotonic context version is the primary proposed fence, with a post-lock `clock_timestamp()` cutover marker.
-- Test / review evidence: Lint, typecheck, 99 non-database tests, production build, high-severity audit, Markdown fence validation, and diff check passed. Database-enabled behavior was already verified on PR #15; this documentation branch makes no runtime change. Branch CI pending. No migration, database write, Traccar write, runtime behavior, or client repository changed.
-- Review / next action: Publish a focused PR and await Tech Lead decisions listed in the interface specification. Do not implement Stage 13b persistence from this proposal alone.
+- Test / review evidence: Lint, typecheck, 99 non-database tests, production build, high-severity audit, Markdown fence validation, and diff check passed. Database-enabled behavior was already verified on PR #15; this documentation branch makes no runtime change. PR #17 CI pending. No migration, database write, Traccar write, runtime behavior, or client repository changed.
+- Review / next action: PR #17 is published at design commit `4a654c1bc95a2a92b431e1683ebf6417c5b44869`. Await the Tech Lead decisions listed in the interface specification. Do not implement Stage 13b persistence from this proposal alone.
 
 ### 2026-10-21 16:55 +08:00 — Unified real-email environment release started
 
