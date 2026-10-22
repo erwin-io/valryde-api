@@ -2,18 +2,18 @@
 
 ## Current snapshot
 
-- Updated at (ISO 8601, Asia/Manila): 2026-10-23T09:00:00+08:00
+- Updated at (ISO 8601, Asia/Manila): 2026-10-23T12:30:00+08:00
 - Agent / module: A — Core Platform / Fastify API (execution owner: Claude, taken over from Codex under `VALRYDE-CLAUDE-A-CODEX-RECOVERY-AND-COMPLETION-003`)
 - Repository: `erwin-io/valryde-api`
-- Branch / head: canonical copy carried identically by every PR branch prepared under `VALRYDE-AGENT-A-PR-INTEGRATION-005` and by local `docs/agent-a-independent-completion`; base `origin/main` `827738c0f2c33ad3082f6a4a38a8e35669d4b0ea`
-- Checklist IDs: 1–11 (gap slices G1–G11, D3)
-- GitHub issues / PRs: PRs #1, #2, #4–#8, #10, #11 merged. Open Agent A PRs, none reviewed: [#12](https://github.com/erwin-io/valryde-api/pull/12) G1, [#15](https://github.com/erwin-io/valryde-api/pull/15) fixtures, [#16](https://github.com/erwin-io/valryde-api/pull/16) mobile testing policy, [#17](https://github.com/erwin-io/valryde-api/pull/17) Stage 13b design, [#19](https://github.com/erwin-io/valryde-api/pull/19) G2, [#20](https://github.com/erwin-io/valryde-api/pull/20) G3, [#21](https://github.com/erwin-io/valryde-api/pull/21) G4, [#23](https://github.com/erwin-io/valryde-api/pull/23) D3, [#24](https://github.com/erwin-io/valryde-api/pull/24) G10 read, [#25](https://github.com/erwin-io/valryde-api/pull/25) G11, [#26](https://github.com/erwin-io/valryde-api/pull/26) G5, [#27](https://github.com/erwin-io/valryde-api/pull/27) G6/G7 proposals.
-- Implementation progress: IN_PROGRESS
-- Tech Lead review decision (if actually issued): IDs 1–11 baseline ACCEPTED (PR #1). PR #25 (G11) ACCEPTED at `c4c8b7f6edd83c80d8ab6a47536929e1f4c9423d`, not merged; PR #26 (G5) ACCEPTED at source-review level; PR #27 DESIGN REVIEW READY. No decision issued on PRs #12, #15–#17, #19–#21, #23, #24.
-- Current objective: controlled PR integration preparation under `VALRYDE-AGENT-A-PR-INTEGRATION-005` (checkpoint `AGENT_A_CONTROLLED_PR_MERGE_READY`).
-- Last confirmed result: G5 fix PR #26 and G6/G7 proposal PR #27 opened; both green on `verify` (PostGIS) and GitGuardian.
-- Next concrete action: owner/Agent G merges in order #26, #23, #25, #24, #15, #16, #12, #20, #19, #21 using merge commits (not squash or rebase merge). G6/G7 only after decisions on PR #27.
-- Blocked by / decision owner: Agent G review of PRs #12–#25 and Stage 13b D01–D12; owner for production domain/app scheme (G5), geocoding provider terms (G6), and G7 lifecycle approval.
+- Branch / head: canonical copy carried identically by open Agent A PRs #17, #27, #28 and #29; base `origin/main` `99f4cb13e875c0145b3e676e3c8d457300c5603c`
+- Checklist IDs: 1–11 (gap slices G1–G11, D3); G6 backend for ID 37
+- GitHub issues / PRs: merged into `main` by Agent G with merge commits: #1, #2, #4–#8, #10–#12, #15, #16, #19–#21, #23–#26 (and Agent B #22). Open Agent A PRs: [#17](https://github.com/erwin-io/valryde-api/pull/17) Stage 13b design (Amendment 1), [#27](https://github.com/erwin-io/valryde-api/pull/27) G6/G7 proposals, [#28](https://github.com/erwin-io/valryde-api/pull/28) G6 implementation, [#29](https://github.com/erwin-io/valryde-api/pull/29) backend release API handoff.
+- Implementation progress: IN_PROGRESS — every independently executable, approved Agent A slice is merged; remaining work waits on the decisions listed under "Blocked by".
+- Tech Lead review decision (if actually issued): IDs 1–11 baseline ACCEPTED (PR #1). G1–G5, G10 read, G11, D3, fixtures and mobile testing policy merged by Agent G. No decision yet on #17 Amendment 1, #27, #28 or #29.
+- Current objective: directive `VALRYDE-AGENT-A-FINAL-BACKEND-RELEASE-008` (milestone `AGENT_A_FULL_INDEPENDENT_BACKEND_RELEASE_READY`).
+- Last confirmed result: merged `main` `99f4cb1` verified (all 11 PR heads present; CI `verify` 178 passed / 1 live-Traccar skipped). #17 amended with X1–X8 and proposed constants; G6 implemented in #28 with the provider disabled by default; #27 G7-D2 set to migration 010 or later; C/D/E handoff regenerated in #29.
+- Next concrete action: Agent G reviews #17 (X1–X8 and §13 constants), #28 (G6-D1, D2, D3, D5) and #29, and decides G7-D1 and D3–D7. Agent A starts the A006 PR only after #17 is formally approved.
+- Blocked by / decision owner: Agent G for the Stage 13b design (#17, D01–D12) and the G6/G7 decisions; owner for the geocoding provider and its terms (G6-D4), the production callback domain and App Links hosting (G5), the first real Admin, and physical GPS/Traccar mapping.
 - Dependencies / affected agents: B (tracking/latest state/realtime), C (public route/live APIs), D (driver invitation and operator APIs), E (Admin APIs), F (device runbooks), G (shared-contract review).
 
 ## Checklist coverage
@@ -34,22 +34,26 @@
 
 | Gap slice | Scope | Progress | PR / full HEAD | Blocker / next action |
 |---|---|---|---|---|
-| G1 | Driver/Operator directories | READY_FOR_REVIEW | #12 `92ad34158e1c9fe840b7264b4c3912aec5eeb25b` | Agent G review; conflicts with #19 in `src/domain/fleet.ts`, `src/services/fleet-service.ts`. |
-| G2 | Group membership list/removal | READY_FOR_REVIEW | #19 `1daad9a4ab74ce03ac0519300271ec2ecdf3a64b` | Agent G review; conflicts with #12, and with #21 in `src/routes/fleet-routes.ts`. |
-| G3 | `GET /api/me/assignment` | READY_FOR_REVIEW | #20 `4c58f2d2e750f79605512b070a96dfa4f0b7cedf` | Agent G review; conflicts with #21 in `src/services/fleet-service.ts`, `docs/OPENAPI_ENDPOINT_TAGS.md`. |
-| G4 | Driver unassignment | READY_FOR_REVIEW | #21 `6f1c789c0b53511e81c54619a7030091b7afb243` | Agent G review; rebase after #19/#20. |
-| D3 | Duplicate direction label → 409 | READY_FOR_REVIEW | #23 `ccdb700f29e2f4de2ea6a4731d5c5401a750d3a9` | Agent G review. |
-| G5 | Mobile email links (backend portion) | READY_FOR_REVIEW | #26 `407acde276517ae7543e885ecfb8eca9e671460a` | App Links/Universal Links hosting, callback domain and per-role destinations owner-gated. |
-| G6 | Place discovery | BLOCKED (proposal READY_FOR_REVIEW) | #27 `0ccd69c5f95a923231913e15442e517617698410` | Decisions G6-D1…D6; provider terms owner-gated. |
-| G7 | Route-change requests | BLOCKED (proposal READY_FOR_REVIEW) | #27 `0ccd69c5f95a923231913e15442e517617698410` | Decisions G7-D1…D7; migration numbering vs A006. |
-| G10 | Admin mapping read | READY_FOR_REVIEW | #24 `e555033872373d836e8ea60392fd339f0e1bbda6` | Remap/unmap gated on Stage 13b context invalidation/locking approval. |
-| G11 | Assignment reads + impact preview | READY_FOR_REVIEW (re-review) | #25 `c4c8b7f6edd83c80d8ab6a47536929e1f4c9423d` | CHANGES REQUIRED at `22b6462` addressed; Agent G re-review. |
-| Stage 13b | Shared interface design (A006 proposed) | READY_FOR_REVIEW | #17 `fd76cb54000ec47c383c6641359f3e3cf59e4340` | Agent G D01–D12 approval before any A006 migration. |
+| G1 | Driver/Operator directories | MERGED | #12 head `f2bc56c`, merge `7aa8ee7` | Client adoption (C/D/E). |
+| G2 | Group membership list/removal | MERGED | #19 head `172e7bf0fc01ea166b9ffef9b0bbf67ae3778ca6`, merge `cef35df` | Client adoption. |
+| G3 | `GET /api/me/assignment` | MERGED | #20 head `a15cc6b`, merge `888c94d` | Client adoption. |
+| G4 | Driver unassignment | MERGED | #21 head `acbc6d61219ee7ff9280aedaf328146044b59bd1`, merge `99f4cb1` | Client adoption. |
+| D3 | Duplicate direction label → 409 | MERGED | #23 head `bea0b7f`, merge `1a79480` | — |
+| G5 | Mobile email links (backend portion) | MERGED | #26 head `fffe141`, merge `bb799b2` | App Links/Universal Links hosting, callback domain and per-role destinations owner-gated. |
+| G6 | Place search + direct discovery | IMPLEMENTED, READY_FOR_REVIEW | #28 code `156fc5a` | Agent G: G6-D1, D2, D3, D5. Owner: provider terms/caching (G6-D4); provider disabled by default. |
+| G7 | Route-change requests | BLOCKED (proposal READY_FOR_REVIEW) | #27 doc `8daf7d7` | Agent G: G7-D1, D3–D7. G7-D2 resolved: migration 010 or later. |
+| G10 | Admin mapping read | MERGED | #24 head `a702738`, merge `4fe8bc9` | Remap/unmap blocked on Stage 13b approval. |
+| G11 | Assignment reads + impact preview | MERGED | #25 head `397e6d6`, merge `000249b` | — |
+| Stage 13b | Shared interface design, Amendment 1 (X1–X8, constants) | READY_FOR_REVIEW | #17 doc `7fe5d3b` | Agent G formal approval before the A006 PR. |
+| Handoff | C/D/E backend release API handoff | READY_FOR_REVIEW | #29 doc `7c4f1c8` | Regenerate the matrix after #28 merges. |
 
 ## Latest verification
 
 | Command / check | Environment | Result | Date/time | Evidence / notes |
 |---|---|---|---|---|
+| Lint, typecheck, build, unit tests (`TEST_DATABASE_URL` unset), Postman JSON parse, `git diff --check` | G6 branch `156fc5a`; local Node.js | PASSED | 2026-10-23 12:10 +08:00 | 165 passed, 42 PostgreSQL tests skipped locally; new `test/place-search.test.ts` 19/19. CI result for #28 is recorded in the 008 checkpoint. |
+| Ancestry of all 11 merged PR heads; GitHub `verify` (PostGIS) on `main` | `main` `99f4cb13e875c0145b3e676e3c8d457300c5603c`; run 39825022429 | PASSED | 2026-10-23 11:50 +08:00 | 24 files / 178 passed, 1 live-Traccar skipped. Local gate on main: lint, typecheck, build, 146 unit tests, Postman parse, no duplicate operationIds. |
+| GitHub `verify` (PostGIS) and GitGuardian | #19 `172e7bf` (run 39824198360), #21 `acbc6d6` (run 39824326943) | PASSED | 2026-10-23 11:00 +08:00 | 178 passed, 1 skipped on each; both MERGEABLE/CLEAN before Agent G merged them. |
 | GitHub `verify` (PostGIS 16-3.4: migrate, lint, typecheck, test, build) and GitGuardian | PR #25 head `c4c8b7f6edd83c80d8ab6a47536929e1f4c9423d` | PASSED | 2026-10-23 00:28 +08:00 | 19 files / 115 tests passed, 1 live-Traccar skipped; MERGEABLE. |
 | GitHub `verify` (PostGIS) and GitGuardian | PR #26 head `407acde`, PR #27 head `0ccd69c` | PASSED | 2026-10-22 23:45 +08:00 | Both MERGEABLE against `main` `827738c`. |
 | `npm run lint`, `npm run typecheck`, `npm run build`, `vitest run`, `npm audit --audit-level=high`, `git diff --check` | G5 branch; local Node.js, no `TEST_DATABASE_URL` | PASSED | 2026-10-22 23:05 +08:00 | 105 passed, 15 PostgreSQL-backed skipped locally; 0 vulnerabilities. |
@@ -121,6 +125,42 @@
 - Gate: Physical GPS/Traccar mapping and activation. Required actor: operator/Agent F/Agent B. Requested evidence: power, SIM/APN, server connectivity, GPS fix, correct IMEI/uniqueId mapping. State: OWNER_VERIFICATION_PENDING.
 
 ## Activity log (newest first; preserve prior entries)
+
+### 2026-10-23 12:30 +08:00 — Final backend release (directive 008): verification, Stage 13b amendment, G6, handoff
+
+- Action / reason: directive `VALRYDE-AGENT-A-FINAL-BACKEND-RELEASE-008`. Work done in `.worktrees/agent-a-integration` plus the existing #17 and #27 worktrees. Agent B worktrees and PR #14 untouched.
+- Checklist/issue: IDs 1–11; Stage 13b; G6 (ID 37 backend); G7; Phase E handoff for C/D/E.
+- Files/config/services affected:
+  - #17: `docs/design/stage13b/AGENT_A_SHARED_INTERFACE_SPECIFICATION.md` Amendment 1. X1–X8 applied in place; §13 adds the proposed constants (250 cap, reject > 300 km/h, create-only mapping, 30 s freshness, best-effort invalidation + 10 s poll, 006–008 reserved, G7 010+) and deterministic tests T4-X1 … T26. Proposed new codes: `422 TRACKING_CONTEXT_MUTATION_TOO_LARGE`, `503 TRACKING_CONTEXT_BUSY`.
+  - #27: G7-D2 resolved to migration 010 or later; G6 proposal points to #28.
+  - #28 (new): `src/services/geocoder-service.ts`, `src/routes/place-routes.ts`, discovery in `transit-service.ts`/`transit-routes.ts`, `GEOCODER_*` config, `GEOCODER_UNAVAILABLE` code, path-only request logging, tests, OpenAPI tag 13, Postman.
+  - #29 (new): release handoff, regenerated matrix/index/OpenAPI snapshot, `scripts/generate-api-handoff.ts`.
+- Observed result: merged `main` has no regression. #17 and #27 brought up to date with `main` by merge commits. G6 implemented with the live provider disabled by default and no fabricated responses. A006, G7 and every migration not started, because none is approved.
+- Validation and evidence: see "Latest verification". One local unit run was started with `TEST_DATABASE_URL` set to an empty string, so the PostgreSQL suites tried the local server on port 5432. Every connection failed at password authentication before any query, so no data was read or written. Re-run correctly with the variable unset.
+- Contracts / risks / dependencies: G6 endpoints are implemented but stay proposed until Agent G approves G6-D1, D2, D3, D5. The provider cache is deferred until G6-D4. Discovery uses no migration.
+- Commit/PR link or SHA: #17 amendment `7fe5d3bdef6f43cec02205395dba5e513c50e47d`; #27 `8daf7d70af995e3bd76d3d01916908bc5f5c2846`; #28 code `156fc5a`; #29 docs `7c4f1c8`. Final heads, including this status commit, are in checkpoint `AGENT_A_FULL_INDEPENDENT_BACKEND_RELEASE_READY`.
+- Next action / owner gate: Agent G decisions listed in the snapshot. On #17 approval, Agent A opens the A006 PR. On G7 approval, Agent A implements G7 with migration 010 or later.
+
+### 2026-10-23 11:00 +08:00 — #19 / #21 GitHub merge rejection fixed (no force push)
+
+- Action / reason: directive `VALRYDE-AGENT-A-MERGE-CONFLICT-FIX-007`. GitHub rejected merging #19 with HTTP 405 after #12 and #20 had merged.
+- Checklist/issue: IDs 5–7 (G2, G4).
+- Files/config/services affected: merge commits only on `feat/6-7-group-membership-management` (#19) and `feat/5-g4-unassign-driver` (#21).
+- Observed result: #19 had two merge bases with `main` (`a15cc6b`, `f2bc56c`). Git's own merge was clean, but GitHub's single-base test merge reported conflicts. Merging current `main` into #19, then corrected #19 into #21, left `main` as the single merge base. No file content changed beyond `main`'s; the earlier keep-both resolutions were preserved.
+- Validation and evidence: CI `verify` 178 passed / 1 skipped and GitGuardian passed on both heads; both MERGEABLE/CLEAN; simulated #19 → #21 sequence clean.
+- Commit/PR link or SHA: #19 `172e7bf0fc01ea166b9ffef9b0bbf67ae3778ca6`; #21 `acbc6d61219ee7ff9280aedaf328146044b59bd1`. Agent G then merged both (`cef35df`, `99f4cb1`).
+- Next action / owner gate: none for G2/G4.
+
+### 2026-10-23 10:00 +08:00 — Status synchronized into #17 and #27; Agent A on hold
+
+- Action / reason: Tech Lead status synchronization authorization for PRs #17 and #27.
+- Checklist/issue: IDs 1–11; Stage 13b; G6/G7.
+- Files/config/services affected: `docs/agent-status/AGENT_A_STATUS.md` only on #17 (`docs/stage13b-shared-interfaces`) and #27 (`docs/agent-a-g6-g7-contract-proposals`). No Stage 13b or G6/G7 contract document changed.
+- Observed result: all twelve open Agent A PRs carry identical status blob `05ac88d823b2919245c8ca975564315dc9c635e1`. A simulated ordered merge of #26, #23, #25, #24, #15, #16, #12, #20, #19, #21, #17 and #27 into `main` `827738c` has no conflicts.
+- Validation and evidence: lint, typecheck, build and unit tests passed locally on both branches; CI `verify` (PostGIS) and GitGuardian results are in checkpoint `AGENT_A_STATUS_SYNC_17_27_COMPLETE`.
+- Contracts / risks / dependencies: flagged for Agent G's next decision. (1) #17 must incorporate the approved X1–X8 reconciliation before A006 implementation is authorized. (2) #27 G7-D2 must reserve migration 006 exclusively for Stage 13b; G7 uses migration 010 or later. Neither is applied yet, because this synchronization was status-only.
+- Commit/PR link or SHA: #17 `f385f752de598b2f09e9c63160eb98ca415c9a7e`; #27 `27b9349c208a3599b1938f51ee76364bfe4a80b9`. Kept on the local status branch during the merge sequence so the PR copies stayed identical; carried into the PR branches with the 2026-10-23 12:30 entry.
+- Next action / owner gate: owner-authorized merges using merge commits; Agent A takes no further action until directed.
 
 ### 2026-10-23 09:00 +08:00 — Controlled PR integration preparation (no merges)
 
