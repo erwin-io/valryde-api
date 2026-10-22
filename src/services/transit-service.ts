@@ -2,10 +2,12 @@ import type pg from 'pg';
 
 import type { User } from '../domain/identity.js';
 import type {
+  AffectedJeepney,
   EffectiveRouteDirection,
   LineStringGeometry,
   RecordStatus,
   RouteDirection,
+  RouteAssignmentImpact,
   TransitRoute,
   VehicleRouteAssignment,
 } from '../domain/transit.js';
@@ -49,6 +51,17 @@ interface EffectiveRouteRow extends DirectionRow {
   assignment_id: string;
   assignment_group_id: string | null;
   assignment_active_from: Date;
+}
+
+interface AffectedJeepneyRow {
+  jeepney_id: string | null;
+  plate_no: string | null;
+  source: 'DIRECT' | 'GROUP' | null;
+  assignment_id: string | null;
+  group_id: string | null;
+  affected_total: string;
+  direct_assignment_count: string;
+  group_assignment_count: string;
 }
 
 export class TransitService {
@@ -350,6 +363,154 @@ export class TransitService {
     }
   }
 
+  async listRouteAssignments(
+    actor: User,
+    input: {
+      routeDirectionId?: string;
+      jeepneyId?: string;
+      groupId?: string;
+      activeOnly: boolean;
+      page: number;
+      pageSize: number;
+    },
+  ): Promise<{ assignments: VehicleRouteAssignment[]; total: number }> {
+    const isAdmin = actor.roles.includes('ADMIN');
+    const operatorId = isAdmin ? null : await this.actorOperator(actor);
+    const parameters = [
+      isAdmin,
+      operatorId,
+      input.routeDirectionId ?? null,
+      input.jeepneyId ?? null,
+      input.groupId ?? null,
+      input.activeOnly,
+    ];
+    const where = `WHERE (
+        $1::boolean
+        OR (assignment.jeepney_id IS NOT NULL AND jeepney.operator_id = $2)
+        OR (assignment.group_id IS NOT NULL AND fleet_group.operator_id = $2)
+      )
+      AND ($3::uuid IS NULL OR assignment.route_direction_id = $3)
+      AND ($4::uuid IS NULL OR assignment.jeepney_id = $4)
+      AND ($5::uuid IS NULL OR assignment.group_id = $5)
+      AND ($6::boolean = false OR assignment.active_to IS NULL)`;
+    const joins = `FROM vehicle_route_assignments assignment
+      LEFT JOIN jeepneys jeepney ON jeepney.id = assignment.jeepney_id
+      LEFT JOIN fleet_groups fleet_group ON fleet_group.id = assignment.group_id`;
+    const [rows, count] = await Promise.all([
+      this.pool.query<AssignmentRow>(
+        `SELECT assignment.* ${joins} ${where}
+         ORDER BY assignment.active_from DESC, assignment.id
+         LIMIT $7 OFFSET $8`,
+        [...parameters, input.pageSize, (input.page - 1) * input.pageSize],
+      ),
+      this.pool.query<{ total: string }>(
+        `SELECT count(*)::text AS total ${joins} ${where}`,
+        parameters,
+      ),
+    ]);
+    return {
+      assignments: rows.rows.map(mapAssignment),
+      total: Number(count.rows[0]?.total ?? 0),
+    };
+  }
+
+  async getRouteAssignmentImpact(
+    routeDirectionId: string,
+    input: { page: number; pageSize: number },
+  ): Promise<RouteAssignmentImpact> {
+    await this.requireDirection(routeDirectionId, false);
+    const conflict = await this.pool.query(
+      `SELECT 1
+       FROM jeepneys jeepney
+       WHERE NOT EXISTS (
+           SELECT 1 FROM vehicle_route_assignments direct
+           WHERE direct.jeepney_id = jeepney.id AND direct.active_to IS NULL
+         )
+         AND EXISTS (
+           SELECT 1
+           FROM fleet_group_jeepneys membership
+           JOIN vehicle_route_assignments inherited
+             ON inherited.group_id = membership.group_id AND inherited.active_to IS NULL
+           WHERE membership.jeepney_id = jeepney.id
+             AND inherited.route_direction_id = $1
+         )
+         AND (
+           SELECT count(*)
+           FROM fleet_group_jeepneys membership
+           JOIN vehicle_route_assignments inherited
+             ON inherited.group_id = membership.group_id AND inherited.active_to IS NULL
+           WHERE membership.jeepney_id = jeepney.id
+         ) > 1
+       LIMIT 1`,
+      [routeDirectionId],
+    );
+    if (conflict.rowCount !== 0) {
+      throw new ApiError(
+        409,
+        'ROUTE_ASSIGNMENT_CONFLICT',
+        'An affected jeepney inherits more than one active fleet-group route',
+      );
+    }
+
+    const result = await this.pool.query<AffectedJeepneyRow>(
+      `WITH direct_active AS (
+         SELECT id, jeepney_id, route_direction_id
+         FROM vehicle_route_assignments
+         WHERE jeepney_id IS NOT NULL AND active_to IS NULL
+       ),
+       group_active AS (
+         SELECT membership.jeepney_id,
+           (array_agg(assignment.id ORDER BY assignment.active_from DESC, assignment.id))[1] AS assignment_id,
+           (array_agg(assignment.group_id ORDER BY assignment.active_from DESC, assignment.id))[1] AS group_id,
+           (array_agg(assignment.route_direction_id ORDER BY assignment.active_from DESC, assignment.id))[1] AS route_direction_id,
+           count(*) AS assignment_count
+         FROM fleet_group_jeepneys membership
+         JOIN vehicle_route_assignments assignment
+           ON assignment.group_id = membership.group_id AND assignment.active_to IS NULL
+         GROUP BY membership.jeepney_id
+       ),
+       affected AS (
+         SELECT jeepney.id AS jeepney_id, jeepney.plate_no,
+           CASE WHEN direct.id IS NOT NULL THEN 'DIRECT'::text ELSE 'GROUP'::text END AS source,
+           COALESCE(direct.id, inherited.assignment_id) AS assignment_id,
+           CASE WHEN direct.id IS NOT NULL THEN NULL::uuid ELSE inherited.group_id END AS group_id
+         FROM jeepneys jeepney
+         LEFT JOIN direct_active direct ON direct.jeepney_id = jeepney.id
+         LEFT JOIN group_active inherited ON inherited.jeepney_id = jeepney.id
+         WHERE COALESCE(direct.route_direction_id, inherited.route_direction_id) = $1
+           AND (direct.id IS NOT NULL OR inherited.assignment_count = 1)
+       ),
+       counts AS (
+         SELECT
+           (SELECT count(*) FROM affected)::text AS affected_total,
+           (SELECT count(*) FROM vehicle_route_assignments
+             WHERE jeepney_id IS NOT NULL AND active_to IS NULL AND route_direction_id = $1)::text
+             AS direct_assignment_count,
+           (SELECT count(*) FROM vehicle_route_assignments
+             WHERE group_id IS NOT NULL AND active_to IS NULL AND route_direction_id = $1)::text
+             AS group_assignment_count
+       )
+       SELECT affected.*, counts.affected_total, counts.direct_assignment_count,
+         counts.group_assignment_count
+       FROM counts
+       LEFT JOIN affected ON true
+       ORDER BY affected.plate_no NULLS LAST, affected.jeepney_id
+       LIMIT $2 OFFSET $3`,
+      [routeDirectionId, input.pageSize, (input.page - 1) * input.pageSize],
+    );
+    const first = result.rows[0];
+    const affected = result.rows
+      .filter((row) => row.jeepney_id !== null)
+      .map(mapAffectedJeepney);
+    return {
+      routeDirectionId,
+      activeDirectAssignmentCount: Number(first?.direct_assignment_count ?? 0),
+      activeGroupAssignmentCount: Number(first?.group_assignment_count ?? 0),
+      affectedJeepneyCount: Number(first?.affected_total ?? 0),
+      affectedJeepneys: affected,
+    };
+  }
+
   async getEffectiveRouteDirection(
     actor: User,
     jeepneyId: string,
@@ -545,6 +706,24 @@ function mapEffectiveRoute(
     groupId: row.assignment_group_id,
     activeFrom: row.assignment_active_from,
     direction: mapDirection(row),
+  };
+}
+
+function mapAffectedJeepney(row: AffectedJeepneyRow): AffectedJeepney {
+  if (
+    row.jeepney_id === null ||
+    row.plate_no === null ||
+    row.source === null ||
+    row.assignment_id === null
+  ) {
+    throw new Error('Affected jeepney row is incomplete');
+  }
+  return {
+    jeepneyId: row.jeepney_id,
+    plateNo: row.plate_no,
+    source: row.source,
+    assignmentId: row.assignment_id,
+    groupId: row.group_id,
   };
 }
 

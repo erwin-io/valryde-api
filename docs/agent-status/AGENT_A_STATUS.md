@@ -2,18 +2,18 @@
 
 ## Current snapshot
 
-- Updated at (ISO 8601, Asia/Manila): 2026-10-21T16:55:00+08:00
+- Updated at (ISO 8601, Asia/Manila): 2026-10-22T21:59:00+08:00
 - Agent / module: A — Core Platform / Fastify API
 - Repository: `erwin-io/valryde-api`
-- Branch / head: `docs/1-unified-real-email` / base `2e8cc4d36fe1066534e07863c3112ec95688f905`
+- Branch / head: `feat/10-g11-route-assignment-reads` / base `827738c0f2c33ad3082f6a4a38a8e35669d4b0ea`; implementation commit pending
 - Checklist IDs: 1–11
-- GitHub issues / PRs: PRs [#1](https://github.com/erwin-io/valryde-api/pull/1), [#2](https://github.com/erwin-io/valryde-api/pull/2), [#4](https://github.com/erwin-io/valryde-api/pull/4), [#5](https://github.com/erwin-io/valryde-api/pull/5), [#6](https://github.com/erwin-io/valryde-api/pull/6), [#7](https://github.com/erwin-io/valryde-api/pull/7), and [#8](https://github.com/erwin-io/valryde-api/pull/8) merged; unified-email [PR #11](https://github.com/erwin-io/valryde-api/pull/11) open.
+- GitHub issues / PRs: Baseline through PR #11 merged; G1 #12, fixtures #15, policy #16, Stage 13b #17, G2 #19, G3 #20, G4 #21, D3 #23 and G10 #24 remain separate/open. G11 PR pending.
 - Implementation progress: IN_PROGRESS
 - Tech Lead review decision (if actually issued): Existing IDs 1–11 baseline ACCEPTED; unified real-email release authorized for implementation, not yet reviewed.
-- Current objective: Standardize real authenticated SMTP for all interactive environments, preserve Mailpit as a test override, verify seed-no-email behavior, and publish the Agent D readiness contract.
-- Last confirmed result: Existing provider-neutral SMTP source supports authenticated implicit TLS without modification. Gmail TCP/TLS certificate validation passed; full Mailpit registration/verification/recovery passed and cleaned all test rows; real provider authentication/delivery remains owner-gated.
-- Next concrete action: Complete the focused documentation/test gate, open the unified-email PR, then run controlled real-email validation after the owner privately configures SMTP credentials and a reachable callback.
-- Blocked by / decision owner: Owner must configure the authorized sender/SMTP secret and approve a reachable HTTPS callback/test inbox. Real Gmail authentication, external delivery, and Agent D credential handoff cannot be claimed before that evidence exists.
+- Current objective: Complete G11 authorized route-assignment reads and bounded Admin change-impact preview.
+- Last confirmed result: Operator reads are ownership-scoped; Admin impact uses direct-over-group precedence and rejects ambiguous inherited assignments.
+- Next concrete action: Complete the full gate and submit the focused G11 PR without merging.
+- Blocked by / decision owner: None for the read/preview slice; mutations and Stage 13b invalidation remain separately gated.
 - Dependencies / affected agents: B (tracking/latest state/realtime), C (public route/live APIs), D (driver invitation and operator APIs), E (Admin APIs), F (device runbooks), G (shared-contract review).
 
 ## Checklist coverage
@@ -36,6 +36,8 @@
 
 | Command / check | Environment | Result | Date/time | Evidence / notes |
 |---|---|---|---|---|
+| `npm run db:migrate`, `npm run lint`, `npm run typecheck`, `npm test`, `npm run build`, `npm run postman:smoke`, `npm audit --audit-level=high`, `git diff --check` | G11 branch; local PostgreSQL/PostGIS `valrydedb`, `dbo,public` | PASSED | 2026-10-22 22:00 +08:00 | 19 test files / 114 tests passed; 2 owner/live checks skipped; Postman 2 requests / 5 assertions; zero vulnerabilities. |
+| `test/pg-effective-route.integration.test.ts` | Local PostgreSQL/PostGIS | PASSED | 2026-10-22 21:58 +08:00 | 8 tests: scoped/paginated reads, cross-Operator isolation, DRIVER denial, direct precedence, bounded impact and legacy ambiguity conflict. |
 | GitHub API CI and GitGuardian | PR #11 head `b77e491` | PASSED | 2026-10-21 17:26 +08:00 | API `verify` passed in 59 seconds; GitGuardian passed. |
 | `npm run db:migrate`, `npm run lint`, `npm run typecheck`, `npm test`, `npm run build`, `npm audit --audit-level=high`, `git diff --check` | Unified-email branch; local PostgreSQL/PostGIS `dbo` | PASSED | 2026-10-21 17:24 +08:00 | 17 files / 92 tests, 0 skipped; zero vulnerabilities; Admin bootstrap test confirms zero auth challenges. |
 | Gmail port 465 TLS handshake | Local network; no credentials | PASSED | 2026-10-21 16:48 +08:00 | `smtp.gmail.com:465` reachable; certificate authorization true; authentication intentionally not attempted without owner secret. |
@@ -74,6 +76,17 @@
 - Gate: Physical GPS/Traccar mapping and activation. Required actor: operator/Agent F/Agent B. Requested evidence: power, SIM/APN, server connectivity, GPS fix, correct IMEI/uniqueId mapping. State: OWNER_VERIFICATION_PENDING.
 
 ## Activity log (newest first; preserve prior entries)
+
+### 2026-10-22 21:59 +08:00 — G11 route-assignment reads and impact preview implemented
+
+- Action / reason: Added authorized assignment history/read access and an Admin-only bounded preview for route-direction change warnings.
+- Checklist/issue: ID 10; G11.
+- Files/config/services affected: Transit domain/service/routes, effective-route PostgreSQL tests, OpenAPI endpoint map, Postman collection and this status file.
+- Observed result (success/failure/rollback): OPERATOR sees only owned jeepney/group assignments; ADMIN can read global assignments and preview effective affected jeepneys. Direct assignments override group inheritance; legacy inherited ambiguity returns `409 ROUTE_ASSIGNMENT_CONFLICT`.
+- Validation and evidence: Complete gate passed: migrations, lint, typecheck, 114-test DB-enabled suite, build, safe Postman smoke, high-severity audit and diff check. Eight targeted PostgreSQL tests cover pagination, isolation, RBAC, precedence and legacy conflict.
+- Contracts / risks / dependencies: No schema or mutation change. Preview is bounded to 100 records/page and reports total effective vehicles plus active direct/group assignment counts.
+- Commit/PR link or SHA (if available): Pending focused commit/PR.
+- Next action / owner gate: Run the full release gate and submit for Tech Lead/Agent G review without merging.
 
 ### 2026-10-21 16:55 +08:00 — Unified real-email environment release started
 

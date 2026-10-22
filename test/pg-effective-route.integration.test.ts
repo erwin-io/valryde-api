@@ -209,6 +209,110 @@ describeDatabase('effective jeepney route contract with PostgreSQL', () => {
     expect(denied.json()).toMatchObject({ error: { code: 'FORBIDDEN' } });
   });
 
+  it('lists scoped assignments and previews effective affected vehicles with direct precedence', async () => {
+    const targetDirectionId = await createDirection('IMPACT-TARGET');
+    const overrideDirectionId = await createDirection('IMPACT-OVERRIDE');
+    const directJeepneyId = await createJeepney('IMPACT-DIRECT');
+    const inheritedJeepneyId = await createJeepney('IMPACT-GROUP');
+    const overriddenJeepneyId = await createJeepney('IMPACT-OVERRIDDEN');
+    const groupId = await createGroup('Impact group');
+    await addJeepneyToGroup(groupId, inheritedJeepneyId);
+    await addJeepneyToGroup(groupId, overriddenJeepneyId);
+    await assignRoute({ jeepneyId: directJeepneyId, routeDirectionId: targetDirectionId });
+    await assignRoute({ groupId, routeDirectionId: targetDirectionId });
+    await assignRoute({ jeepneyId: overriddenJeepneyId, routeDirectionId: overrideDirectionId });
+
+    const otherOperator = await createUser('OPERATOR', 'Other Assignment Operator');
+    const otherJeepneyResponse = await app.inject({
+      method: 'POST',
+      url: '/api/jeepneys',
+      headers: auth(token(otherOperator)),
+      payload: { plateNo: `ER-OTHER-${randomUUID().slice(0, 6)}`, colorHex: '#778899' },
+    });
+    expect(otherJeepneyResponse.statusCode).toBe(201);
+    const otherJeepneyId = otherJeepneyResponse.json<{ jeepney: { id: string } }>().jeepney.id;
+    const otherAssignment = await app.inject({
+      method: 'POST',
+      url: '/api/route-assignments',
+      headers: auth(token(otherOperator)),
+      payload: { jeepneyId: otherJeepneyId, routeDirectionId: targetDirectionId },
+    });
+    expect(otherAssignment.statusCode).toBe(201);
+
+    const operatorList = await app.inject({
+      method: 'GET',
+      url: `/api/route-assignments?routeDirectionId=${targetDirectionId}&page=1&pageSize=1`,
+      headers: auth(token(operator)),
+    });
+    expect(operatorList.statusCode).toBe(200);
+    expect(operatorList.json()).toMatchObject({
+      pagination: { page: 1, pageSize: 1, total: 2, totalPages: 2 },
+    });
+    expect(operatorList.json<{ assignments: unknown[] }>().assignments).toHaveLength(1);
+
+    const driver = await createUser('DRIVER', 'Assignment Read Driver');
+    const driverDenied = await app.inject({
+      method: 'GET',
+      url: '/api/route-assignments',
+      headers: auth(token(driver)),
+    });
+    expect(driverDenied.statusCode).toBe(403);
+
+    const impact = await app.inject({
+      method: 'GET',
+      url: `/api/admin/route-directions/${targetDirectionId}/assignment-impact?page=1&pageSize=20`,
+      headers: auth(token(admin)),
+    });
+    expect(impact.statusCode, impact.body).toBe(200);
+    expect(impact.json()).toMatchObject({
+      impact: {
+        routeDirectionId: targetDirectionId,
+        activeDirectAssignmentCount: 2,
+        activeGroupAssignmentCount: 1,
+        affectedJeepneyCount: 3,
+      },
+      pagination: { page: 1, pageSize: 20, total: 3, totalPages: 1 },
+    });
+    const affected = impact.json<{ impact: { affectedJeepneys: Array<{ jeepneyId: string }> } }>()
+      .impact.affectedJeepneys;
+    expect(affected.map((item) => item.jeepneyId).sort()).toEqual(
+      [directJeepneyId, inheritedJeepneyId, otherJeepneyId].sort(),
+    );
+    expect(affected.some((item) => item.jeepneyId === overriddenJeepneyId)).toBe(false);
+
+    const nonAdminImpact = await app.inject({
+      method: 'GET',
+      url: `/api/admin/route-directions/${targetDirectionId}/assignment-impact`,
+      headers: auth(token(operator)),
+    });
+    expect(nonAdminImpact.statusCode).toBe(403);
+  });
+
+  it('rejects an impact preview instead of guessing through an inherited assignment conflict', async () => {
+    const firstDirectionId = await createDirection('IMPACT-CONFLICT-A');
+    const secondDirectionId = await createDirection('IMPACT-CONFLICT-B');
+    const jeepneyId = await createJeepney('IMPACT-CONFLICT');
+    const firstGroupId = await createGroup('Impact conflict A');
+    const secondGroupId = await createGroup('Impact conflict B');
+    await addJeepneyToGroup(firstGroupId, jeepneyId);
+    await addJeepneyToGroup(secondGroupId, jeepneyId);
+    await assignRoute({ groupId: firstGroupId, routeDirectionId: firstDirectionId });
+
+    await pool.query(
+      `INSERT INTO vehicle_route_assignments(group_id, route_direction_id, assigned_by_user_id)
+       VALUES ($1, $2, $3)`,
+      [secondGroupId, secondDirectionId, operator.id],
+    );
+
+    const response = await app.inject({
+      method: 'GET',
+      url: `/api/admin/route-directions/${firstDirectionId}/assignment-impact`,
+      headers: auth(token(admin)),
+    });
+    expect(response.statusCode).toBe(409);
+    expect(response.json()).toMatchObject({ error: { code: 'ROUTE_ASSIGNMENT_CONFLICT' } });
+  });
+
   async function createUser(
     role: 'COMMUTER' | 'DRIVER' | 'OPERATOR',
     displayName: string,
@@ -228,6 +332,7 @@ describeDatabase('effective jeepney route contract with PostgreSQL', () => {
     const response = await app.inject({
       method: 'POST',
       url: '/api/driver-associations',
+      remoteAddress: nextRemoteAddress(),
       headers: auth(token(operator)),
       payload: { email: driver.email },
     });
@@ -240,6 +345,7 @@ describeDatabase('effective jeepney route contract with PostgreSQL', () => {
     const route = await app.inject({
       method: 'POST',
       url: '/api/admin/transit-routes',
+      remoteAddress: nextRemoteAddress(),
       headers: auth(token(admin)),
       payload: {
         routeCode: `EFFECTIVE-${label.slice(0, 10)}-${suffix}`,
@@ -252,6 +358,7 @@ describeDatabase('effective jeepney route contract with PostgreSQL', () => {
     const direction = await app.inject({
       method: 'POST',
       url: `/api/admin/transit-routes/${routeId}/directions`,
+      remoteAddress: nextRemoteAddress(),
       headers: auth(token(admin)),
       payload: {
         directionLabel: label,
@@ -265,12 +372,14 @@ describeDatabase('effective jeepney route contract with PostgreSQL', () => {
     await app.inject({
       method: 'PATCH',
       url: `/api/admin/transit-routes/${routeId}`,
+      remoteAddress: nextRemoteAddress(),
       headers: auth(token(admin)),
       payload: { status: 'ACTIVE' },
     });
     await app.inject({
       method: 'PATCH',
       url: `/api/admin/route-directions/${directionId}`,
+      remoteAddress: nextRemoteAddress(),
       headers: auth(token(admin)),
       payload: { status: 'ACTIVE' },
     });
@@ -281,6 +390,7 @@ describeDatabase('effective jeepney route contract with PostgreSQL', () => {
     const response = await app.inject({
       method: 'POST',
       url: '/api/jeepneys',
+      remoteAddress: nextRemoteAddress(),
       headers: auth(token(operator)),
       payload: { plateNo: `ER-${label}-${randomUUID().slice(0, 6)}`, colorHex: '#334455' },
     });
@@ -292,6 +402,7 @@ describeDatabase('effective jeepney route contract with PostgreSQL', () => {
     const response = await app.inject({
       method: 'POST',
       url: '/api/fleet-groups',
+      remoteAddress: nextRemoteAddress(),
       headers: auth(token(operator)),
       payload: { name: `${label} ${randomUUID().slice(0, 8)}` },
     });
@@ -303,6 +414,7 @@ describeDatabase('effective jeepney route contract with PostgreSQL', () => {
     const response = await app.inject({
       method: 'POST',
       url: `/api/fleet-groups/${groupId}/jeepneys`,
+      remoteAddress: nextRemoteAddress(),
       headers: auth(token(operator)),
       payload: { jeepneyId },
     });
@@ -316,6 +428,7 @@ describeDatabase('effective jeepney route contract with PostgreSQL', () => {
     const response = await app.inject({
       method: 'POST',
       url: '/api/route-assignments',
+      remoteAddress: nextRemoteAddress(),
       headers: auth(token(operator)),
       payload,
     });
@@ -353,4 +466,10 @@ describeDatabase('effective jeepney route contract with PostgreSQL', () => {
 
 function auth(token: string): { authorization: string } {
   return { authorization: `Bearer ${token}` };
+}
+
+let remoteAddressSequence = 1;
+function nextRemoteAddress(): string {
+  remoteAddressSequence = (remoteAddressSequence % 250) + 1;
+  return `127.0.1.${remoteAddressSequence}`;
 }
