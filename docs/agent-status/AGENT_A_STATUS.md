@@ -2,7 +2,7 @@
 
 ## Current snapshot
 
-- Updated at (ISO 8601, Asia/Manila): 2026-10-23T09:00:00+08:00
+- Updated at (ISO 8601, Asia/Manila): 2026-10-23T10:00:00+08:00
 - Agent / module: A — Core Platform / Fastify API (execution owner: Claude, taken over from Codex under `VALRYDE-CLAUDE-A-CODEX-RECOVERY-AND-COMPLETION-003`)
 - Repository: `erwin-io/valryde-api`
 - Branch / head: canonical copy carried identically by every PR branch prepared under `VALRYDE-AGENT-A-PR-INTEGRATION-005` and by local `docs/agent-a-independent-completion`; base `origin/main` `827738c0f2c33ad3082f6a4a38a8e35669d4b0ea`
@@ -10,7 +10,7 @@
 - GitHub issues / PRs: PRs #1, #2, #4–#8, #10, #11 merged. Open Agent A PRs, none reviewed: [#12](https://github.com/erwin-io/valryde-api/pull/12) G1, [#15](https://github.com/erwin-io/valryde-api/pull/15) fixtures, [#16](https://github.com/erwin-io/valryde-api/pull/16) mobile testing policy, [#17](https://github.com/erwin-io/valryde-api/pull/17) Stage 13b design, [#19](https://github.com/erwin-io/valryde-api/pull/19) G2, [#20](https://github.com/erwin-io/valryde-api/pull/20) G3, [#21](https://github.com/erwin-io/valryde-api/pull/21) G4, [#23](https://github.com/erwin-io/valryde-api/pull/23) D3, [#24](https://github.com/erwin-io/valryde-api/pull/24) G10 read, [#25](https://github.com/erwin-io/valryde-api/pull/25) G11, [#26](https://github.com/erwin-io/valryde-api/pull/26) G5, [#27](https://github.com/erwin-io/valryde-api/pull/27) G6/G7 proposals.
 - Implementation progress: IN_PROGRESS
 - Tech Lead review decision (if actually issued): IDs 1–11 baseline ACCEPTED (PR #1). PR #25 (G11) ACCEPTED at `c4c8b7f6edd83c80d8ab6a47536929e1f4c9423d`, not merged; PR #26 (G5) ACCEPTED at source-review level; PR #27 DESIGN REVIEW READY. No decision issued on PRs #12, #15–#17, #19–#21, #23, #24.
-- Current objective: controlled PR integration preparation under `VALRYDE-AGENT-A-PR-INTEGRATION-005` (checkpoint `AGENT_A_CONTROLLED_PR_MERGE_READY`).
+- Current objective: ON HOLD for the owner-authorized PR merge sequence (after checkpoint `AGENT_A_STATUS_SYNC_17_27_COMPLETE`).
 - Last confirmed result: G5 fix PR #26 and G6/G7 proposal PR #27 opened; both green on `verify` (PostGIS) and GitGuardian.
 - Next concrete action: owner/Agent G merges in order #26, #23, #25, #24, #15, #16, #12, #20, #19, #21 using merge commits (not squash or rebase merge). G6/G7 only after decisions on PR #27.
 - Blocked by / decision owner: Agent G review of PRs #12–#25 and Stage 13b D01–D12; owner for production domain/app scheme (G5), geocoding provider terms (G6), and G7 lifecycle approval.
@@ -121,6 +121,17 @@
 - Gate: Physical GPS/Traccar mapping and activation. Required actor: operator/Agent F/Agent B. Requested evidence: power, SIM/APN, server connectivity, GPS fix, correct IMEI/uniqueId mapping. State: OWNER_VERIFICATION_PENDING.
 
 ## Activity log (newest first; preserve prior entries)
+
+### 2026-10-23 10:00 +08:00 — Status synchronized into #17 and #27; Agent A on hold
+
+- Action / reason: Tech Lead status synchronization authorization for PRs #17 and #27.
+- Checklist/issue: IDs 1–11; Stage 13b; G6/G7.
+- Files/config/services affected: `docs/agent-status/AGENT_A_STATUS.md` only on #17 (`docs/stage13b-shared-interfaces`) and #27 (`docs/agent-a-g6-g7-contract-proposals`). No Stage 13b or G6/G7 contract document changed.
+- Observed result: all twelve open Agent A PRs carry identical status blob `05ac88d823b2919245c8ca975564315dc9c635e1`. A simulated ordered merge of #26, #23, #25, #24, #15, #16, #12, #20, #19, #21, #17 and #27 into `main` `827738c` has no conflicts.
+- Validation and evidence: lint, typecheck, build and unit tests passed locally on both branches; CI `verify` (PostGIS) and GitGuardian results are in checkpoint `AGENT_A_STATUS_SYNC_17_27_COMPLETE`.
+- Contracts / risks / dependencies: flagged for Agent G's next decision. (1) #17 must incorporate the approved X1–X8 reconciliation before A006 implementation is authorized. (2) #27 G7-D2 must reserve migration 006 exclusively for Stage 13b; G7 uses migration 010 or later. Neither is applied yet, because this synchronization was status-only.
+- Commit/PR link or SHA: #17 `f385f752de598b2f09e9c63160eb98ca415c9a7e`; #27 `27b9349c208a3599b1938f51ee76364bfe4a80b9`. This entry is local only, kept off the PR branches so their status files stay identical; carry it in after the merge sequence.
+- Next action / owner gate: owner-authorized merges using merge commits; Agent A takes no further action until directed.
 
 ### 2026-10-23 09:00 +08:00 — Controlled PR integration preparation (no merges)
 
