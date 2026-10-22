@@ -97,6 +97,8 @@ describe('OpenAPI documentation', () => {
     expect(document.paths['/auth/register']?.post?.security).toBeUndefined();
     expect(document.paths['/transit-routes']?.get?.security).toBeUndefined();
     expect(document.paths['/transit-routes/{routeId}']?.get?.security).toBeUndefined();
+    expect(document.paths['/transit-routes/discover']?.get?.security).toBeUndefined();
+    expect(document.paths['/places/search']?.get?.security).toEqual([{ bearerAuth: [] }]);
     expect(document.paths['/auth/me']?.get?.security).toEqual([{ bearerAuth: [] }]);
     expect(document.paths['/admin/users/']?.get?.security).toEqual([{ bearerAuth: [] }]);
   });

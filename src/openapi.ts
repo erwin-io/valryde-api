@@ -64,7 +64,7 @@ export const openApiTagDefinitions = [
   },
   {
     name: OpenApiTags.placeSearch,
-    description: 'Future contract area for normalized place search and direct transit discovery.',
+    description: 'Normalized place search and direct (no-transfer) transit discovery.',
   },
   {
     name: OpenApiTags.operatorReports,

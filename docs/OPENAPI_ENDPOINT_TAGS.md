@@ -1,6 +1,6 @@
 # VALRYDE OpenAPI endpoint-to-tag mapping
 
-The OpenAPI server URL is `/api`; paths below are relative to that base. Categories 09–15 are declared as future contract areas and intentionally contain no operations until those routes are implemented.
+The OpenAPI server URL is `/api`; paths below are relative to that base. Categories 09–12, 14 and 15 are declared as future contract areas and intentionally contain no operations until those routes are implemented.
 
 ## 01 — System & Health
 
@@ -96,3 +96,10 @@ shared `TransitService.resolveEffectiveRouteDirection()` method instead of recre
 - `GET /admin/gps-setup-requests/{requestId}/device-mapping` — `getGpsDeviceMapping`
 - `POST /admin/gps-setup-requests/{requestId}/device-mapping` — `mapGpsDevice`
 - `POST /admin/gps-setup-requests/{requestId}/verification` — `verifyGpsInstallation`
+
+## 13 — Place Search & Transit Discovery
+
+- `GET /places/search` — `searchPlaces` (any authenticated role; 20/minute per user)
+- `GET /transit-routes/discover` — `discoverDirectTransitRoutes` (public; 30/minute per IP)
+
+Place search is a server-side geocoder proxy. It is disabled by default (`GEOCODER_PROVIDER=disabled`) and then returns `503 GEOCODER_UNAVAILABLE`; route search and discovery keep working. Discovery returns direct rides only, never transfers. Neither route stores or logs its query string.

@@ -297,6 +297,11 @@
           "name": "Get active transit route details",
           "request": { "method": "GET", "header": [], "url": "{{baseUrl}}/transit-routes/{{routeId}}" },
           "event": [{ "listen": "test", "script": { "type": "text/javascript", "exec": ["pm.test('route details include canonical geometry', () => { pm.response.to.have.status(200); const route = pm.response.json().route; pm.expect(route.id).to.eql(pm.environment.get('routeId')); pm.expect(route.directions[0].geometry.type).to.eql('LineString'); });"] } }]
+        },
+        {
+          "name": "Discover direct transit routes",
+          "request": { "method": "GET", "header": [], "url": "{{baseUrl}}/transit-routes/discover?lat=10.2775&lng=123.86&destinationLat=10.2925&destinationLng=123.88&maxWalkM=500&limit=5" },
+          "event": [{ "listen": "test", "script": { "type": "text/javascript", "exec": ["pm.test('discovery finds the active outbound direction', () => { pm.response.to.have.status(200); const body = pm.response.json(); pm.expect(body.directRouteFound).to.eql(true); pm.expect(body.candidates.map((c) => c.direction.id)).to.include(pm.environment.get('routeDirectionId')); });"] } }]
         }
       ]
     },
@@ -543,6 +548,11 @@
             "header": [{ "key": "Authorization", "value": "Bearer {{operatorAccessToken}}" }],
             "url": "{{baseUrl}}/fleet-groups/{{fleetGroupId}}/jeepneys/{{jeepneyId}}"
           }
+        },
+        {
+          "name": "Search places (provider may be disabled)",
+          "request": { "method": "GET", "header": [{ "key": "Authorization", "value": "Bearer {{operatorAccessToken}}" }], "url": "{{baseUrl}}/places/search?q=Fuente%20Osme%C3%B1a&limit=5" },
+          "event": [{ "listen": "test", "script": { "type": "text/javascript", "exec": ["pm.test('place search returns normalized places or GEOCODER_UNAVAILABLE', () => { pm.expect([200, 503]).to.include(pm.response.code); if (pm.response.code === 200) { pm.expect(pm.response.json().attribution).to.be.a('string'); } else { pm.expect(pm.response.json().error.code).to.eql('GEOCODER_UNAVAILABLE'); } });"] } }]
         }
       ]
     }
