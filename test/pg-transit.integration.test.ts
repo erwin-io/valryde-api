@@ -137,6 +137,45 @@ describeDatabase('transit route API with PostgreSQL and PostGIS', () => {
     expect(directionResponse.statusCode).toBe(201);
     const directionId = directionResponse.json<{ direction: { id: string } }>().direction.id;
 
+    const inboundResponse = await app.inject({
+      method: 'POST',
+      url: `/api/admin/transit-routes/${routeId}/directions`,
+      headers: auth(adminToken),
+      payload: {
+        directionLabel: 'Inbound',
+        originName: 'Colon',
+        destinationName: 'Bulacao',
+        geometry: {
+          type: 'LineString',
+          coordinates: [
+            [123.9, 10.3],
+            [123.86, 10.26],
+          ],
+        },
+      },
+    });
+    expect(inboundResponse.statusCode).toBe(201);
+    const inboundId = inboundResponse.json<{ direction: { id: string } }>().direction.id;
+
+    const duplicateLabelUpdate = await app.inject({
+      method: 'PATCH',
+      url: `/api/admin/route-directions/${inboundId}`,
+      headers: auth(adminToken),
+      payload: { directionLabel: 'Outbound' },
+    });
+    expect(duplicateLabelUpdate.statusCode).toBe(409);
+    expect(duplicateLabelUpdate.json<{ error: { code: string; message: string } }>().error).toEqual(
+      expect.objectContaining({
+        code: 'CONFLICT',
+        message: 'Direction label already exists for this route',
+      }),
+    );
+    const persistedInbound = await pool.query<{ direction_label: string }>(
+      'SELECT direction_label FROM route_directions WHERE id = $1',
+      [inboundId],
+    );
+    expect(persistedInbound.rows[0]?.direction_label).toBe('Inbound');
+
     expect(
       (
         await app.inject({

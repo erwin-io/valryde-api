@@ -19,6 +19,10 @@
     "bridge:dev": "tsx src/bridge.ts",
     "bridge:start": "node dist/bridge.js",
     "admin:bootstrap": "tsx src/cli/bootstrap-admin.ts",
+    "dev:fixtures:seed": "tsx src/cli/development-fixtures.ts seed",
+    "dev:fixtures:cleanup": "tsx src/cli/development-fixtures.ts cleanup",
+    "dev:fixtures:verify": "tsx src/cli/development-fixtures.ts verify",
+    "dev:fixtures:manifest": "tsx src/cli/development-fixtures.ts manifest",
     "postman:smoke": "postman collection run postman/Valryde-Agent-A.postman_collection.json -e postman/Valryde-Local.postman_environment.json -i \"00 - Safe smoke\" --no-report-events",
     "postman:e2e": "postman collection run postman/Valryde-Agent-A.postman_collection.json -e postman/Valryde-Local.postman_environment.json --no-report-events"
   },

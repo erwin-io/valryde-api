@@ -94,3 +94,33 @@ describe('SMTP configuration profiles', () => {
     ).toThrow('SMTP_USER and SMTP_PASSWORD must either both be set or both be omitted');
   });
 });
+
+describe('Email callback URLs', () => {
+  const smtp = { ...emailBase, SMTP_HOST: '127.0.0.1' };
+
+  it('rejects plain http callbacks in production', () => {
+    expect(() =>
+      loadConfig({ ...smtp, NODE_ENV: 'production', APP_PASSWORD_RESET_URL: 'http://app.example.com/auth/reset-password' }),
+    ).toThrow('APP_PASSWORD_RESET_URL must use https in production');
+  });
+
+  it('accepts https callbacks in production and http callbacks in development', () => {
+    expect(loadConfig({ ...smtp, NODE_ENV: 'production' }).email.deliveryMode).toBe('smtp');
+    expect(
+      loadConfig({ ...smtp, NODE_ENV: 'development', APP_VERIFICATION_URL: 'http://localhost:4200/auth/verify-email' }).email,
+    ).toMatchObject({ verificationOrigin: 'http://localhost:4200/auth/verify-email' });
+  });
+
+  it.each(['https://user:pass@app.example.com/auth/verify-email', 'https://user@app.example.com/auth/verify-email'])(
+    'rejects callbacks with embedded credentials (%s)',
+    (url) => {
+      expect(() => loadConfig({ ...smtp, APP_VERIFICATION_URL: url })).toThrow(
+        'APP_VERIFICATION_URL must not contain credentials',
+      );
+    },
+  );
+
+  it.each(['javascript:alert(1)', 'valryde://auth/verify-email'])('rejects non-web scheme %s', (url) => {
+    expect(() => loadConfig({ ...smtp, APP_EMAIL_CHANGE_URL: url })).toThrow('APP_EMAIL_CHANGE_URL must use http or https');
+  });
+});

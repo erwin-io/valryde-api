@@ -47,6 +47,22 @@ export interface EffectiveRouteDirection {
   direction: RouteDirection;
 }
 
+export interface AffectedJeepney {
+  jeepneyId: string;
+  plateNo: string;
+  source: 'DIRECT' | 'GROUP';
+  assignmentId: string;
+  groupId: string | null;
+}
+
+export interface RouteAssignmentImpact {
+  routeDirectionId: string;
+  activeDirectAssignmentCount: number;
+  activeGroupAssignmentCount: number;
+  affectedJeepneyCount: number;
+  affectedJeepneys: AffectedJeepney[];
+}
+
 export function serializeTransitRoute(route: TransitRoute) {
   return {
     ...route,
