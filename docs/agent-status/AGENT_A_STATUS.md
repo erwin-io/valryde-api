@@ -77,6 +77,17 @@
 
 ## Activity log (newest first; preserve prior entries)
 
+### 2026-10-23 00:20 +08:00 — G11 PR #25 corrections for AGENT_A_PHASE4_REVIEW_001
+
+- Action / reason: Agent G returned CHANGES REQUIRED on `22b6462f2bb6da4ef18c7cfaf2cee7638b191297`. Claude Agent A applied corrective commits on the same branch.
+- Checklist/issue: ID 10, gap G11.
+- Files/config/services affected: `src/services/transit-service.ts`, `test/pg-effective-route.integration.test.ts`.
+- Observed result: one canonical SQL decision boundary (`effectiveRouteDecisions`) now serves both `resolveEffectiveRouteDirection` and the impact preview, preserving direct override, single inherited route and CONFLICT rules. The impact preview's conflict check, counts and page now run in one statement, which shares one snapshot. Counts survive out-of-range pages. No schema, endpoint or DTO change; no Stage 13b interface.
+- Validation and evidence: lint, typecheck, build, audit (0), `git diff --check` passed locally; PostgreSQL suites run in CI's disposable PostGIS.
+- Contracts / risks / dependencies: Agent B consumers of `resolveEffectiveRouteDirection` keep the same signature and results.
+- Commit/PR link or SHA: PR #25 (corrective commit on `feat/10-g11-route-assignment-reads`).
+- Next action / owner gate: Agent G re-review.
+
 ### 2026-10-22 21:59 +08:00 — G11 route-assignment reads and impact preview implemented
 
 - Action / reason: Added authorized assignment history/read access and an Admin-only bounded preview for route-direction change warnings.

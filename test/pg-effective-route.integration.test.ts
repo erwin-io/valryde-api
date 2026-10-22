@@ -286,6 +286,40 @@ describeDatabase('effective jeepney route contract with PostgreSQL', () => {
       headers: auth(token(operator)),
     });
     expect(nonAdminImpact.statusCode).toBe(403);
+
+    const outOfRange = await app.inject({
+      method: 'GET',
+      url: `/api/admin/route-directions/${targetDirectionId}/assignment-impact?page=5&pageSize=20`,
+      headers: auth(token(admin)),
+    });
+    expect(outOfRange.statusCode, outOfRange.body).toBe(200);
+    expect(outOfRange.json()).toMatchObject({
+      impact: {
+        activeDirectAssignmentCount: 2,
+        activeGroupAssignmentCount: 1,
+        affectedJeepneyCount: 3,
+        affectedJeepneys: [],
+      },
+      pagination: { page: 5, pageSize: 20, total: 3, totalPages: 1 },
+    });
+
+    const commuter = await createUser('COMMUTER', 'Assignment Read Commuter');
+    for (const url of [
+      '/api/route-assignments',
+      `/api/admin/route-directions/${targetDirectionId}/assignment-impact`,
+    ]) {
+      const commuterDenied = await app.inject({ method: 'GET', url, headers: auth(token(commuter)) });
+      expect(commuterDenied.statusCode, url).toBe(403);
+      expect(commuterDenied.json()).toMatchObject({ error: { code: 'FORBIDDEN' } });
+    }
+
+    const unknownDirection = await app.inject({
+      method: 'GET',
+      url: `/api/admin/route-directions/${randomUUID()}/assignment-impact`,
+      headers: auth(token(admin)),
+    });
+    expect(unknownDirection.statusCode).toBe(404);
+    expect(unknownDirection.json()).toMatchObject({ error: { code: 'NOT_FOUND' } });
   });
 
   it('rejects an impact preview instead of guessing through an inherited assignment conflict', async () => {
@@ -311,6 +345,15 @@ describeDatabase('effective jeepney route contract with PostgreSQL', () => {
     });
     expect(response.statusCode).toBe(409);
     expect(response.json()).toMatchObject({ error: { code: 'ROUTE_ASSIGNMENT_CONFLICT' } });
+
+    // The per-jeepney resolver shares the same decision boundary.
+    const resolved = await app.inject({
+      method: 'GET',
+      url: `/api/jeepneys/${jeepneyId}/effective-route`,
+      headers: auth(token(operator)),
+    });
+    expect(resolved.statusCode).toBe(409);
+    expect(resolved.json()).toMatchObject({ error: { code: 'ROUTE_ASSIGNMENT_CONFLICT' } });
   });
 
   async function createUser(
