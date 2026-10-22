@@ -68,6 +68,8 @@ business fields only; account email and `userId` are not exposed through the gro
 - `POST /admin/transit-routes/{routeId}/directions` — `createRouteDirection`
 - `PATCH /admin/route-directions/{directionId}` — `updateRouteDirection`
 - `POST /route-assignments` — `assignTransitRoute`
+- `GET /route-assignments` — `listRouteAssignments`
+- `GET /admin/route-directions/{directionId}/assignment-impact` — `getRouteDirectionAssignmentImpact`
 - `GET /jeepneys/{jeepneyId}/effective-route` — `getJeepneyEffectiveRoute`
 
 Effective-route precedence is server-owned: an active direct jeepney assignment wins; otherwise one
@@ -86,5 +88,6 @@ shared `TransitService.resolveEffectiveRouteDirection()` method instead of recre
 - `GET /gps-setup-requests` — `listGpsSetupRequests`
 - `POST /gps-setup-requests` — `submitGpsSetupRequest`
 - `PATCH /admin/gps-setup-requests/{requestId}/status` — `transitionGpsSetupStatus`
+- `GET /admin/gps-setup-requests/{requestId}/device-mapping` — `getGpsDeviceMapping`
 - `POST /admin/gps-setup-requests/{requestId}/device-mapping` — `mapGpsDevice`
 - `POST /admin/gps-setup-requests/{requestId}/verification` — `verifyGpsInstallation`
