@@ -57,3 +57,18 @@ The compliance thresholds are unchanged: 100 m corridor; 30 s outside or 3 conse
 | B6 | BLOCKED | B1–B5; the 42 ledger cases stay BLOCKED |
 
 Agent B cannot write B007, because its writer reads `jeepneys.tracking_context_version` from A006 and the migration runner applies files in filename order. Exact next action: **Agent G approves M1–M4, then Agent A opens the A006/retrofit PR with A #17 tests T1–T26.** Agent B starts B1 once that PR merges.
+
+## 5. Gate decisions — `VALRYDE-G-B-STAGE13B-GATES-001` (2026-10-23)
+
+| # | Decision | Effect on Agent B |
+|---|---|---|
+| M1 | **APPROVED**: merged A #17 + Amendment 1 + X1–X8 are the baseline | B007/B008/writer follow it; no further A/B design difference |
+| M2 | **APPROVED**: 250 cap, speed ≤ 300 km/h, 30 s freshness, 10 s polling, create-only mapping, B009 deferred | Encoded as B007 CHECKs and writer constants |
+| M3 | **APPROVED**: `503 TRACKING_CONTEXT_BUSY`, bounded retry, safe response, deterministic tests | Agent A code in the A006 retrofit; B does not emit it |
+| M4 | **CONDITIONAL**: design exact least-privilege roles/grants and submit SQL + privilege evidence; do not apply to shared/production DBs | Grants ship as reviewed SQL, exercised only in disposable CI |
+| M5 | **PENDING**: retention not approved | No purge code path is scheduled; event rows are kept |
+| M6 | **PENDING**: Driver `displayName` | T2/T3 omit `currentDriver.displayName` by default |
+| M7 | **PENDING CONTRACT REVIEW** | T1–T6 DTOs and contract tests are built but labeled not frozen |
+| M8 | **INFRASTRUCTURE-GATED**: no Pusher credentials | REST, writer, compliance and recovery proceed; realtime signing is tested with a fake |
+
+Migration order stays A006 → B007 → B008. B007/B008 implementation PRs may be opened before A006 merges, but must not merge before it. Tests that need A006 columns use a labeled stub and are not integrated acceptance evidence.
