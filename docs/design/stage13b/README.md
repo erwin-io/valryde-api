@@ -23,6 +23,7 @@ Infrastructure status/evidence reviewed read-only: Windows Traccar6.16.0 develop
 | A-owned transaction/scope/locks/mapping/context coordination | [A interface boundary](AGENT_A_INTERFACE_BOUNDARY.md) |
 |42 detailed acceptance specifications, all planned | [Acceptance specifications](ACCEPTANCE_SPECIFICATIONS.md) |
 | Five separately authorized implementation phases | [Release plan](IMPLEMENTATION_RELEASE_PLAN.md) |
+| Consolidated G decision package, A dependencies, C/D/E contracts (2026-10-23) | [Parallel readiness package](PARALLEL_READINESS_REVIEW_PACKAGE.md) |
 
 ## Architecture
 
