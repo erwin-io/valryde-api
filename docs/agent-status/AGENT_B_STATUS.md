@@ -1,7 +1,7 @@
 # VALRYDE — Agent B Status
 
 ## Current snapshot
-- Updated at: 2026-10-22T08:38:56+08:00 (Asia/Singapore; same offset as Asia/Manila).
+- Updated at: 2026-10-22T08:43:06+08:00 (Asia/Singapore; same offset as Asia/Manila).
 - Agent / module: B — Traccar / Tracking Engine. Codex executor; prior Claude/Codex evidence and history preserved below.
 - Repository: erwin-io/valryde-api. Overall checklist IDs12–21 remain IN_PROGRESS.
 - Branch / baseline HEAD: docs/13b-durable-tracking-design, based on canonical origin/main **827738c0f2c33ad3082f6a4a38a8e35669d4b0ea** in C:/Development/valryde/.worktrees/agent-b-bridge. Documentation commit HEAD is recorded in Git/PR metadata, avoiding a self-referential SHA.
@@ -11,7 +11,7 @@
 - Current review: architecture direction ACCEPTED IN PRINCIPLE by current Tech Lead directive; exact D01–D12/migrations/runtime/gateway NOT_APPROVED. Continuing existing PR14; no new acceptance claim. [Design issue #13](https://github.com/erwin-io/valryde-api/issues/13), [documentation PR #14](https://github.com/erwin-io/valryde-api/pull/14) OPEN; initial design source head d4884c0fb2be831701d24254cd9f70ed6592c750; earlier [Issue #9](https://github.com/erwin-io/valryde-api/issues/9) / PR10 and [Issue #3](https://github.com/erwin-io/valryde-api/issues/3) / [PR #4](https://github.com/erwin-io/valryde-api/pull/4) retained as historical slices.
 - Last confirmed result: main remains827738c; existing PR14 head b8f3260705e2a05b853de4800107a44252f03f77 preserved as prior review. Added explicit D01–D12 recommendations/test/gates, same42 Given/When/Then specifications, A boundary coordination and five-phase release/rollback plan. No DB access or runtime tests during refinement.
 - Next concrete action: review refined PR14 D01–D12 recommendations; reconcile reviewed A draft with published artifact and G approval. Await named P1–P5 release with exact SQL/A dependencies/isolated DB authority. Design merge alone does not authorize SQL/runtime.
-- Shared blockers: A proposed same-client resolver/auth, per-jeepney transaction advisory keys and additive context version/cutover need A artifact/G approval (old row-lock candidate inverted request/application workflows); immutable remap protocol; invalid-observation adapter; timing/retention/temporal-history and gateway decisions.
+- Shared blockers: A proposed same-client resolver/auth, per-jeepney transaction advisory keys and additive context version/cutover are delivered as A17 proposal but need G approval/exact SQL/source integration (old row-lock candidate inverted request/application workflows); immutable remap protocol; invalid-observation adapter; timing/retention/temporal-history and gateway decisions.
 - Dependencies: A business eligibility/authorization/route precedence; C/D/E versioned DTOs and REST/Pusher reconciliation; Infrastructure/owner approved app test writer and later rollout; F stationary-reporting/physical GPS evidence.
 - Missing references: complete Version1.0 DOCX and standalone checklist unavailable in workspace; frozen handoffs/owner directives used, no requirements invented.
 
@@ -57,7 +57,7 @@ Current design verification is separate from historical implementation results b
 
 ## Shared contract / risk changes
 - Current refinement: architecture accepted in principle only. DECISION_REGISTER.md records12 explicit recommended resolutions, mapped42 planned cases and named gates; no approved migration/runtime/gateway contract. IMPLEMENTATION_RELEASE_PLAN.md separates P1 exact schema, P2 latest UNKNOWN-compliance writer, P3 compliance/events, P4 recovery/readiness and P5 separately released gateway.
-- A coordination authorized by human B2 directive: sent transaction/scope/global-lock/mapping/cutover/privilege request to Agent: A — Fastify API. A has replied with an unapproved advisory-lock/context-version proposal; exact review artifact/PR/HEAD and G approval remain pending. Proposed boundary remains documentation only; no speculative adapter or cross-worktree edit.
+- A coordination authorized by human B2 directive: sent transaction/scope/global-lock/mapping/cutover/privilege request to Agent: A — Fastify API. A has delivered unapproved advisory-lock/context-version specification PR17/head36af1c6cb7cd1e749f4d8d2eff15183e40e578fd; G approval/exact SQL/runtime remain pending. Proposed boundary remains documentation only; no speculative adapter or cross-worktree edit.
 - Current2026-10-22: [Stage13b design](../design/stage13b/README.md) supersedes prior proposal alternatives for review only. Three core tables and later optional pointer-intent table, observation/writer interface, 30s eligibility projection, transition-only history and invalidation-only Pusher proposed; no approved contract/runtime/schema changed.
 - D05 is a hard A/G gate: transaction executor alone is insufficient; reconcile current review/verification lock inversion and authorize transaction-consistent scopes before implementing the writer. D06/D07 remap/context changes also need A integration.
 - D02/D03 confirm bootstrap/re-entry continuity, invalid watermark and clock/freshness treatment; D08 compliance retention, D09 temporal history/DTO/path limits, D10/D11 gateway delivery and D12 operational limits need explicit decisions. See design decision registry for exact scope.
@@ -82,6 +82,12 @@ Current design verification is separate from historical implementation results b
 - Pusher configuration/hardware evidence are pending later slices. No physical verification claimed.
 
 ## Activity log (newest first; preserve prior entries)
+### 2026-10-22 08:43 +08:00 — Agent A published proposal reconciled into PR14
+- A delivered PR17/head36af1c6cb7cd1e749f4d8d2eff15183e40e578fd, substantive design4a654c1beda0d4d7ddc7ae4938b53a470bacae11, canonical AGENT_A_SHARED_INTERFACE_SPECIFICATION.md. Read/referenced exact published proposal, including advisory namespace/ordering, same-client signatures, positive context version, telemetry/route split, post-lock clock and provisional A006→B007→B008→later009 allocation.
+- Updated B boundary delivery checklist, register, transaction and release-plan references. Design delivery complete; G approval, exact A/B SQL, max synchronous affected-set decision and runtime source integration still pending. No implementation against unmerged proposal; no source/SQL/DB/service changes.
+- B92ea981ad005156f9dc2d37cf965860078089aa1 passed API CI39701078379 and GitGuardian; documentation consistency check PASSED. All42 Stage13b runtime scenarios remain PLANNED/NOT_RUN. Final reference commit checks are separate GitHub evidence; current HEAD reported by PR metadata.
+- Next: G reviews exact D01–D12/A17 interface and releases a named phase with approved dependency approach/isolated DB authority. Overall IDs12–21 IN_PROGRESS; PR14 stays open, no self-merge.
+
 ### 2026-10-22 08:39 +08:00 — Resumed refinement and reviewed A draft
 - Human resumed work; preserved uncommitted A-proposal reconciliation and existing published01bfda4. Re-fetched main, still827738c; no source/SQL/DB/infrastructure changes.
 - Read A draft AGENT_A_SHARED_INTERFACE_SPECIFICATION.md on docs/stage13b-shared-interfaces read-only; proposed same-client services, advisory namespace, context version initial1 and mutation matrix. Exact published A HEAD/PR and G approval pending. Requested two refinements: telemetry eligibility separate from route usability; cutover DB clock after lock waits. Both are now reflected in A updated draft as telemetryEligible/routeUsability and post-lock clock_timestamp(), still not G-approved/implemented. Proposed migration allocation sent to A for confirmation.

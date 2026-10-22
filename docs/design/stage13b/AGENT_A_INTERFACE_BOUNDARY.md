@@ -1,6 +1,6 @@
 # Agent A shared interface coordination — proposed boundary
 
-D05/D06/D07/D12. No adapter/source change is authorized. Current baseline main827738c0f2c33ad3082f6a4a38a8e35669d4b0ea has only migrations001–005; resolver and current scopes issue pool queries. No approved transaction/context helper is delivered. A has now supplied a coordination proposal; its exact document/PR/HEAD and G approval are still pending.
+D05/D06/D07/D12. No adapter/source change is authorized. Current baseline main827738c0f2c33ad3082f6a4a38a8e35669d4b0ea has only migrations001–005; resolver and current scopes issue pool queries. No approved transaction/context helper is delivered. A has now supplied a coordination proposal; its published document/PR/HEAD are now available below; G approval/runtime interface remain pending.
 
 ## Coordination record
 
@@ -10,7 +10,9 @@ A draft reviewed read-only at C:/Development/valryde/.worktrees/agent-a-stage13b
 
 Two exact refinements were sent back to A and are now present in A's updated uncommitted draft (still not G-approved): separate telemetry eligibility (approved active mapped vehicle) from route usability so private valid GPS may persist with route UNKNOWN; capture DB cutover clock after lock waits rather than transaction-start now(). The draft now exposes telemetryEligible separately from routeUsability and captures clock_timestamp() after locks. G decisions remain pending. Suggested allocation A006 context, B007 latest/lease, B008 events, later009 intents is a recommendation only, pending A/G confirmation/current main.
 
-A published PR/full HEAD: pending publication. No speculative adapter or SQL is created by B. Initial interface-delivery checkboxes below remain pending until the reviewable A artifact arrives.
+A published proposal: [PR #17](https://github.com/erwin-io/valryde-api/pull/17), full HEAD **36af1c6cb7cd1e749f4d8d2eff15183e40e578fd**, [exact interface specification](https://github.com/erwin-io/valryde-api/blob/36af1c6cb7cd1e749f4d8d2eff15183e40e578fd/docs/design/stage13b/AGENT_A_SHARED_INTERFACE_SPECIFICATION.md); substantive design commit4a654c1beda0d4d7ddc7ae4938b53a470bacae11. A confirmed both refinements and provisional migration sequence in its handoff. Proposal delivery is complete, but G approval, exact A SQL and runtime interface delivery remain pending. B does not implement against an unmerged/unapproved proposal.
+
+No speculative adapter or SQL is created by B. Checkboxes distinguish delivered design evidence from implementation/approval gates.
 
 ## Boundary B requests from A
 
@@ -27,12 +29,13 @@ A published PR/full HEAD: pending publication. No speculative adapter or SQL is 
 
 ## Required A delivery checklist
 
-- [ ] A-owned draft path/branch reviewed; published full HEAD and PR still required.
-- [ ] Exact client/executor/scope signatures, public error compatibility and source ownership recorded.
-- [ ] Global order includes all fleet/transit/workflow mutations and any context/helper privilege model.
-- [ ] Mapping/context cutover storage, generation and create-only fallback explicitly resolved.
-- [ ] Catalog compatibility checked against001–005; any extra A migration isolated and approved.
-- [ ] Real PostgreSQL barriers for B13B-21–25/31–34/41–42 specified.
+- [x] A-owned draft/path/branch reviewed; published PR17/full HEAD recorded above (design delivery only).
+- [x] Proposed client/executor/scope signatures, error compatibility and A source ownership recorded in PR17.
+- [x] Proposed advisory order/mutation matrix/privileges specified in PR17; max synchronous affected-set decision still requires A/G.
+- [x] Proposed mapping UUID/time, positive context version, post-lock cutover and create-only mapping explicitly specified; not SQL approval.
+- [x] Existing001–005 gaps reviewed; additive A context schema isolated as a proposed dependency.
+- [ ] A/G approve exact additive context migration/initialization/numbering and maximum mutation affected set.
+- [x] Real PostgreSQL barrier requirements specified in A17 and B42-case package; all remain PLANNED / NOT_RUN.
 - [ ] G approves the interface before an A implementation is depended upon; source implementation and tests delivered through approved workflow.
 
 These are delivery/approval checks, not claims that A has failed or that B may implement them. No downstream client contract is frozen by this request.
