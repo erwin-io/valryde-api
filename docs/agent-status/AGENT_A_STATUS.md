@@ -36,6 +36,7 @@
 
 | Command / check | Environment | Result | Date/time | Evidence / notes |
 |---|---|---|---|---|
+| GitHub API CI and GitGuardian | PR #17 complete design/status content head `36af1c6cb7cd1e749f4d8d2eff15183e40e578fd` | PASSED | 2026-10-22 08:43 +08:00 | API `verify` passed in 56 seconds; GitGuardian passed. |
 | `npm run lint`, `npm run typecheck`, `npm test`, `npm run build`, `npm audit --audit-level=high`, Markdown fence check, `git diff --check` | Stage 13b documentation branch; no database test URL injected | PASSED | 2026-10-22 08:41 +08:00 | 11 test files / 99 tests passed; 9 PostgreSQL/live-provider files (15 tests) skipped by their existing environment gates; zero vulnerabilities; both new documents have balanced code fences. |
 | PR #15 final environment-boundary gate | Isolated local PostgreSQL/PostGIS plus GitHub CI | PASSED | 2026-10-22 03:36 +08:00 | 20 files / 119 tests locally; 7/7 fixture tests; API CI and GitGuardian passed at implementation head `aa989254f62a7d7dab899fd1b4eb78171598ccb5`. |
 | GitHub API CI and GitGuardian | PR #11 head `b77e491` | PASSED | 2026-10-21 17:26 +08:00 | API `verify` passed in 59 seconds; GitGuardian passed. |
@@ -82,7 +83,7 @@
 - Action / reason: Coordinated D05/D06/D07 boundaries with Agent B and documented a transaction-owned, executor-aware integration contract without implementing persistence. Prepared one consolidated G1/fixture handoff for Agents C, D, and E.
 - Files/config/services affected: `docs/design/stage13b/AGENT_A_SHARED_INTERFACE_SPECIFICATION.md`, `docs/integration/AGENT_A_G1_FIXTURE_UI_HANDOFF.md`, and this status file only.
 - Shared-contract result: Direct assignment still overrides group assignment. Private telemetry eligibility is independent from route usability; unassigned/inactive/conflicting route context remains private with compliance/public availability UNKNOWN. A monotonic context version is the primary proposed fence, with a post-lock `clock_timestamp()` cutover marker.
-- Test / review evidence: Lint, typecheck, 99 non-database tests, production build, high-severity audit, Markdown fence validation, and diff check passed. Database-enabled behavior was already verified on PR #15; this documentation branch makes no runtime change. PR #17 CI pending. No migration, database write, Traccar write, runtime behavior, or client repository changed.
+- Test / review evidence: Lint, typecheck, 99 non-database tests, production build, high-severity audit, Markdown fence validation, and diff check passed. API CI and GitGuardian passed on PR #17's complete design/status content. Database-enabled behavior was already verified on PR #15; this documentation branch makes no runtime change. No migration, database write, Traccar write, runtime behavior, or client repository changed.
 - Review / next action: PR #17 is published at design commit `4a654c1beda0d4d7ddc7ae4938b53a470bacae11`. Await the Tech Lead decisions listed in the interface specification. Do not implement Stage 13b persistence from this proposal alone.
 
 ### 2026-10-21 16:55 +08:00 — Unified real-email environment release started
