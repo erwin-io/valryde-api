@@ -302,6 +302,24 @@
           "event": [{ "listen": "test", "script": { "type": "text/javascript", "exec": ["pm.test('route assigned', () => pm.response.to.have.status(201));"] } }]
         },
         {
+          "name": "List operator route assignments",
+          "request": {
+            "method": "GET",
+            "header": [{ "key": "Authorization", "value": "Bearer {{operatorAccessToken}}" }],
+            "url": "{{baseUrl}}/route-assignments?jeepneyId={{jeepneyId}}&activeOnly=true&page=1&pageSize=20"
+          },
+          "event": [{ "listen": "test", "script": { "type": "text/javascript", "exec": ["pm.test('owned route assignment is readable', () => { pm.response.to.have.status(200); pm.expect(pm.response.json().pagination.total).to.be.at.least(1); });"] } }]
+        },
+        {
+          "name": "Preview route-direction assignment impact",
+          "request": {
+            "method": "GET",
+            "header": [{ "key": "Authorization", "value": "Bearer {{adminAccessToken}}" }],
+            "url": "{{baseUrl}}/admin/route-directions/{{routeDirectionId}}/assignment-impact?page=1&pageSize=20"
+          },
+          "event": [{ "listen": "test", "script": { "type": "text/javascript", "exec": ["pm.test('Admin impact preview honors effective assignment', () => { pm.response.to.have.status(200); const body = pm.response.json(); pm.expect(body.impact.routeDirectionId).to.eql(pm.environment.get('routeDirectionId')); pm.expect(body.impact.affectedJeepneyCount).to.be.at.least(1); });"] } }]
+        },
+        {
           "name": "Resolve jeepney effective route",
           "request": {
             "method": "GET",
