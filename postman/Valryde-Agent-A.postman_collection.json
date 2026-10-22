@@ -200,6 +200,18 @@
             "pm.test('operator jeepneys return 200', () => pm.response.to.have.status(200));",
             "pm.test('created jeepney is visible', () => pm.expect(pm.response.json().jeepneys.map((item) => item.id)).to.include(pm.environment.get('jeepneyId')));"
           ] } }]
+        },
+        {
+          "name": "List fleet group members",
+          "request": {
+            "method": "GET",
+            "header": [{ "key": "Authorization", "value": "Bearer {{operatorAccessToken}}" }],
+            "url": "{{baseUrl}}/fleet-groups/{{fleetGroupId}}/members?page=1&pageSize=20"
+          },
+          "event": [{ "listen": "test", "script": { "type": "text/javascript", "exec": [
+            "pm.test('group members return 200', () => pm.response.to.have.status(200));",
+            "pm.test('group members use the pagination contract', () => { const body = pm.response.json(); pm.expect(body).to.have.property('members'); pm.expect(body.pagination).to.include({ page: 1, pageSize: 20 }); });"
+          ] } }]
         }
       ]
     },
@@ -470,12 +482,39 @@
           }
         },
         {
+          "name": "Get current Driver assignment",
+          "event": [{ "listen": "prerequest", "script": { "type": "text/javascript", "exec": ["if (!pm.environment.get('driverAccessToken')) pm.execution.skipRequest();"] } }],
+          "request": {
+            "method": "GET",
+            "header": [{ "key": "Authorization", "value": "Bearer {{driverAccessToken}}" }],
+            "url": "{{baseUrl}}/me/assignment"
+          }
+        },
+        {
           "name": "Unassign Driver from jeepney",
           "event": [{ "listen": "prerequest", "script": { "type": "text/javascript", "exec": ["if (!pm.environment.get('driverId') || !pm.environment.get('runDriverUnassignment')) pm.execution.skipRequest();"] } }],
           "request": {
             "method": "DELETE",
             "header": [{ "key": "Authorization", "value": "Bearer {{operatorAccessToken}}" }],
             "url": "{{baseUrl}}/jeepneys/{{jeepneyId}}/driver-assignment"
+          }
+        },
+        {
+          "name": "Remove verified Driver from group",
+          "event": [{ "listen": "prerequest", "script": { "type": "text/javascript", "exec": ["if (!pm.environment.get('driverId') || !pm.environment.get('runMembershipRemoval')) pm.execution.skipRequest();"] } }],
+          "request": {
+            "method": "DELETE",
+            "header": [{ "key": "Authorization", "value": "Bearer {{operatorAccessToken}}" }],
+            "url": "{{baseUrl}}/fleet-groups/{{fleetGroupId}}/drivers/{{driverId}}"
+          }
+        },
+        {
+          "name": "Remove jeepney from group",
+          "event": [{ "listen": "prerequest", "script": { "type": "text/javascript", "exec": ["if (!pm.environment.get('jeepneyId') || !pm.environment.get('runMembershipRemoval')) pm.execution.skipRequest();"] } }],
+          "request": {
+            "method": "DELETE",
+            "header": [{ "key": "Authorization", "value": "Bearer {{operatorAccessToken}}" }],
+            "url": "{{baseUrl}}/fleet-groups/{{fleetGroupId}}/jeepneys/{{jeepneyId}}"
           }
         }
       ]

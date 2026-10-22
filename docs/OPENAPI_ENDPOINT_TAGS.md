@@ -35,19 +35,33 @@ The OpenAPI server URL is `/api`; paths below are relative to that base. Categor
 - `PATCH /jeepneys/{jeepneyId}` — `updateJeepney`
 - `POST /jeepneys/{jeepneyId}/driver-assignment` — `assignDriverToJeepney`
 - `DELETE /jeepneys/{jeepneyId}/driver-assignment` — `unassignDriverFromJeepney`
+- `GET /me/assignment` — `getCurrentDriverAssignment`
 
 Driver unassignment closes the active assignment atomically and returns the closed assignment. Repeating
 the operation when no active assignment exists returns deterministic `409 CONFLICT`; it does not alter
 broader group visibility or the vehicle's effective-route precedence.
 
+`GET /me/assignment` is the server-authoritative current assignment identity for a DRIVER and returns
+an explicit business `driverId`. A `null` assignment is different from `GET /jeepneys`: group-visible or
+Driver-created jeepneys do not become the Driver's active assignment.
+
 ## 05 — Fleet Groups & Membership
 
+- `GET /drivers` — `listDrivers`
+- `GET /operators` — `listOperators`
 - `GET /fleet-groups` — `listFleetGroups`
 - `POST /fleet-groups` — `createFleetGroup`
 - `PATCH /fleet-groups/{groupId}` — `updateFleetGroup`
+- `GET /fleet-groups/{groupId}/members` — `listFleetGroupMembers`
 - `POST /fleet-groups/{groupId}/drivers` — `addDriverToFleetGroup`
+- `DELETE /fleet-groups/{groupId}/drivers/{driverId}` — `removeDriverFromFleetGroup`
 - `POST /fleet-groups/{groupId}/jeepneys` — `addJeepneyToFleetGroup`
+- `DELETE /fleet-groups/{groupId}/jeepneys/{jeepneyId}` — `removeJeepneyFromFleetGroup`
 - `POST /driver-associations` — `associateDriverWithOperator`
+
+Membership reads use a stable unified `members` collection with a `memberType` discriminator and the
+standard `{ page, pageSize, total, totalPages }` envelope. Driver members receive privacy-minimized
+business fields only; account email and `userId` are not exposed through the groupmate contract.
 
 ## 06 — Transit Routes & Directions
 
