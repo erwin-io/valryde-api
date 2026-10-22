@@ -241,6 +241,32 @@ export const fleetRoutes: FastifyPluginAsync<FleetRoutesOptions> = async (instan
   );
 
   fastify.get(
+    '/me/assignment',
+    {
+      preHandler: fastify.requireRoles('DRIVER'),
+      schema: {
+        tags: [OpenApiTags.jeepneys],
+        operationId: 'getCurrentDriverAssignment',
+        summary: 'Get the current Driver assignment',
+        description:
+          'Returns only the authenticated Driver profile active assignment, or null. This is distinct from the broader set of jeepneys visible through ownership or fleet-group membership.',
+        security: [{ bearerAuth: [] }],
+        response: {
+          200: Type.Object({
+            assignment: Type.Union([DriverAssignmentSchema, Type.Null()]),
+          }),
+          401: ErrorSchema,
+          403: ErrorSchema,
+        },
+      },
+    },
+    async (request) => {
+      const assignment = await options.fleetService.getCurrentDriverAssignment(currentUser(request));
+      return { assignment: assignment === null ? null : serializeDriverAssignment(assignment) };
+    },
+  );
+
+  fastify.get(
     '/fleet-groups',
     {
       preHandler: fastify.requireRoles('DRIVER', 'OPERATOR', 'ADMIN'),
