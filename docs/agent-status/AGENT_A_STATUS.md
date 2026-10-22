@@ -2,7 +2,7 @@
 
 ## Current snapshot
 
-- Updated at (ISO 8601, Asia/Manila): 2026-10-22T23:50:00+08:00
+- Updated at (ISO 8601, Asia/Manila): 2026-10-23T00:30:00+08:00
 - Agent / module: A — Core Platform / Fastify API (execution owner: Claude, taken over from Codex under `VALRYDE-CLAUDE-A-CODEX-RECOVERY-AND-COMPLETION-003`)
 - Repository: `erwin-io/valryde-api`
 - Branch / head: `docs/agent-a-independent-completion` / base `origin/main` `827738c0f2c33ad3082f6a4a38a8e35669d4b0ea`
@@ -43,13 +43,14 @@
 | G6 | Place discovery | BLOCKED (proposal READY_FOR_REVIEW) | #27 `0ccd69c5f95a923231913e15442e517617698410` | Decisions G6-D1…D6; provider terms owner-gated. |
 | G7 | Route-change requests | BLOCKED (proposal READY_FOR_REVIEW) | #27 `0ccd69c5f95a923231913e15442e517617698410` | Decisions G7-D1…D7; migration numbering vs A006. |
 | G10 | Admin mapping read | READY_FOR_REVIEW | #24 `e555033872373d836e8ea60392fd339f0e1bbda6` | Remap/unmap gated on Stage 13b context invalidation/locking approval. |
-| G11 | Assignment reads + impact preview | READY_FOR_REVIEW | #25 `22b6462f2bb6da4ef18c7cfaf2cee7638b191297` | Agent G review. |
+| G11 | Assignment reads + impact preview | READY_FOR_REVIEW (re-review) | #25 `c4c8b7f6edd83c80d8ab6a47536929e1f4c9423d` | CHANGES REQUIRED at `22b6462` addressed; Agent G re-review. |
 | Stage 13b | Shared interface design (A006 proposed) | READY_FOR_REVIEW | #17 `fd76cb54000ec47c383c6641359f3e3cf59e4340` | Agent G D01–D12 approval before any A006 migration. |
 
 ## Latest verification
 
 | Command / check | Environment | Result | Date/time | Evidence / notes |
 |---|---|---|---|---|
+| GitHub `verify` (PostGIS 16-3.4: migrate, lint, typecheck, test, build) and GitGuardian | PR #25 head `c4c8b7f6edd83c80d8ab6a47536929e1f4c9423d` | PASSED | 2026-10-23 00:28 +08:00 | 19 files / 115 tests passed, 1 live-Traccar skipped; MERGEABLE. |
 | GitHub `verify` (PostGIS) and GitGuardian | PR #26 head `407acde`, PR #27 head `0ccd69c` | PASSED | 2026-10-22 23:45 +08:00 | Both MERGEABLE against `main` `827738c`. |
 | `npm run lint`, `npm run typecheck`, `npm run build`, `vitest run`, `npm audit --audit-level=high`, `git diff --check` | G5 branch; local Node.js, no `TEST_DATABASE_URL` | PASSED | 2026-10-22 23:05 +08:00 | 105 passed, 15 PostgreSQL-backed skipped locally; 0 vulnerabilities. |
 | `npm run lint`, `npm run typecheck`, `npm run build`, `vitest run` (no `TEST_DATABASE_URL`) | All 8 Agent A code worktrees (#12, #15, #19, #20, #21, #23, #24, #25 heads); local Node.js | PASSED | 2026-10-22 22:35 +08:00 | 99–100 tests passed per branch; PostgreSQL suites skipped locally because the only local database (`valrydedb`) is not proven disposable. Worktrees still clean after the run. |
@@ -120,6 +121,17 @@
 - Gate: Physical GPS/Traccar mapping and activation. Required actor: operator/Agent F/Agent B. Requested evidence: power, SIM/APN, server connectivity, GPS fix, correct IMEI/uniqueId mapping. State: OWNER_VERIFICATION_PENDING.
 
 ## Activity log (newest first; preserve prior entries)
+
+### 2026-10-23 00:30 +08:00 — Agent G review AGENT_A_PHASE4_REVIEW_001 recorded; PR #25 corrected
+
+- Action / reason: Agent G decisions: PR #26 (G5) ACCEPTED at source-review level; PR #27 (G6/G7) DESIGN REVIEW READY, no implementation until the decision register is approved; PR #25 (G11) CHANGES REQUIRED at `22b6462`.
+- Checklist/issue: IDs 1, 10, 37, 52.
+- Files/config/services affected: PR #25 only (`src/services/transit-service.ts`, `test/pg-effective-route.integration.test.ts`, status entry). PRs #26/#27 unchanged.
+- Observed result: shared `effectiveRouteDecisions` SQL boundary used by the resolver and impact preview; single-statement impact query (one snapshot) with counts preserved on out-of-range pages; new assertions for out-of-range page, unknown direction 404, Commuter 403 on list and impact, and resolver conflict via the shared decision.
+- Validation and evidence: local lint/typecheck/build/audit passed; CI PostGIS 19 files / 115 tests passed.
+- Contracts / risks / dependencies: no endpoint, DTO, schema or migration change; resolver signature unchanged for Agent B.
+- Commit/PR link or SHA: PR #25 `c4c8b7f6edd83c80d8ab6a47536929e1f4c9423d`.
+- Next action / owner gate: Agent G re-review of #25; decision register G6-D1…D6, G7-D1…D7.
 
 ### 2026-10-22 23:50 +08:00 — Phase 4 independent gaps submitted for review
 
