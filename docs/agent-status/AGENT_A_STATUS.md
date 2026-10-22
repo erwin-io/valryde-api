@@ -2,17 +2,17 @@
 
 ## Current snapshot
 
-- Updated at (ISO 8601, Asia/Manila): 2026-10-23T00:30:00+08:00
+- Updated at (ISO 8601, Asia/Manila): 2026-10-23T01:10:00+08:00
 - Agent / module: A — Core Platform / Fastify API (execution owner: Claude, taken over from Codex under `VALRYDE-CLAUDE-A-CODEX-RECOVERY-AND-COMPLETION-003`)
 - Repository: `erwin-io/valryde-api`
 - Branch / head: `docs/agent-a-independent-completion` / base `origin/main` `827738c0f2c33ad3082f6a4a38a8e35669d4b0ea`
 - Checklist IDs: 1–11 (gap slices G1–G11, D3)
 - GitHub issues / PRs: PRs #1, #2, #4–#8, #10, #11 merged. Open Agent A PRs, none reviewed: [#12](https://github.com/erwin-io/valryde-api/pull/12) G1, [#15](https://github.com/erwin-io/valryde-api/pull/15) fixtures, [#16](https://github.com/erwin-io/valryde-api/pull/16) mobile testing policy, [#17](https://github.com/erwin-io/valryde-api/pull/17) Stage 13b design, [#19](https://github.com/erwin-io/valryde-api/pull/19) G2, [#20](https://github.com/erwin-io/valryde-api/pull/20) G3, [#21](https://github.com/erwin-io/valryde-api/pull/21) G4, [#23](https://github.com/erwin-io/valryde-api/pull/23) D3, [#24](https://github.com/erwin-io/valryde-api/pull/24) G10 read, [#25](https://github.com/erwin-io/valryde-api/pull/25) G11, [#26](https://github.com/erwin-io/valryde-api/pull/26) G5, [#27](https://github.com/erwin-io/valryde-api/pull/27) G6/G7 proposals.
 - Implementation progress: IN_PROGRESS
-- Tech Lead review decision (if actually issued): IDs 1–11 baseline ACCEPTED (PR #1). No decision issued on PRs #12–#27.
-- Current objective: Phase 4 independent gaps submitted (checkpoint `AGENT_A_PHASE4_INDEPENDENT_GAPS_READY_FOR_REVIEW`); awaiting Agent G decisions.
+- Tech Lead review decision (if actually issued): IDs 1–11 baseline ACCEPTED (PR #1). PR #25 (G11) ACCEPTED at `c4c8b7f6edd83c80d8ab6a47536929e1f4c9423d`, not merged; PR #26 (G5) ACCEPTED at source-review level; PR #27 DESIGN REVIEW READY. No decision issued on PRs #12, #15–#17, #19–#21, #23, #24.
+- Current objective: read-only integration readiness under `VALRYDE-AGENT-A-INTEGRATION-READINESS-004` (checkpoint `AGENT_A_BACKEND_PR_INTEGRATION_READY`).
 - Last confirmed result: G5 fix PR #26 and G6/G7 proposal PR #27 opened; both green on `verify` (PostGIS) and GitGuardian.
-- Next concrete action: implement G6/G7 only after Agent G decisions on PR #27; rebase overlapping PRs in the merge order Agent G chooses.
+- Next concrete action: Agent G merges in the recommended order; Agent A reconciles #19, then #21, and resolves the status-file conflict on each later PR only when directed. G6/G7 only after decisions on PR #27.
 - Blocked by / decision owner: Agent G review of PRs #12–#25 and Stage 13b D01–D12; owner for production domain/app scheme (G5), geocoding provider terms (G6), and G7 lifecycle approval.
 - Dependencies / affected agents: B (tracking/latest state/realtime), C (public route/live APIs), D (driver invitation and operator APIs), E (Admin APIs), F (device runbooks), G (shared-contract review).
 
@@ -121,6 +121,17 @@
 - Gate: Physical GPS/Traccar mapping and activation. Required actor: operator/Agent F/Agent B. Requested evidence: power, SIM/APN, server connectivity, GPS fix, correct IMEI/uniqueId mapping. State: OWNER_VERIFICATION_PENDING.
 
 ## Activity log (newest first; preserve prior entries)
+
+### 2026-10-23 01:10 +08:00 — Integration readiness (read-only) for open Agent A PRs
+
+- Action / reason: directive `VALRYDE-AGENT-A-INTEGRATION-READINESS-004`. Simulated merges using `git merge-tree` and dangling commits only; no branch, ref, PR or Agent B checkout was changed.
+- Checklist/issue: IDs 1–11 (G1–G5, G10, G11, D3).
+- Files/config/services affected: this status file only.
+- Observed result: all 14 open PRs MERGEABLE against `827738c`, with green `verify` and GitGuardian checks. No PR adds a migration (main ends at 005). Every Agent A PR conflicts with every other on `AGENT_A_STATUS.md`. Real source conflicts exist only in #12×#19 (`fleet.ts`, `fleet-service.ts`), #19×#21 (`fleet-routes.ts`), #20×#21 (`fleet-service.ts`, `OPENAPI_ENDPOINT_TAGS.md`), and Postman for #19×#20, #19×#21 and #20×#21; all are additive keep-both. A combined tree of #26, #23, #25, #24, #15, #16, #17, #27, #12 and #20 had only the status-file conflict and passed lint, typecheck, unit tests (106 passed, PostgreSQL suites skipped) and build; its Postman JSON is valid. Mechanical union resolution of #19/#21 broke syntax, so a manual reconciliation is required.
+- Validation and evidence: local simulation only; the PostgreSQL suites for the combined tree have not been run (no disposable local database).
+- Contracts / risks / dependencies: recommended order is #26, #23, #25, #24, #12, #20, then #19 (rebase), then #21 (rebase). Docs PRs #15, #16 and #17 are independent; #27 is design-only.
+- Commit/PR link or SHA: simulation commit `d1ded2c` (dangling, local only).
+- Next action / owner gate: Agent G merge decisions; G6/G7 and Stage 13b D01–D12 approvals.
 
 ### 2026-10-23 00:30 +08:00 — Agent G review AGENT_A_PHASE4_REVIEW_001 recorded; PR #25 corrected
 
