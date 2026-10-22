@@ -2,18 +2,18 @@
 
 ## Current snapshot
 
-- Updated at (ISO 8601, Asia/Manila): 2026-10-21T16:55:00+08:00
+- Updated at (ISO 8601, Asia/Manila): 2026-10-22T21:47:03+08:00
 - Agent / module: A — Core Platform / Fastify API
 - Repository: `erwin-io/valryde-api`
-- Branch / head: `docs/1-unified-real-email` / base `2e8cc4d36fe1066534e07863c3112ec95688f905`
+- Branch / head: `fix/9-d3-direction-label-conflict` / base `827738c0f2c33ad3082f6a4a38a8e35669d4b0ea`; implementation commit pending
 - Checklist IDs: 1–11
-- GitHub issues / PRs: PRs [#1](https://github.com/erwin-io/valryde-api/pull/1), [#2](https://github.com/erwin-io/valryde-api/pull/2), [#4](https://github.com/erwin-io/valryde-api/pull/4), [#5](https://github.com/erwin-io/valryde-api/pull/5), [#6](https://github.com/erwin-io/valryde-api/pull/6), [#7](https://github.com/erwin-io/valryde-api/pull/7), and [#8](https://github.com/erwin-io/valryde-api/pull/8) merged; unified-email [PR #11](https://github.com/erwin-io/valryde-api/pull/11) open.
+- GitHub issues / PRs: G1 #12, fixtures #15, policy #16 and Stage 13b #17 remain separate/open; G2 #19, G3 #20 and G4 #21 are open. D3 fix PR pending.
 - Implementation progress: IN_PROGRESS
-- Tech Lead review decision (if actually issued): Existing IDs 1–11 baseline ACCEPTED; unified real-email release authorized for implementation, not yet reviewed.
-- Current objective: Standardize real authenticated SMTP for all interactive environments, preserve Mailpit as a test override, verify seed-no-email behavior, and publish the Agent D readiness contract.
-- Last confirmed result: Existing provider-neutral SMTP source supports authenticated implicit TLS without modification. Gmail TCP/TLS certificate validation passed; full Mailpit registration/verification/recovery passed and cleaned all test rows; real provider authentication/delivery remains owner-gated.
-- Next concrete action: Complete the focused documentation/test gate, open the unified-email PR, then run controlled real-email validation after the owner privately configures SMTP credentials and a reachable callback.
-- Blocked by / decision owner: Owner must configure the authorized sender/SMTP secret and approve a reachable HTTPS callback/test inbox. Real Gmail authentication, external delivery, and Agent D credential handoff cannot be claimed before that evidence exists.
+- Tech Lead review decision (if actually issued): Existing IDs 1–11 baseline ACCEPTED; D3 correction authorized but not yet reviewed.
+- Current objective: Correct duplicate route-direction label update semantics without changing the route/direction contract.
+- Last confirmed result: Duplicate direction labels now return deterministic `409 CONFLICT` for both create and update; failed update preserves the original label.
+- Next concrete action: Commit/push the focused D3 fix and open a PR without merging.
+- Blocked by / decision owner: None for source review.
 - Dependencies / affected agents: B (tracking/latest state/realtime), C (public route/live APIs), D (driver invitation and operator APIs), E (Admin APIs), F (device runbooks), G (shared-contract review).
 
 ## Checklist coverage
@@ -36,6 +36,9 @@
 
 | Command / check | Environment | Result | Date/time | Evidence / notes |
 |---|---|---|---|---|
+| `npm run postman:smoke` | D3 branch; live local API + PostgreSQL/PostGIS | PASSED | 2026-10-22 21:49 +08:00 | 2 requests / 5 assertions; Postman Cloud publication skipped because CLI login is intentionally not configured. |
+| `npm run db:migrate`, `npm run lint`, `npm run typecheck`, `npm test`, `npm run build`, `npm audit --audit-level=high`, `git diff --check` | D3 branch; local PostgreSQL/PostGIS `valrydedb`, `dbo,public` | PASSED | 2026-10-22 21:46 +08:00 | 19 files / 112 tests passed; 2 owner/live checks skipped; zero vulnerabilities. |
+| `test/pg-transit.integration.test.ts` | Local PostgreSQL/PostGIS | PASSED | 2026-10-22 21:46 +08:00 | Duplicate update returns `409 CONFLICT` with approved message and leaves the original direction label unchanged. |
 | GitHub API CI and GitGuardian | PR #11 head `b77e491` | PASSED | 2026-10-21 17:26 +08:00 | API `verify` passed in 59 seconds; GitGuardian passed. |
 | `npm run db:migrate`, `npm run lint`, `npm run typecheck`, `npm test`, `npm run build`, `npm audit --audit-level=high`, `git diff --check` | Unified-email branch; local PostgreSQL/PostGIS `dbo` | PASSED | 2026-10-21 17:24 +08:00 | 17 files / 92 tests, 0 skipped; zero vulnerabilities; Admin bootstrap test confirms zero auth challenges. |
 | Gmail port 465 TLS handshake | Local network; no credentials | PASSED | 2026-10-21 16:48 +08:00 | `smtp.gmail.com:465` reachable; certificate authorization true; authentication intentionally not attempted without owner secret. |
@@ -60,7 +63,7 @@
 
 ## Shared contract / risk changes
 
-- API/DTO/schema/migration changes: Unified-email work changes no endpoint, DTO, schema, migration, token, or RBAC contract. It standardizes environment documentation and verifies existing SMTP/bootstrap behavior. Previously accepted additions remain unchanged.
+- API/DTO/schema/migration changes: No endpoint, DTO or migration change. Existing direction update now maps PostgreSQL unique violation to the same approved `409 CONFLICT` used by direction creation.
 - Auth/RBAC/data-isolation impact: Challenge delivery is provider-neutral SMTP with environment-only configuration, hashed tokens, cooldown, supersession, invalidation, generic public responses, and provider-failure recovery. Driver association requires a verified DRIVER email and transactionally rejects cross-Operator claims.
 - Realtime/Traccar/geospatial impact: No realtime or Traccar implementation changed. Agent B now has a server-authoritative effective-route contract: active direct assignment wins; otherwise exactly one active group assignment is inherited; zero returns no route; multiple inherited routes return `409 ROUTE_ASSIGNMENT_CONFLICT`.
 - Secrets/security/privacy impact: No credentials are tracked. Postman environment values remain blank; runtime E2E credentials were generated in memory and removed. SMTP credentials, JWTs, challenge tokens, and Admin passwords are absent from source, logs, docs, and checked-in Postman data.
@@ -74,6 +77,17 @@
 - Gate: Physical GPS/Traccar mapping and activation. Required actor: operator/Agent F/Agent B. Requested evidence: power, SIM/APN, server connectivity, GPS fix, correct IMEI/uniqueId mapping. State: OWNER_VERIFICATION_PENDING.
 
 ## Activity log (newest first; preserve prior entries)
+
+### 2026-10-22 21:47 +08:00 — D3 direction-label conflict corrected
+
+- Action / reason: Reproduced the asymmetric error handling: create mapped duplicate labels to `409`, while update allowed the database error to become `500`. Added the missing update mapping.
+- Checklist/issue: ID 9; D3.
+- Files/config/services affected: Transit service, PostgreSQL transit regression and this status file.
+- Observed result (success/failure/rollback): Duplicate update now returns `409 CONFLICT` and persists neither the requested duplicate nor an audit entry. Original direction data remains intact.
+- Validation and evidence: Migrations, lint, typecheck, 112-test DB-enabled suite, build, safe Postman smoke (2 requests / 5 assertions), high-severity audit and diff check passed.
+- Contracts / risks / dependencies: Public success DTO and route ownership remain unchanged; this is deterministic error-semantic repair only.
+- Commit/PR link or SHA (if available): Pending focused commit/PR.
+- Next action / owner gate: Submit for Tech Lead/Agent G review without merging.
 
 ### 2026-10-21 16:55 +08:00 — Unified real-email environment release started
 
