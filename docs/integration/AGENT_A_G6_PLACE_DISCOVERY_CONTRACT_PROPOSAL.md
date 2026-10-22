@@ -1,6 +1,6 @@
 # Agent A — G6 Place Search & Direct Transit Discovery: Contract Proposal
 
-**Status:** PROPOSED — review only. Nothing here is implemented, and no client may build against it until Agent G approves.
+**Status:** PROPOSED — implemented for review in [PR #28](https://github.com/erwin-io/valryde-api/pull/28) using the recommendations below (live provider disabled by default; no response cache until G6-D4). No client may build against it until Agent G approves G6-D1, D2, D3 and D5. G6-D6 is settled: directive 008 assigns G6 to Agent A.
 **Checklist:** ID 37 (Agent C consumer), backend gap G6 · **Base:** `main` `827738c0f2c33ad3082f6a4a38a8e35669d4b0ea` · **Date:** 2026-10-22
 
 ## 1. Approved sources this proposal follows

@@ -14,7 +14,7 @@
 
 Approving a request records the Admin decision only. It **does not** create or edit `transit_routes`/`route_directions`, and it **does not** touch `vehicle_route_assignments`. The Admin applies an approved change through the existing Admin route endpoints. Those already validate geometry and enforce the frozen effective-route rule. This satisfies "do not silently change active route assignments" and keeps one canonical write path (**decision G7-D1**).
 
-## 3. Data model (proposed migration — number not yet assigned, **G7-D2**)
+## 3. Data model (proposed migration `010` or later — **G7-D2**)
 
 ```sql
 CREATE TYPE route_change_request_type AS ENUM ('ADD_ROUTE', 'CHANGE_ROUTE');
@@ -140,7 +140,7 @@ PostgreSQL/PostGIS, disposable database only. All rows created are removed by id
 | ID | Decision | Recommendation |
 |---|---|---|
 | G7-D1 | Approval is a decision record only; no automatic canonical or assignment change | Accept |
-| G7-D2 | Migration number and ordering relative to proposed A006 (Stage 13b context generation) | Number after A006, or `006` if Stage 13b slips; no dependency between them |
+| G7-D2 | Migration number and ordering relative to Stage 13b | **Resolved by Tech Lead directive 008:** migrations 006–008 are reserved exclusively for Stage 13b (A006, B007, B008; 009 deferred). G7 uses `010` or later, never `006`, even if Stage 13b slips; no dependency between them |
 | G7-D3 | Cross-Operator single read: `404` (non-disclosure) vs `403` | `404` |
 | G7-D4 | Allowed target route statuses for `CHANGE_ROUTE` | ACTIVE or INACTIVE; reject DRAFT with `404` |
 | G7-D5 | Philippines geometry envelope for both proposals and Admin geometry | Adopt lat 4.0–21.5, lng 116.0–127.0 in a separate Admin-route change |
