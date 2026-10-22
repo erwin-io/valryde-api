@@ -3,10 +3,13 @@ import type pg from 'pg';
 import type { User } from '../domain/identity.js';
 import type {
   DriverAssignment,
+  DriverDirectoryEntry,
   FleetGroup,
   FleetGroupMember,
   Jeepney,
   JeepneyStatus,
+  OperatorDirectoryEntry,
+  PaginationResult,
 } from '../domain/fleet.js';
 import { ApiError } from '../lib/api-error.js';
 
@@ -64,8 +67,194 @@ interface GroupMemberRow {
   joined_at: Date;
 }
 
+interface DriverDirectoryRow {
+  driver_id: string;
+  user_id: string;
+  email: string;
+  display_name: string;
+  status: 'ACTIVE' | 'DISABLED';
+  user_status: 'ACTIVE' | 'DISABLED';
+  email_verified: boolean;
+  operator_id: string | null;
+  active_jeepney_id: string | null;
+  group_ids: string[];
+  created_at: Date;
+}
+
+interface OperatorDirectoryRow {
+  operator_id: string;
+  owner_user_id: string;
+  email: string;
+  display_name: string;
+  status: 'ACTIVE' | 'DISABLED';
+  user_status: 'ACTIVE' | 'DISABLED';
+  driver_count: number;
+  jeepney_count: number;
+  group_count: number;
+  created_at: Date;
+}
+
+interface DirectoryQuery {
+  q?: string;
+  status?: 'ACTIVE' | 'DISABLED';
+  page: number;
+  pageSize: number;
+}
+
+interface DriverDirectoryQuery extends DirectoryQuery {
+  operatorId?: string;
+  associated?: boolean;
+}
+
 export class FleetService {
   constructor(private readonly pool: pg.Pool) {}
+
+  async listDrivers(
+    actor: User,
+    query: DriverDirectoryQuery,
+  ): Promise<{ drivers: DriverDirectoryEntry[]; pagination: PaginationResult }> {
+    const isAdmin = actor.roles.includes('ADMIN');
+    let operatorId: string | undefined;
+    if (!isAdmin) {
+      if (!actor.roles.includes('OPERATOR')) {
+        throw new ApiError(403, 'FORBIDDEN', 'This role cannot view the Driver directory');
+      }
+      if (query.operatorId !== undefined || query.associated !== undefined) {
+        throw new ApiError(403, 'FORBIDDEN', 'Operator scope cannot be changed by query filters');
+      }
+      operatorId = await this.requireActorOperator(actor.id);
+    }
+
+    const values: unknown[] = [];
+    const conditions: string[] = [];
+    const parameter = (value: unknown): string => {
+      values.push(value);
+      return `$${values.length}`;
+    };
+
+    if (operatorId !== undefined) {
+      conditions.push(`d.operator_id = ${parameter(operatorId)}::uuid`);
+    } else if (query.operatorId !== undefined) {
+      conditions.push(`d.operator_id = ${parameter(query.operatorId)}::uuid`);
+    }
+    if (isAdmin && query.associated !== undefined) {
+      conditions.push(query.associated ? 'd.operator_id IS NOT NULL' : 'd.operator_id IS NULL');
+    }
+    if (query.status !== undefined) {
+      conditions.push(`d.status = ${parameter(query.status)}::user_status`);
+    }
+    if (query.q !== undefined) {
+      const q = parameter(`%${query.q.trim()}%`);
+      conditions.push(`(u.display_name ILIKE ${q} OR u.email::text ILIKE ${q})`);
+    }
+    const where = conditions.length === 0 ? '' : `WHERE ${conditions.join(' AND ')}`;
+    const countResult = await this.pool.query<{ total: number }>(
+      `SELECT count(*)::integer AS total
+       FROM drivers d
+       JOIN users u ON u.id = d.user_id
+       ${where}`,
+      values,
+    );
+    const total = countResult.rows[0]?.total ?? 0;
+    const limit = parameter(query.pageSize);
+    const offset = parameter((query.page - 1) * query.pageSize);
+    const result = await this.pool.query<DriverDirectoryRow>(
+      `SELECT
+         d.id AS driver_id,
+         d.user_id,
+         u.email::text,
+         u.display_name,
+         d.status,
+         u.status AS user_status,
+         (u.email_verified_at IS NOT NULL) AS email_verified,
+         d.operator_id,
+         (
+           SELECT dja.jeepney_id
+           FROM driver_jeepney_assignments dja
+           WHERE dja.driver_id = d.id AND dja.active_to IS NULL
+           ORDER BY dja.active_from DESC, dja.id
+           LIMIT 1
+         ) AS active_jeepney_id,
+         COALESCE(
+           ARRAY(
+             SELECT fgd.group_id
+             FROM fleet_group_drivers fgd
+             JOIN fleet_groups fg ON fg.id = fgd.group_id
+             WHERE fgd.driver_id = d.id
+               AND (d.operator_id IS NULL OR fg.operator_id = d.operator_id)
+             ORDER BY fgd.group_id
+           ),
+           ARRAY[]::uuid[]
+         ) AS group_ids,
+         d.created_at
+       FROM drivers d
+       JOIN users u ON u.id = d.user_id
+       ${where}
+       ORDER BY u.display_name ASC, d.id ASC
+       LIMIT ${limit} OFFSET ${offset}`,
+      values,
+    );
+    return {
+      drivers: result.rows.map(mapDriverDirectoryEntry),
+      pagination: pagination(query.page, query.pageSize, total),
+    };
+  }
+
+  async listOperators(
+    actor: User,
+    query: DirectoryQuery,
+  ): Promise<{ operators: OperatorDirectoryEntry[]; pagination: PaginationResult }> {
+    if (!actor.roles.includes('ADMIN')) {
+      throw new ApiError(403, 'FORBIDDEN', 'Only Admin may view the Operator directory');
+    }
+    const values: unknown[] = [];
+    const conditions: string[] = [];
+    const parameter = (value: unknown): string => {
+      values.push(value);
+      return `$${values.length}`;
+    };
+    if (query.status !== undefined) {
+      conditions.push(`o.status = ${parameter(query.status)}::user_status`);
+    }
+    if (query.q !== undefined) {
+      const q = parameter(`%${query.q.trim()}%`);
+      conditions.push(`(u.display_name ILIKE ${q} OR u.email::text ILIKE ${q})`);
+    }
+    const where = conditions.length === 0 ? '' : `WHERE ${conditions.join(' AND ')}`;
+    const countResult = await this.pool.query<{ total: number }>(
+      `SELECT count(*)::integer AS total
+       FROM operators o
+       JOIN users u ON u.id = o.owner_user_id
+       ${where}`,
+      values,
+    );
+    const total = countResult.rows[0]?.total ?? 0;
+    const limit = parameter(query.pageSize);
+    const offset = parameter((query.page - 1) * query.pageSize);
+    const result = await this.pool.query<OperatorDirectoryRow>(
+      `SELECT
+         o.id AS operator_id,
+         o.owner_user_id,
+         u.email::text,
+         u.display_name,
+         o.status,
+         u.status AS user_status,
+         (SELECT count(*)::integer FROM drivers d WHERE d.operator_id = o.id) AS driver_count,
+         (SELECT count(*)::integer FROM jeepneys j WHERE j.operator_id = o.id) AS jeepney_count,
+         (SELECT count(*)::integer FROM fleet_groups fg WHERE fg.operator_id = o.id) AS group_count,
+         o.created_at
+       FROM operators o
+       JOIN users u ON u.id = o.owner_user_id
+       ${where}
+       ORDER BY u.display_name ASC, o.id ASC
+       LIMIT ${limit} OFFSET ${offset}`,
+      values,
+    );
+    return {
+      operators: result.rows.map(mapOperatorDirectoryEntry),
+      pagination: pagination(query.page, query.pageSize, total),
+    };
+  }
 
   async associateDriver(actor: User, email: string): Promise<{
     driverId: string;
@@ -719,6 +908,41 @@ function mapGroupMember(row: GroupMemberRow): FleetGroupMember {
     activeDriverId: row.active_driver_id,
     joinedAt: row.joined_at,
   };
+}
+
+function mapDriverDirectoryEntry(row: DriverDirectoryRow): DriverDirectoryEntry {
+  return {
+    driverId: row.driver_id,
+    userId: row.user_id,
+    email: row.email,
+    displayName: row.display_name,
+    status: row.status,
+    userStatus: row.user_status,
+    emailVerified: row.email_verified,
+    operatorId: row.operator_id,
+    activeJeepneyId: row.active_jeepney_id,
+    groupIds: row.group_ids,
+    createdAt: row.created_at,
+  };
+}
+
+function mapOperatorDirectoryEntry(row: OperatorDirectoryRow): OperatorDirectoryEntry {
+  return {
+    operatorId: row.operator_id,
+    ownerUserId: row.owner_user_id,
+    email: row.email,
+    displayName: row.display_name,
+    status: row.status,
+    userStatus: row.user_status,
+    driverCount: row.driver_count,
+    jeepneyCount: row.jeepney_count,
+    groupCount: row.group_count,
+    createdAt: row.created_at,
+  };
+}
+
+function pagination(page: number, pageSize: number, total: number): PaginationResult {
+  return { page, pageSize, total, totalPages: Math.ceil(total / pageSize) };
 }
 
 function normalizePlate(plateNo: string): string {
