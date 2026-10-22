@@ -19,6 +19,8 @@ export type ErrorCode =
   | 'GPS_NOT_INSTALLED'
   | 'DEVICE_MAPPING_CONFLICT'
   | 'GEOCODER_UNAVAILABLE'
+  | 'TRACKING_CONTEXT_MUTATION_TOO_LARGE'
+  | 'TRACKING_CONTEXT_BUSY'
   | 'INTERNAL_ERROR';
 
 export class ApiError extends Error {
