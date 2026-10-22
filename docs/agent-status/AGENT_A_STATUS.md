@@ -2,17 +2,17 @@
 
 ## Current snapshot
 
-- Updated at (ISO 8601, Asia/Manila): 2026-10-23T01:10:00+08:00
+- Updated at (ISO 8601, Asia/Manila): 2026-10-23T09:00:00+08:00
 - Agent / module: A — Core Platform / Fastify API (execution owner: Claude, taken over from Codex under `VALRYDE-CLAUDE-A-CODEX-RECOVERY-AND-COMPLETION-003`)
 - Repository: `erwin-io/valryde-api`
-- Branch / head: `docs/agent-a-independent-completion` / base `origin/main` `827738c0f2c33ad3082f6a4a38a8e35669d4b0ea`
+- Branch / head: canonical copy carried identically by every PR branch prepared under `VALRYDE-AGENT-A-PR-INTEGRATION-005` and by local `docs/agent-a-independent-completion`; base `origin/main` `827738c0f2c33ad3082f6a4a38a8e35669d4b0ea`
 - Checklist IDs: 1–11 (gap slices G1–G11, D3)
 - GitHub issues / PRs: PRs #1, #2, #4–#8, #10, #11 merged. Open Agent A PRs, none reviewed: [#12](https://github.com/erwin-io/valryde-api/pull/12) G1, [#15](https://github.com/erwin-io/valryde-api/pull/15) fixtures, [#16](https://github.com/erwin-io/valryde-api/pull/16) mobile testing policy, [#17](https://github.com/erwin-io/valryde-api/pull/17) Stage 13b design, [#19](https://github.com/erwin-io/valryde-api/pull/19) G2, [#20](https://github.com/erwin-io/valryde-api/pull/20) G3, [#21](https://github.com/erwin-io/valryde-api/pull/21) G4, [#23](https://github.com/erwin-io/valryde-api/pull/23) D3, [#24](https://github.com/erwin-io/valryde-api/pull/24) G10 read, [#25](https://github.com/erwin-io/valryde-api/pull/25) G11, [#26](https://github.com/erwin-io/valryde-api/pull/26) G5, [#27](https://github.com/erwin-io/valryde-api/pull/27) G6/G7 proposals.
 - Implementation progress: IN_PROGRESS
 - Tech Lead review decision (if actually issued): IDs 1–11 baseline ACCEPTED (PR #1). PR #25 (G11) ACCEPTED at `c4c8b7f6edd83c80d8ab6a47536929e1f4c9423d`, not merged; PR #26 (G5) ACCEPTED at source-review level; PR #27 DESIGN REVIEW READY. No decision issued on PRs #12, #15–#17, #19–#21, #23, #24.
-- Current objective: read-only integration readiness under `VALRYDE-AGENT-A-INTEGRATION-READINESS-004` (checkpoint `AGENT_A_BACKEND_PR_INTEGRATION_READY`).
+- Current objective: controlled PR integration preparation under `VALRYDE-AGENT-A-PR-INTEGRATION-005` (checkpoint `AGENT_A_CONTROLLED_PR_MERGE_READY`).
 - Last confirmed result: G5 fix PR #26 and G6/G7 proposal PR #27 opened; both green on `verify` (PostGIS) and GitGuardian.
-- Next concrete action: Agent G merges in the recommended order; Agent A reconciles #19, then #21, and resolves the status-file conflict on each later PR only when directed. G6/G7 only after decisions on PR #27.
+- Next concrete action: owner/Agent G merges in order #26, #23, #25, #24, #15, #16, #12, #20, #19, #21 using merge commits (not squash or rebase merge). G6/G7 only after decisions on PR #27.
 - Blocked by / decision owner: Agent G review of PRs #12–#25 and Stage 13b D01–D12; owner for production domain/app scheme (G5), geocoding provider terms (G6), and G7 lifecycle approval.
 - Dependencies / affected agents: B (tracking/latest state/realtime), C (public route/live APIs), D (driver invitation and operator APIs), E (Admin APIs), F (device runbooks), G (shared-contract review).
 
@@ -122,6 +122,17 @@
 
 ## Activity log (newest first; preserve prior entries)
 
+### 2026-10-23 09:00 +08:00 — Controlled PR integration preparation (no merges)
+
+- Action / reason: directive `VALRYDE-AGENT-A-PR-INTEGRATION-005`. Work done in dedicated worktree `.worktrees/agent-a-integration`; Agent B worktrees and PRs #14/#22 untouched.
+- Checklist/issue: IDs 1–11 (G1–G5, G10, G11, D3, fixtures, mobile testing policy).
+- Files/config/services affected: this status file on PRs #26, #23, #25, #24, #15, #16, #12, #20, #19 and #21; reconciled fleet sources on #19 (`src/domain/fleet.ts`, `src/services/fleet-service.ts`, `postman/Valryde-Agent-A.postman_collection.json`) and #21 (`src/routes/fleet-routes.ts`, `src/services/fleet-service.ts`, `docs/OPENAPI_ENDPOINT_TAGS.md`, Postman).
+- Observed result: one canonical status file now merges every PR's activity entries (the G5 23:10, G6/G7 23:30 and G11 00:20 entries were missing from the consolidated copy and are restored), and every prepared PR carries it byte-for-byte, so status-file conflicts disappear in any merge order. #19 merges #12 and #20 and #21 merges #19, through merge commits with manual keep-both resolution. History is not rewritten and nothing is force-pushed.
+- Validation and evidence: per branch, lint, strict typecheck, build, unit tests, unique OpenAPI operationIds and Postman JSON parse checks run locally; the full PostgreSQL/PostGIS suite and GitGuardian run in CI on each new HEAD. No local PostgreSQL test was run (no verified-disposable database).
+- Contracts / risks / dependencies: no endpoint, DTO, schema or migration change beyond the already-reviewed PR content. Until #12 and #20 merge, PR #19's diff also shows their commits, and #21's diff also shows #12, #20 and #19. A squash or rebase merge would reintroduce conflicts, so merge commits are required.
+- Commit/PR link or SHA: see the checkpoint `AGENT_A_CONTROLLED_PR_MERGE_READY` for each new HEAD.
+- Next action / owner gate: owner/Agent G merge decisions; G6/G7 decision register; Stage 13b D01–D12.
+
 ### 2026-10-23 01:10 +08:00 — Integration readiness (read-only) for open Agent A PRs
 
 - Action / reason: directive `VALRYDE-AGENT-A-INTEGRATION-READINESS-004`. Simulated merges using `git merge-tree` and dangling commits only; no branch, ref, PR or Agent B checkout was changed.
@@ -144,6 +155,17 @@
 - Commit/PR link or SHA: PR #25 `c4c8b7f6edd83c80d8ab6a47536929e1f4c9423d`.
 - Next action / owner gate: Agent G re-review of #25; decision register G6-D1…D6, G7-D1…D7.
 
+### 2026-10-23 00:20 +08:00 — G11 PR #25 corrections for AGENT_A_PHASE4_REVIEW_001
+
+- Action / reason: Agent G returned CHANGES REQUIRED on `22b6462f2bb6da4ef18c7cfaf2cee7638b191297`. Claude Agent A applied corrective commits on the same branch.
+- Checklist/issue: ID 10, gap G11.
+- Files/config/services affected: `src/services/transit-service.ts`, `test/pg-effective-route.integration.test.ts`.
+- Observed result: one canonical SQL decision boundary (`effectiveRouteDecisions`) now serves both `resolveEffectiveRouteDirection` and the impact preview, preserving direct override, single inherited route and CONFLICT rules. The impact preview's conflict check, counts and page now run in one statement, which shares one snapshot. Counts survive out-of-range pages. No schema, endpoint or DTO change; no Stage 13b interface.
+- Validation and evidence: lint, typecheck, build, audit (0), `git diff --check` passed locally; PostgreSQL suites run in CI's disposable PostGIS.
+- Contracts / risks / dependencies: Agent B consumers of `resolveEffectiveRouteDirection` keep the same signature and results.
+- Commit/PR link or SHA: PR #25 (corrective commit on `feat/10-g11-route-assignment-reads`).
+- Next action / owner gate: Agent G re-review.
+
 ### 2026-10-22 23:50 +08:00 — Phase 4 independent gaps submitted for review
 
 - Action / reason: Tech Lead Phase 4 authorization after recovery checkpoint.
@@ -155,6 +177,28 @@
 - Contracts / risks / dependencies: production startup now requires HTTPS `APP_*_URL`. G6-D1…D6, G7-D1…D7 await Agent G/owner.
 - Commit/PR link or SHA: #26 `407acde276517ae7543e885ecfb8eca9e671460a`; #27 `0ccd69c5f95a923231913e15442e517617698410`.
 - Next action / owner gate: Agent G review/decisions; this status branch stays local until Agent G directs how to land it.
+
+### 2026-10-22 23:30 +08:00 — G6 and G7 contract proposals submitted for review
+
+- Action / reason: Phase 4 authorization (Claude Agent A) asked for exact API/DTO/RBAC/error/fixture proposals for G6 and G7 without implementation.
+- Checklist/issue: IDs 37 (G6, Agent C consumer) and 52 (G7, Agents D/E consumers).
+- Files/config/services affected: `docs/integration/AGENT_A_G6_PLACE_DISCOVERY_CONTRACT_PROPOSAL.md`, `docs/integration/AGENT_A_G7_ROUTE_CHANGE_REQUEST_CONTRACT_PROPOSAL.md`. No source, migration or configuration change.
+- Observed result: proposals derived from the V1 system documentation (§4.5, C.3, D.5, §14.3) and existing repository conventions. Findings recorded: Fastify default request logs would capture place queries/coordinates unless redacted; Admin geometry validation enforces WGS84 bounds only, not the Philippines policy.
+- Validation and evidence: documentation only; `git diff --check` clean.
+- Contracts / risks / dependencies: decisions G6-D1…D6 and G7-D1…D7 await Agent G/owner. G7 migration numbering must be ordered against proposed A006.
+- Commit/PR link or SHA: branch `docs/agent-a-g6-g7-contract-proposals`.
+- Next action / owner gate: Agent G decisions; implement only the approved contract.
+
+### 2026-10-22 23:10 +08:00 — G5 email link audit and production callback guard
+
+- Action / reason: Phase 4 authorization (Claude Agent A). Audited verification, reset and email-change links against the approved unified-email contract (PR #11).
+- Checklist/issue: ID 1, gap G5.
+- Files/config/services affected: `src/config.ts` (production `APP_*_URL` must be HTTPS; embedded credentials rejected in all environments), `test/config.test.ts`, `docs/integration/AGENT_A_G5_EMAIL_LINK_AUDIT.md`.
+- Observed result: token hashing, single use, expiry, supersession and no-redirect behavior already pass. Two configuration gaps fixed. No endpoint, DTO, schema or migration change.
+- Validation and evidence: lint, typecheck, build, `npm audit --audit-level=high` (0), `git diff --check` passed; vitest 105 passed, 15 PostgreSQL-backed skipped locally (no proven-disposable database); CI runs them against PostGIS.
+- Contracts / risks / dependencies: a production deployment with an `http:` callback now fails at startup by design. App Links/Universal Links hosting, owner callback domain and per-role destinations remain owner/Tech Lead decisions.
+- Commit/PR link or SHA: branch `fix/1-g5-email-link-origin-guard`.
+- Next action / owner gate: Agent G review.
 
 ### 2026-10-22 22:45 +08:00 — Codex → Claude takeover recovery
 
