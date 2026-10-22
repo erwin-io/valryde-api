@@ -75,6 +75,17 @@
 
 ## Activity log (newest first; preserve prior entries)
 
+### 2026-10-22 23:30 +08:00 — G6 and G7 contract proposals submitted for review
+
+- Action / reason: Phase 4 authorization (Claude Agent A) asked for exact API/DTO/RBAC/error/fixture proposals for G6 and G7 without implementation.
+- Checklist/issue: IDs 37 (G6, Agent C consumer) and 52 (G7, Agents D/E consumers).
+- Files/config/services affected: `docs/integration/AGENT_A_G6_PLACE_DISCOVERY_CONTRACT_PROPOSAL.md`, `docs/integration/AGENT_A_G7_ROUTE_CHANGE_REQUEST_CONTRACT_PROPOSAL.md`. No source, migration or configuration change.
+- Observed result: proposals derived from the V1 system documentation (§4.5, C.3, D.5, §14.3) and existing repository conventions. Findings recorded: Fastify default request logs would capture place queries/coordinates unless redacted; Admin geometry validation enforces WGS84 bounds only, not the Philippines policy.
+- Validation and evidence: documentation only; `git diff --check` clean.
+- Contracts / risks / dependencies: decisions G6-D1…D6 and G7-D1…D7 await Agent G/owner. G7 migration numbering must be ordered against proposed A006.
+- Commit/PR link or SHA: branch `docs/agent-a-g6-g7-contract-proposals`.
+- Next action / owner gate: Agent G decisions; implement only the approved contract.
+
 ### 2026-10-21 16:55 +08:00 — Unified real-email environment release started
 
 - Action / reason: Tech Lead authorized real authenticated SMTP for local, preview, and production while retaining Mailpit only as an explicit testing override. Recovered canonical `main` at `2e8cc4d`; confirmed PRs #5/#7/#8 merged; preserved Agent B worktrees and untracked files.
