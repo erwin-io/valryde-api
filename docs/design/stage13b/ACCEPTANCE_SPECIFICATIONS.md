@@ -115,7 +115,7 @@ Phase: P3. Harness: A resolver integration + real PostgreSQL. Evidence: **PLANNE
 
 - **Given:** No direct; independently seed0,1,2 active inherited assignments.
 - **When:** Resolve each through approved A boundary.
-- **Then:** UNASSIGNED/null, RESOLVED/group and ROUTE_ASSIGNMENT_CONFLICT/UNKNOWN respectively; unrelated DB error is propagated, not converted into no route.
+- **Then:** UNASSIGNED/null, RESOLVED/group and ROUTE_ASSIGNMENT_CONFLICT/UNKNOWN respectively; under recommended eligibility split, valid private GPS may persist with unusable route, but public availability is denied. A/G confirmation required; unrelated DB error is propagated, not converted into no route.
 
 ### B13B-14
 
@@ -202,8 +202,8 @@ Phase: P2/P4. Harness: Pure provenance + real PostgreSQL. Evidence: **PLANNED / 
 Phase: P2/P3/P4/P5. Harness: A mutation integration + real PostgreSQL. Evidence: **PLANNED / NOT_RUN**.
 
 - **Given:** Materialized ON_ROUTE; separate ownership/group/direct/route-geometry/corridor/device-context changes.
-- **When:** Commit A mutation without new GPS; project immediately, reconcile, then drain pre-cutover fix.
-- **Then:** Public stale context hidden before sweep; new owner receives no prior-context private point; queued old observation fenced. Reconciliation monotonic revision/reset, old/new route invalidation intents only inP5.
+- **When:** Commit A mutation without new GPS; project immediately, reconcile, then drain pre-cutover fix; include route A→B→A with two version bumps.
+- **Then:** Public stale context hidden before sweep; new owner receives no prior-context private point; queued old observation fenced even when final route/hash returns to A, because expected contextVersion is old. Reconciliation monotonic revision/reset, old/new route invalidation intents only inP5.
 
 ### B13B-25
 
@@ -257,9 +257,9 @@ Phase: P2/P4. Harness: Two real PostgreSQL clients. Evidence: **PLANNED / NOT_RU
 
 Phase: P2/P4. Harness: Actual A mutations + two real PostgreSQL clients. Evidence: **PLANNED / NOT_RUN**.
 
-- **Given:** Reviewed A helper/lock contract and least-privilege role; review/verify/remap vs ingestion.
+- **Given:** Reviewed A advisory/context contract and least-privilege role; review/verify/remap vs ingestion.
 - **When:** At named lock barriers run each A workflow against B in both schedules; inspect own locks only.
-- **Then:** No baseline request/application↔jeepney inversion, no false active state or unexplained A deadlock500. If interface absent, case BLOCKED_BY_INTERFACE/NOT_RUN, never mocked as passing.
+- **Then:** No baseline request/application↔jeepney inversion; prove both paths acquire identical A-defined advisory keys before business locks, no false active state or unexplained A deadlock500. If interface absent, case BLOCKED_BY_INTERFACE/NOT_RUN, never mocked as passing.
 
 ### B13B-32
 
@@ -267,7 +267,7 @@ Phase: P3/P4. Harness: Actual A mutations + two real PostgreSQL clients. Evidenc
 
 - **Given:** Current direct/group/membership and route geometry/corridor mutation candidates.
 - **When:** Pause A between discovery/locked revalidation; overlap B resolver/write; test both orders.
-- **Then:** State uses one coherent committed business context; direct precedence unchanged. Test parent/direction update order too; no pool-query escape or stale hash relabel.
+- **Then:** State uses one coherent committed business context; direct precedence unchanged. Test parent/direction update order and affected-set expansion rollback/retry too; no pool-query escape or stale hash relabel.
 
 ### B13B-33
 
@@ -347,4 +347,4 @@ Phase: P1/P4/P5. Harness: Disposable PostgreSQL/PostGIS + migration runner. Evid
 
 - **Given:** Explicit authorized disposable DB identity; empty schema and001–005 snapshot; actual least-privilege actor.
 - **When:** Apply exact released migrations; inject DDL failure; verify catalog/checks/indexes/grants and old API; rehearse operational rollback.
-- **Then:** Atomic install/failure, no unexpected schema acceptance/version deletion. Non-owner cannot DDL/modify A business fields; locking only approved helper/grants. Rollback disables writer/readers and preserves audit; destructive restore/drop separately owner-approved.
+- **Then:** Atomic install/failure, no unexpected schema acceptance/version deletion. Non-owner cannot DDL/modify A business fields; only approved advisory execution plus A SELECT/B-write privileges; A context dependency installed as approved. Rollback disables writer/readers and preserves audit; destructive restore/drop separately owner-approved.

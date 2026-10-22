@@ -36,6 +36,7 @@ Exactly one row per jeepney. All identifiers/timestamps below are internal unles
 | route_direction_id | uuid NULL FK route_directions(id); current resolved snapshot, never a route assignment |
 | route_assignment_id | uuid NULL; provenance of A resolver result; not a new assignment table/FK |
 | route_resolution | text NOT NULL DEFAULT'UNASSIGNED', CHECK IN UNASSIGNED/RESOLVED/CONFLICT/INACTIVE |
+| context_version, context_cutover_at | bigint NULL CHECK>0 / timestamptz NULL; snapshot of proposed A positive monotonic version/cutover (initial1), all-or-none; not an implemented001–005 field |
 | context_fingerprint | text NULL;64 hex hash of mapping generation, effective assignment/source/active_from, direction+route status, geometry hash/corridor and eligibility/ownership context |
 | route_compliance | text NOT NULL DEFAULT'UNKNOWN', CHECK IN UNKNOWN/ON_ROUTE/OFF_ROUTE |
 | distance_m | double precision NULL; nonnegative finite distance to current canonical direction; not historical coordinates |
@@ -90,16 +91,19 @@ Preserve pending removal for every prior public route independently until delive
 
 | Candidate | Contents | Gate |
 |---|---|---|
-|006_tracking_latest_state.sql | vehicle_latest_states + tracking_bridge_leases + checks/indexes/empty lease seed | D01/D03/D05/D06/D12 plus explicit implementation/migration release |
-|007_route_compliance_events.sql | event table/constraints/indexes; no historical import or purge | D01/D02/D08 plus compliance release |
-|008_tracking_publication_intents.sql | pointer-only delivery intents, no Pusher settings | D09–D11 plus ID19 release |
+|006_tracking_context_generation.sql (A-owned prerequisite proposal) | A jeepney context version/cutover fields and reviewed initialization; no invented B adapter | A/G exact schema/initialization/lock/cutover approval; separate A ownership |
+|007_tracking_latest_state.sql | vehicle_latest_states + tracking_bridge_leases + checks/indexes/empty lease seed | D01/D03/D05/D06/D12 plus explicit implementation/migration release |
+|008_route_compliance_events.sql | event table/constraints/indexes; no historical import or purge | D01/D02/D08 plus compliance release |
+|009_tracking_publication_intents.sql | pointer-only delivery intents, no Pusher settings | D09–D11 plus ID19 release |
 
-P1 is the dedicated exact application-schema PR for006/007, with no runtime enablement. P2 keeps compliance UNKNOWN; P3 adds approved compliance/event writes;008 remains a separate P5 release. Approved A context/cutover design may require a separately reviewed dependency, never guessed columns/helpers in006.
+Proposed coordinated allocation is A006 context prerequisite, B007 latest/lease, B008 compliance events, later009 intents. This supersedes the initial B-only006/007/008 numbering; A/G must confirm before reserving filenames.
+
+P1 is the dedicated exact B application-schema PR for007/008, with no runtime enablement. P2 keeps compliance UNKNOWN; P3 adds approved compliance/event writes;009 remains a separate P5 release. Approved A context/cutover design may require a separately reviewed dependency, never guessed A columns/helpers in B007.
 
 Numbers are reservations in this proposal only. Re-fetch main before implementation; renumber if occupied. Do not create runtime objects on import or add auto-migration to Bridge startup.
 
 Forward plan after authorization: review exact SQL and privileges; backup/restore readiness for application DB (not Traccar dump); isolated empty-schema and001–005-upgrade tests; verify catalog/check/index/permission behavior and old API compatibility; apply through existing migration runner using migrator identity. Start no writer until matching schema version/feature flag checks pass. Transactions must fail loudly for unexpected existing structures, not silently accept incorrect IF NOT EXISTS objects.
 
-No existing-table rewrite/backfill or Traccar history copy is needed. Core-table creation must be atomic; indexes on new empty tables can be transactional. Bridge business reads and B state/lease/event writes must be allowlisted; locking A rows additionally requires reviewed locking privileges/helper execution under D12 (SELECT alone does not authorize these row locks). Future publisher/purge grants remain separate. Existing API/migrator role capabilities are not assumed sufficient proof of least privilege. No GRANT/role creation executed now.
+B tables require no Traccar history copy/backfill. A now proposes additive jeepney context version/cutover columns as a separately reviewed schema dependency; its initialization, upgrade/locking impact and exact SQL are A-owned and cannot be claimed rewrite-free from this design. Core-table creation must be atomic; indexes on new empty tables can be transactional. Bridge business reads and B state/lease/event writes must be allowlisted; preferred shared advisory serialization avoids B row locks on A tables. Review advisory execution/key namespace under D12; the superseded A-row-lock candidate would require more than SELECT and is not the preferred implementation. Future publisher/purge grants remain separate. Existing API/migrator role capabilities are not assumed sufficient proof of least privilege. No GRANT/role creation executed now.
 
 Rollback plan: stop only the authorized Bridge consumer gracefully, disable the proposed persistence/gateway feature flags, return to accepted13a summary-only mode and treat all durable snapshots as unavailable. Leave new tables/events intact for diagnosis; never present old rows as fresh. Schema/data DROP or restore is a separate owner-approved destructive operation after reader/writer dependency checks and recoverable backup. Do not delete schema_migrations records or edit already-applied migration SQL. No automatic down migration supplied/executed. Subsequent fix is a reviewed forward migration.
