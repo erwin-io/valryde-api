@@ -24,6 +24,7 @@ Infrastructure status/evidence reviewed read-only: Windows Traccar6.16.0 develop
 |42 detailed acceptance specifications, all planned | [Acceptance specifications](ACCEPTANCE_SPECIFICATIONS.md) |
 | Five separately authorized implementation phases | [Release plan](IMPLEMENTATION_RELEASE_PLAN.md) |
 | Consolidated G decision package, A dependencies, C/D/E contracts (2026-10-23) | [Parallel readiness package](PARALLEL_READINESS_REVIEW_PACKAGE.md) |
+| A17 reconciliation X1–X8, final options, post-#19/#21 dependency order | [Final decision options](FINAL_DECISION_OPTIONS.md) |
 
 ## Architecture
 
