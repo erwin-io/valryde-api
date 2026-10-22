@@ -1,16 +1,16 @@
 # VALRYDE — Agent B Status
 
 ## Current snapshot
-- Updated at: 2026-10-22T21:44:26+08:00 (Asia/Singapore; same offset as Asia/Manila).
+- Updated at: 2026-10-22T21:50:44+08:00 (Asia/Singapore; same offset as Asia/Manila).
 - Agent / module: B — Traccar / Tracking Engine. Codex executor; prior Claude/Codex evidence and history preserved below.
 - Repository: erwin-io/valryde-api. Overall checklist IDs12–21 remain IN_PROGRESS.
 - Branch / baseline HEAD: test/b-tracking-independent-preparation, based on canonical origin/main **827738c0f2c33ad3082f6a4a38a8e35669d4b0ea** in C:/Development/valryde/.worktrees/agent-b-bridge. Documentation commit HEAD is recorded in Git/PR metadata, avoiding a self-referential SHA.
 - Accepted REST foundation: PR #4 MERGED as 068da0c7cbb3bd5759d90c26ac96026eb706b999; accepted source a4062c800944457f11f6f8e97848b15c18d507b4, Tech Lead review comment6267265303. No change to accepted PR4.
 - Accepted Stage13a: [PR #10](https://github.com/erwin-io/valryde-api/pull/10) ACCEPTED per Tech Lead release and MERGED; final head9d009d5a9467c498125d54c8f844dabacd3cc6c3, merge69deb572a9e323ce5cb2f0fb0f163dafe8df2bbd. Scoped progress DONE_AFTER_ACCEPTANCE; prior runtime/live evidence preserved, not rerun for design.
 - Current objective: VALRYDE-AGENT-B-TRACKING-COMPLETION-001 independent implementation/preparation; **AGENT_B_TRACKING_INDEPENDENT_SCOPE_COMPLETE**, independent scope READY_FOR_REVIEW; overall IDs12–21 IN_PROGRESS. Stage13b schema/runtime NOT_IMPLEMENTED; no migration or client contract authorized.
-- Current review: architecture direction ACCEPTED IN PRINCIPLE by current Tech Lead directive; exact D01–D12/migrations/runtime/gateway NOT_APPROVED. Continuing existing PR14; no new acceptance claim. [Design issue #13](https://github.com/erwin-io/valryde-api/issues/13), [documentation PR #14](https://github.com/erwin-io/valryde-api/pull/14) OPEN; initial design source head d4884c0fb2be831701d24254cd9f70ed6592c750; earlier [Issue #9](https://github.com/erwin-io/valryde-api/issues/9) / PR10 and [Issue #3](https://github.com/erwin-io/valryde-api/issues/3) / [PR #4](https://github.com/erwin-io/valryde-api/pull/4) retained as historical slices.
-- Last confirmed result:38new independent tests +2history regressions, two reproduced B parser/frame defects narrowly fixed. Lint/typecheck/build/audit PASSED; full local run139PASS/15explicit DB/live skips.42full13b cases BLOCKED, not PASS. Source/contract/gateway readiness report and machine-readable matrix prepared.
-- Next concrete action: publish focused independent PR/Issue18 for review; G must approve D01–D12 and integrate released A interfaces before B007/B008/gateway work. Design merge alone does not authorize SQL/runtime.
+- Current review: independent [PR22](https://github.com/erwin-io/valryde-api/pull/22) OPEN/sourcef97724b3fdaa4ba9556f08b82691889a5a41d230; G review pending. Earlier architecture direction ACCEPTED IN PRINCIPLE by current Tech Lead directive; exact D01–D12/migrations/runtime/gateway NOT_APPROVED. Continuing existing PR14; no new acceptance claim. [Design issue #13](https://github.com/erwin-io/valryde-api/issues/13), [documentation PR #14](https://github.com/erwin-io/valryde-api/pull/14) OPEN; initial design source head d4884c0fb2be831701d24254cd9f70ed6592c750; earlier [Issue #9](https://github.com/erwin-io/valryde-api/issues/9) / PR10 and [Issue #3](https://github.com/erwin-io/valryde-api/issues/3) / [PR #4](https://github.com/erwin-io/valryde-api/pull/4) retained as historical slices.
+- Last confirmed result:38new independent tests +2history regressions +1read-only isolated PostGIS dependency probe, two reproduced B parser/frame defects narrowly fixed. Lint/typecheck/build/audit PASSED; final local run139PASS/16explicit DB/live skips; initial PR22 API verify/security PASSED.42full13b cases BLOCKED, not PASS. Source/contract/gateway readiness report and machine-readable matrix prepared.
+- Next concrete action: review published independent PR22/Issue18; G must approve D01–D12 and integrate released A interfaces before B007/B008/gateway work. Design merge alone does not authorize SQL/runtime.
 - Shared blockers: A proposed same-client resolver/auth, per-jeepney transaction advisory keys and additive context version/cutover are delivered as A17 proposal but need G approval/exact SQL/source integration (old row-lock candidate inverted request/application workflows); immutable remap protocol; invalid-observation adapter; timing/retention/temporal-history and gateway decisions.
 - Dependencies: A business eligibility/authorization/route precedence; C/D/E versioned DTOs and REST/Pusher reconciliation; Infrastructure/owner approved app test writer and later rollout; F stationary-reporting/physical GPS evidence.
 - Missing references: complete Version1.0 DOCX and standalone checklist unavailable in workspace; frozen handoffs/owner directives used, no requirements invented.
@@ -25,14 +25,14 @@
 | 19–21 | Realtime/compliance/geospatial | Design proposed; runtime NOT_STARTED | Stage13b compliance review; gateway remains separate ID19 release |
 
 ## Latest verification
-Current independent completion: two minimal B-owned admission fixes and40added regressions; no local database/live service run. Full13b case results are separately BLOCKED.
+Current independent completion: two minimal B-owned admission fixes,40added regressions and1read-only PostGIS CI dependency probe; no local database/live service run. Full13b case results are separately BLOCKED.
 
 Current design verification is separate from historical implementation results below. Earlier dated entries retain what was known at that time; current snapshot supersedes their stale merge/credential gates.
 
 | Command/check | Result | Evidence |
 |---|---|---|
 | Independent targeted suites | PASSED |38new parser/lifecycle/ordering/privacy cases +14history cases =52; broader initial tracking gate96passed |
-| Independent full local Vitest | PASSED WITH SKIPS |139passed/15skipped,12files passed/9skipped; TEST_DATABASE_URL/TRACCAR_LIVE_TEST cleared in test child; no DB/live evidence |
+| Independent full local Vitest | PASSED WITH SKIPS |Final139passed/16skipped,12files passed/10skipped; TEST_DATABASE_URL/TRACCAR_LIVE_TEST cleared in test child; no DB/live evidence |
 | Independent lint/typecheck/build/audit | PASSED | Direct ESLint CLI excludes ignoredtmp; npm typecheck/build; audit0 |
 | Initial local lint | FAILED, ENVIRONMENT | Historical ignoredtmp live harness outside TS project; npm wrapper consumed exclusion flag; direct CLI succeeds, artifacts preserved |
 | B13B-01..42 current full-case execution | BLOCKED42 | D01–D12/A006/B007/B008/gateway approvals/source absent; partial independent evidence never upgrades full cases |
@@ -92,6 +92,12 @@ Current design verification is separate from historical implementation results b
 - Pusher configuration/hardware evidence are pending later slices. No physical verification claimed.
 
 ## Activity log (newest first; preserve prior entries)
+### 2026-10-22 21:51 +08:00 — PR22 published and read-only PostGIS probe prepared
+- Published source/test/headf97724b3fdaa4ba9556f08b82691889a5a41d230 on independent branch, opened PR22 and attached it to this chat. GitGuardian SUCCESS; API verify job39789717778 SUCCESS on disposable CI PostGIS/legacy001–005. Design14/A17 still OPEN with no reviews; main still827738c. No main push/merge.
+- Added pg-tracking-geometry.integration.test.ts as an independent SQL dependency probe: BEGIN READ ONLY, constant SRID4326 point/line,99/100/101m distances,100/150m corridors and exact zero-distance inclusive boundary. Rollback/release/end in finally; no tables/fixtures/writes. This is not the unimplemented B compliance evaluator and does not upgrade B13B-11 from BLOCKED.
+- New probe-inclusive local full suite PASSED139tests/16explicit skips,12files passed/10skipped; real DB probe skipped locally and will run only under isolated CI TEST_DATABASE_URL. Lint/typecheck had passed with new probe; final lint/static/whitespace recheck accompanies the metadata/probe commit.
+- Updated technical report/machine ledger and canonical PR refs; complete historical log preserved. Exact final follow-up HEAD/CI reported by PR metadata. Overall B IN_PROGRESS; no local DB migration, private provider credential/telemetry or infrastructure change.
+
 ### 2026-10-22 21:44 +08:00 — Independent scope verified, full42 cases remain gated
 - Targeted52tests PASSED, then direct ESLint/typecheck/full local Vitest/build/audit PASSED:139tests passed/15explicit skips (DB14 + live1),12files passed/9skipped. Audit0. Lint first failed on a preserved ignored13a live harness; npm wrapper also lost ignore flag; direct ESLint excluding only ignoredtmp passed. All failures retained, no new source finding from those lint attempts.
 - New38test independent suite plus2history regressions (40new tests) exercises real accepted source, not a speculative A adapter or invented gateway. Two production defects reproduced before fix (34pass/2fail) and corrected narrowly. Valid session/reconnect/lifecycle/auth/route behavior retained. Fake-socket timers and existing loopback transport cleaned; no DB fixtures or real Traccar session.

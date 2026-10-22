@@ -4,7 +4,7 @@ Directive VALRYDE-AGENT-B-TRACKING-COMPLETION-001. Checkpoint **AGENT_B_TRACKING
 
 ## Baseline, authority and source preservation
 
-Branch test/b-tracking-independent-preparation is based on merged main827738c0f2c33ad3082f6a4a38a8e35669d4b0ea, including accepted13a PR10/merge69deb572a9e323ce5cb2f0fb0f163dafe8df2bbd. No runtime source is taken from an unmerged dependency. Work item [Issue18](https://github.com/erwin-io/valryde-api/issues/18).
+Branch test/b-tracking-independent-preparation is based on merged main827738c0f2c33ad3082f6a4a38a8e35669d4b0ea, including accepted13a PR10/merge69deb572a9e323ce5cb2f0fb0f163dafe8df2bbd. No runtime source is taken from an unmerged dependency. Work item [Issue18](https://github.com/erwin-io/valryde-api/issues/18); review [PR22](https://github.com/erwin-io/valryde-api/pull/22), substantive admission/test headf97724b3fdaa4ba9556f08b82691889a5a41d230. Follow-up adds only read-only SQL probe/report metadata, not production source changes.
 
 Reviewed B [PR14](https://github.com/erwin-io/valryde-api/pull/14) at149cefc82d0ccea3c1efe06aebaf157a607c1d8e, its D01–D12/42-scenario/P1–P5 package; A [PR17](https://github.com/erwin-io/valryde-api/pull/17) atfd76cb54000ec47c383c6641359f3e3cf59e4340 (interface content36af1c6cb7cd1e749f4d8d2eff15183e40e578fd); A G1/fixture handoff. Both design PRs are OPEN with no GitHub reviews/comments approving exact decisions at recovery. Architecture acceptance in principle from the human is preserved; exact shared-schema/gateway approval is not inferred.
 
@@ -15,7 +15,8 @@ Read [A interface proposal](https://github.com/erwin-io/valryde-api/blob/36af1c6
 -38 new deterministic tests in test/tracking-independent.test.ts cover safe provider IDs, malformed/nonfinite values, normalization/source instants, future/per-device watermarks, invalid-fix gap characterization, UTF8 frame bounds, malformed sibling isolation, event-ID dedupe/arrival ordering, status-without-GPS, stationary reporting, stale reconciliation, queue overflow, shutdown cancellation/drain, replaced-socket callbacks, duplicate supervisors and privacy.
 -2 added existing history-boundary tests reject ambiguous duplicate provider devices and reauthorize a revoked fleet grant before provider access. This tests the accepted service, not a speculative A adapter.
 -Two reproduced B-owned defects fixed narrowly: finite source speed may overflow km/h, now rejected during provider parsing; maxFrameBytes now counts UTF8 bytes rather than UTF16 characters. Valid normalization, accepted session/lifecycle/recovery and API/A interfaces preserved.
--No database migration/schema, A-owned source, API endpoint/DTO, route rule, Pusher/channel, permanent process or infrastructure configuration changed. No Traccar session/credential/telemetry access. Tests use injected fakes and an ephemeral loopback provider stub only.
+-One additional read-only pg-tracking-geometry.integration.test.ts probe uses only constant geometries in the isolated CI PostGIS service: longitude/latitude/SRID,99/100/101m distance measurements,100/150m corridors and exact coincident-point inclusion. It rolls back/releases in finally, creates no fixture/table, and never claims full B13B-11 evaluator acceptance. Nominal100m projection is measured within numerical test tolerance; no runtime corridor epsilon is added.
+-No database migration/schema, A-owned source, API endpoint/DTO, route rule, Pusher/channel, permanent process or infrastructure configuration changed. No Traccar session/credential/telemetry access. Independent lifecycle tests use injected fakes and an ephemeral loopback provider stub; the SQL dependency probe runs only when an explicitly supplied isolated TEST_DATABASE_URL exists (CI).
 
 ## Verification ledger
 
@@ -25,11 +26,13 @@ Read [A interface proposal](https://github.com/erwin-io/valryde-api/blob/36af1c6
 | Corrected fixture, before source fixes |34PASS/2FAIL | Reproduced conversion overflow and multibyte frame-limit defects |
 | After narrow fixes,5 tracking suites |96PASS | Actual existing bridge/REST/history and loopback HTTP/socket regression |
 | Expanded independent+history suites |52PASS |38new independent tests plus14history tests; no database |
-| Final lint/typecheck/full tests/build/audit | PASSED;139tests passed/15skipped |12files passed/9skipped; DB14cases + live1case explicitly skipped; audit0; no shared local database used |
+| Lint/typecheck/full tests/build/audit before SQL probe | PASSED;139tests passed/15skipped |12files passed/9skipped; DB14cases + live1case explicitly skipped; audit0 |
+| Final SQL-probe-inclusive local full test run | PASSED WITH SKIPS;139PASS/16SKIP |12files passed/10skipped; DB15cases + live1 skipped; read-only probe awaits isolated CI evidence |
+| Initial PR22 API verify + GitGuardian atf97724b | PASSED | CI39789717778 runs legacy001–005 on disposable PostGIS; follow-up SQL probe has separate checks |
 
 Plain npm run lint initially failed because an ignored historical tmp/bridge-readonly-validation.mjs is outside TypeScript project service. The npm wrapper also consumed the attempted exclusion flag; direct node node_modules/eslint/bin/eslint.js . --ignore-pattern tmp/** successfully excluded only ignored local artifacts. Those historical scripts are preserved; tracked CI runs the unchanged ordinary lint command.
 
-Local full test execution explicitly clears TEST_DATABASE_URL and TRACCAR_LIVE_TEST in the child environment then restores inherited values. Database/live cases are skipped, not passing evidence. GitHub CI may run unchanged legacy001–005 PostgreSQL tests in its disposable PostGIS service; it does not implement or pass the42 future13b cases. No new migrations executed anywhere under this slice.
+Local full test execution explicitly clears TEST_DATABASE_URL and TRACCAR_LIVE_TEST in the child environment then restores inherited values. Database/live cases are skipped, not passing evidence. GitHub CI may run unchanged legacy001–005 PostgreSQL tests in its disposable PostGIS service; it does not implement or pass the42 future13b cases. No new migrations executed anywhere under this slice. The additional PostGIS dependency probe uses BEGIN READ ONLY and constant geometries only, with no B schema/A context dependency; its CI result is separate from the42 full-case ledger.
 
 ## IDs12–21 feature inventory
 
@@ -127,7 +130,7 @@ Counts: **0PASS /0FAIL /42BLOCKED /0NOT_RUN**. BLOCKED means the complete accept
 |B13B-08|BLOCKED|COMPLIANCE_RELEASE: D02/D03 plus A006/interfaces and approved B007/B008 schema/runtime|No full-case execution; design only|
 |B13B-09|BLOCKED|COMPLIANCE_RELEASE: D02/D03 plus A006/interfaces and approved B007/B008 schema/runtime|No full-case execution; design only|
 |B13B-10|BLOCKED|COMPLIANCE_RELEASE: D02/D03 plus A006/interfaces and approved B007/B008 schema/runtime|No full-case execution; design only|
-|B13B-11|BLOCKED|COMPLIANCE_RELEASE: D02/D03 plus A006/interfaces and approved B007/B008 schema/runtime|No full-case execution; design only|
+|B13B-11|BLOCKED|COMPLIANCE_RUNTIME: exact evaluator/corridor configuration integration not released; independent SQL dependency probe is not full acceptance|Read-only PostGIS probe added in pg-tracking-geometry.integration.test.ts; isolated CI execution reported separately; full runtime evaluator NOT_RUN|
 |B13B-12|BLOCKED|COMPLIANCE_RELEASE: D02/D03 plus A006/interfaces and approved B007/B008 schema/runtime|No full-case execution; design only|
 |B13B-13|BLOCKED|COMPLIANCE_RELEASE: D02/D03 plus A006/interfaces and approved B007/B008 schema/runtime|No full-case execution; design only|
 |B13B-14|BLOCKED|COMPLIANCE_RELEASE: D02/D03 plus A006/interfaces and approved B007/B008 schema/runtime|No full-case execution; design only|
@@ -162,6 +165,6 @@ Counts: **0PASS /0FAIL /42BLOCKED /0NOT_RUN**. BLOCKED means the complete accept
 
 ## Deployment, migrations and remaining evidence
 
-No new migration authored/executed, database fixtures created, live telemetry sent, actual Traccar account changed, service installed, production secret accessed or deployment performed. Existing DPAPI service artifact and Windows Infrastructure preserved; historical authenticated13a evidence is linked in prior status and remains historical. New fake sockets/timers/loopback listeners close during tests. Approval gates require G/A decisions and later exact SQL/database scope, not physical hardware before submitting independent software work.
+No new migration authored/executed or local database fixtures created, live telemetry sent, actual Traccar account changed, service installed, production secret accessed or deployment performed. Existing DPAPI service artifact and Windows Infrastructure preserved; historical authenticated13a evidence is linked in prior status and remains historical. New fake sockets/timers/loopback listeners close during tests. Approval gates require G/A decisions and later exact SQL/database scope, not physical hardware before submitting independent software work.
 
 Final branch/PR/full source HEAD and CI are recorded in the PR and canonical status. Do not self-merge or declare IDs12–21 fully accepted from this checkpoint.

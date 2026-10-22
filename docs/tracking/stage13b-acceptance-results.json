@@ -84,8 +84,8 @@
       "id": "B13B-11",
       "status": "BLOCKED",
       "scenario": "Distance99/100/101m and configured corridor150m",
-      "blocker": "COMPLIANCE_RELEASE: D02/D03 plus A006/interfaces and approved B007/B008 schema/runtime",
-      "partialEvidence": "No full-case execution; design only"
+      "blocker": "COMPLIANCE_RUNTIME: exact evaluator/corridor configuration integration not released; independent SQL dependency probe is not full acceptance",
+      "partialEvidence": "Read-only PostGIS probe added in pg-tracking-geometry.integration.test.ts; isolated CI execution reported separately; full runtime evaluator NOT_RUN"
     },
     {
       "id": "B13B-12",
