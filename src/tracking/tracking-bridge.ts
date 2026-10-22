@@ -270,7 +270,7 @@ export class TrackingBridge {
 
   /** Returns undefined for a keepalive. Throws FrameError when continuity can no longer be trusted. */
   #parseFrame(data: unknown): Frame | undefined {
-    if (typeof data !== 'string' || data.length > this.#config.maxFrameBytes) throw new FrameError();
+    if (typeof data !== 'string' || Buffer.byteLength(data, 'utf8') > this.#config.maxFrameBytes) throw new FrameError();
     let value: unknown;
     try { value = JSON.parse(data); } catch { throw new FrameError(); }
     if (typeof value !== 'object' || value === null || Array.isArray(value)) throw new FrameError();

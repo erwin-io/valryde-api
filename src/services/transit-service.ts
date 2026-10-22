@@ -2,10 +2,12 @@ import type pg from 'pg';
 
 import type { User } from '../domain/identity.js';
 import type {
+  AffectedJeepney,
   EffectiveRouteDirection,
   LineStringGeometry,
   RecordStatus,
   RouteDirection,
+  RouteAssignmentImpact,
   TransitRoute,
   VehicleRouteAssignment,
 } from '../domain/transit.js';
@@ -49,6 +51,38 @@ interface EffectiveRouteRow extends DirectionRow {
   assignment_id: string;
   assignment_group_id: string | null;
   assignment_active_from: Date;
+}
+
+interface AffectedJeepneyRow {
+  jeepney_id: string | null;
+  plate_no: string | null;
+  source: 'DIRECT' | 'GROUP' | null;
+  assignment_id: string | null;
+  group_id: string | null;
+  conflict_total: string;
+  affected_total: string;
+  direct_assignment_count: string;
+  group_assignment_count: string;
+}
+
+export interface DirectRouteCandidate {
+  route: { id: string; routeCode: string; publicName: string; routeColorHex: string };
+  direction: { id: string; directionLabel: string; originName: string; destinationName: string };
+  originDistanceM: number;
+  destinationDistanceM: number;
+}
+
+interface DirectRouteCandidateRow {
+  route_id: string;
+  route_code: string;
+  public_name: string;
+  route_color_hex: string;
+  direction_id: string;
+  direction_label: string;
+  origin_name: string;
+  destination_name: string;
+  origin_distance_m: number;
+  destination_distance_m: number;
 }
 
 export class TransitService {
@@ -117,6 +151,68 @@ export class TransitService {
       [routeId],
     );
     return { ...mapRoute(route), directions: directions.rows.map(mapDirection) };
+  }
+
+  // Direct (single-ride) candidates only; VALRYDE has no multi-transfer planner.
+  async discoverDirectRoutes(input: {
+    origin: { lat: number; lng: number };
+    destination: { lat: number; lng: number };
+    maxWalkM: number;
+    limit: number;
+  }): Promise<DirectRouteCandidate[]> {
+    const result = await this.pool.query<DirectRouteCandidateRow>(
+      `WITH input AS (
+         SELECT ST_SetSRID(ST_MakePoint($2, $1), 4326) AS origin,
+                ST_SetSRID(ST_MakePoint($4, $3), 4326) AS destination,
+                $5::float8 AS max_walk_m
+       )
+       SELECT * FROM (
+       SELECT tr.id AS route_id, tr.route_code, tr.public_name, tr.route_color_hex,
+         rd.id AS direction_id, rd.direction_label, rd.origin_name, rd.destination_name,
+         round(ST_Distance(rd.geometry::geography, input.origin::geography))::int AS origin_distance_m,
+         round(ST_Distance(rd.geometry::geography, input.destination::geography))::int
+           AS destination_distance_m
+       FROM route_directions rd
+       JOIN transit_routes tr ON tr.id = rd.route_id
+       CROSS JOIN input
+       WHERE tr.status = 'ACTIVE' AND rd.status = 'ACTIVE'
+         -- Degree prefilter lets the GiST index apply; one degree is over 100 km inside the PH envelope.
+         AND ST_DWithin(rd.geometry, input.origin, input.max_walk_m / 100000)
+         AND ST_DWithin(rd.geometry, input.destination, input.max_walk_m / 100000)
+         AND ST_DWithin(rd.geometry::geography, input.origin::geography, input.max_walk_m)
+         AND ST_DWithin(rd.geometry::geography, input.destination::geography, input.max_walk_m)
+         AND ST_LineLocatePoint(rd.geometry, input.origin)
+           < ST_LineLocatePoint(rd.geometry, input.destination)
+       ) candidate
+       -- Output aliases cannot appear inside ORDER BY expressions, hence the subquery.
+       ORDER BY candidate.origin_distance_m + candidate.destination_distance_m,
+         candidate.route_code, candidate.direction_label
+       LIMIT $6`,
+      [
+        input.origin.lat,
+        input.origin.lng,
+        input.destination.lat,
+        input.destination.lng,
+        input.maxWalkM,
+        input.limit,
+      ],
+    );
+    return result.rows.map((row) => ({
+      route: {
+        id: row.route_id,
+        routeCode: row.route_code,
+        publicName: row.public_name,
+        routeColorHex: row.route_color_hex,
+      },
+      direction: {
+        id: row.direction_id,
+        directionLabel: row.direction_label,
+        originName: row.origin_name,
+        destinationName: row.destination_name,
+      },
+      originDistanceM: row.origin_distance_m,
+      destinationDistanceM: row.destination_distance_m,
+    }));
   }
 
   async listAdminRoutes(): Promise<Array<TransitRoute & { directions: RouteDirection[] }>> {
@@ -235,28 +331,36 @@ export class TransitService {
   ): Promise<RouteDirection> {
     await this.requireDirection(directionId, false);
     if (input.geometry !== undefined) validateLineString(input.geometry);
-    const result = await this.pool.query<DirectionRow>(
-      `UPDATE route_directions SET
-         direction_label = COALESCE($2, direction_label),
-         origin_name = COALESCE($3, origin_name),
-         destination_name = COALESCE($4, destination_name),
-         geometry = CASE WHEN $5::boolean
-           THEN ST_SetSRID(ST_GeomFromGeoJSON($6), 4326) ELSE geometry END,
-         corridor_m = COALESCE($7, corridor_m),
-         status = COALESCE($8::record_status, status),
-         updated_at = now()
-       WHERE id = $1 RETURNING ${directionReturning}`,
-      [
-        directionId,
-        input.directionLabel?.trim() ?? null,
-        input.originName?.trim() ?? null,
-        input.destinationName?.trim() ?? null,
-        input.geometry !== undefined,
-        input.geometry === undefined ? null : JSON.stringify(input.geometry),
-        input.corridorM ?? null,
-        input.status ?? null,
-      ],
-    );
+    let result: pg.QueryResult<DirectionRow>;
+    try {
+      result = await this.pool.query<DirectionRow>(
+        `UPDATE route_directions SET
+           direction_label = COALESCE($2, direction_label),
+           origin_name = COALESCE($3, origin_name),
+           destination_name = COALESCE($4, destination_name),
+           geometry = CASE WHEN $5::boolean
+             THEN ST_SetSRID(ST_GeomFromGeoJSON($6), 4326) ELSE geometry END,
+           corridor_m = COALESCE($7, corridor_m),
+           status = COALESCE($8::record_status, status),
+           updated_at = now()
+         WHERE id = $1 RETURNING ${directionReturning}`,
+        [
+          directionId,
+          input.directionLabel?.trim() ?? null,
+          input.originName?.trim() ?? null,
+          input.destinationName?.trim() ?? null,
+          input.geometry !== undefined,
+          input.geometry === undefined ? null : JSON.stringify(input.geometry),
+          input.corridorM ?? null,
+          input.status ?? null,
+        ],
+      );
+    } catch (error) {
+      if (isUniqueViolation(error)) {
+        throw new ApiError(409, 'CONFLICT', 'Direction label already exists for this route');
+      }
+      throw error;
+    }
     const direction = mapDirection(requireRow(result.rows[0]));
     await this.audit(actor.id, 'ROUTE_DIRECTION_UPDATED', 'ROUTE_DIRECTION', directionId, {
       fields: Object.keys(input),
@@ -350,6 +454,120 @@ export class TransitService {
     }
   }
 
+  async listRouteAssignments(
+    actor: User,
+    input: {
+      routeDirectionId?: string;
+      jeepneyId?: string;
+      groupId?: string;
+      activeOnly: boolean;
+      page: number;
+      pageSize: number;
+    },
+  ): Promise<{ assignments: VehicleRouteAssignment[]; total: number }> {
+    const isAdmin = actor.roles.includes('ADMIN');
+    const operatorId = isAdmin ? null : await this.actorOperator(actor);
+    const parameters = [
+      isAdmin,
+      operatorId,
+      input.routeDirectionId ?? null,
+      input.jeepneyId ?? null,
+      input.groupId ?? null,
+      input.activeOnly,
+    ];
+    const where = `WHERE (
+        $1::boolean
+        OR (assignment.jeepney_id IS NOT NULL AND jeepney.operator_id = $2)
+        OR (assignment.group_id IS NOT NULL AND fleet_group.operator_id = $2)
+      )
+      AND ($3::uuid IS NULL OR assignment.route_direction_id = $3)
+      AND ($4::uuid IS NULL OR assignment.jeepney_id = $4)
+      AND ($5::uuid IS NULL OR assignment.group_id = $5)
+      AND ($6::boolean = false OR assignment.active_to IS NULL)`;
+    const joins = `FROM vehicle_route_assignments assignment
+      LEFT JOIN jeepneys jeepney ON jeepney.id = assignment.jeepney_id
+      LEFT JOIN fleet_groups fleet_group ON fleet_group.id = assignment.group_id`;
+    const [rows, count] = await Promise.all([
+      this.pool.query<AssignmentRow>(
+        `SELECT assignment.* ${joins} ${where}
+         ORDER BY assignment.active_from DESC, assignment.id
+         LIMIT $7 OFFSET $8`,
+        [...parameters, input.pageSize, (input.page - 1) * input.pageSize],
+      ),
+      this.pool.query<{ total: string }>(
+        `SELECT count(*)::text AS total ${joins} ${where}`,
+        parameters,
+      ),
+    ]);
+    return {
+      assignments: rows.rows.map(mapAssignment),
+      total: Number(count.rows[0]?.total ?? 0),
+    };
+  }
+
+  async getRouteAssignmentImpact(
+    routeDirectionId: string,
+    input: { page: number; pageSize: number },
+  ): Promise<RouteAssignmentImpact> {
+    await this.requireDirection(routeDirectionId, false);
+    // One statement: the conflict check, counts and page share a single snapshot.
+    const result = await this.pool.query<AffectedJeepneyRow>(
+      `WITH ${effectiveRouteDecisions(
+        `EXISTS (SELECT 1 FROM vehicle_route_assignments direct
+           WHERE direct.jeepney_id = jeepney.id AND direct.active_to IS NULL AND direct.route_direction_id = $1)
+         OR EXISTS (SELECT 1 FROM fleet_group_jeepneys membership
+           JOIN vehicle_route_assignments inherited
+             ON inherited.group_id = membership.group_id AND inherited.active_to IS NULL
+           WHERE membership.jeepney_id = jeepney.id AND inherited.route_direction_id = $1)`,
+      )},
+       affected AS (
+         SELECT jeepney_id, plate_no, source, assignment_id, group_id
+         FROM effective_route_decisions
+         WHERE route_direction_id = $1
+       ),
+       counts AS (
+         SELECT
+           (SELECT count(*) FROM effective_route_decisions
+             WHERE source = 'CONFLICT' AND $1 = ANY(inherited_direction_ids))::text AS conflict_total,
+           (SELECT count(*) FROM affected)::text AS affected_total,
+           (SELECT count(*) FROM vehicle_route_assignments
+             WHERE jeepney_id IS NOT NULL AND active_to IS NULL AND route_direction_id = $1)::text
+             AS direct_assignment_count,
+           (SELECT count(*) FROM vehicle_route_assignments
+             WHERE group_id IS NOT NULL AND active_to IS NULL AND route_direction_id = $1)::text
+             AS group_assignment_count
+       ),
+       page AS (
+         SELECT * FROM affected
+         ORDER BY plate_no, jeepney_id
+         LIMIT $2 OFFSET $3
+       )
+       SELECT page.*, counts.*
+       FROM counts
+       LEFT JOIN page ON true
+       ORDER BY page.plate_no NULLS LAST, page.jeepney_id`,
+      [routeDirectionId, input.pageSize, (input.page - 1) * input.pageSize],
+    );
+    const first = result.rows[0];
+    if (Number(first?.conflict_total ?? 0) > 0) {
+      throw new ApiError(
+        409,
+        'ROUTE_ASSIGNMENT_CONFLICT',
+        'An affected jeepney inherits more than one active fleet-group route',
+      );
+    }
+    const affected = result.rows
+      .filter((row) => row.jeepney_id !== null)
+      .map(mapAffectedJeepney);
+    return {
+      routeDirectionId,
+      activeDirectAssignmentCount: Number(first?.direct_assignment_count ?? 0),
+      activeGroupAssignmentCount: Number(first?.group_assignment_count ?? 0),
+      affectedJeepneyCount: Number(first?.affected_total ?? 0),
+      affectedJeepneys: affected,
+    };
+  }
+
   async getEffectiveRouteDirection(
     actor: User,
     jeepneyId: string,
@@ -359,30 +577,28 @@ export class TransitService {
   }
 
   async resolveEffectiveRouteDirection(jeepneyId: string): Promise<EffectiveRouteDirection | null> {
-    const direct = await this.pool.query<EffectiveRouteRow>(
-      `${effectiveDirectionSelect}
-       WHERE assignment.jeepney_id = $1 AND assignment.active_to IS NULL`,
+    const result = await this.pool.query<EffectiveRouteRow & { decision_source: EffectiveRouteSource | null }>(
+      `WITH ${effectiveRouteDecisions('jeepney.id = $1')}
+       SELECT decision.source AS decision_source, assignment.id AS assignment_id,
+         assignment.group_id AS assignment_group_id, assignment.active_from AS assignment_active_from,
+         rd.id, rd.route_id, rd.direction_label, rd.origin_name, rd.destination_name,
+         ST_AsGeoJSON(rd.geometry)::json AS geometry, rd.corridor_m, rd.status,
+         rd.created_at, rd.updated_at
+       FROM effective_route_decisions decision
+       LEFT JOIN vehicle_route_assignments assignment ON assignment.id = decision.assignment_id
+       LEFT JOIN route_directions rd ON rd.id = assignment.route_direction_id`,
       [jeepneyId],
     );
-    const directRow = direct.rows[0];
-    if (directRow !== undefined) return mapEffectiveRoute(directRow, 'DIRECT');
-
-    const group = await this.pool.query<EffectiveRouteRow>(
-      `${effectiveDirectionSelect}
-       JOIN fleet_group_jeepneys membership ON membership.group_id = assignment.group_id
-       WHERE membership.jeepney_id = $1 AND assignment.active_to IS NULL
-       ORDER BY assignment.active_from DESC, assignment.id`,
-      [jeepneyId],
-    );
-    if (group.rows.length > 1) {
+    const row = result.rows[0];
+    if (row?.decision_source === 'CONFLICT') {
       throw new ApiError(
         409,
         'ROUTE_ASSIGNMENT_CONFLICT',
         'Jeepney inherits more than one active fleet-group route',
       );
     }
-    const groupRow = group.rows[0];
-    return groupRow === undefined ? null : mapEffectiveRoute(groupRow, 'GROUP');
+    if (row === undefined || row.decision_source === null) return null;
+    return mapEffectiveRoute(row, row.decision_source);
   }
 
   private async actorOperator(actor: User): Promise<string> {
@@ -487,13 +703,57 @@ const directionInsert = `INSERT INTO route_directions(
 const directionReturning = `id, route_id, direction_label, origin_name, destination_name,
   ST_AsGeoJSON(geometry)::json AS geometry, corridor_m, status, created_at, updated_at`;
 
-const effectiveDirectionSelect = `SELECT assignment.id AS assignment_id,
-  assignment.group_id AS assignment_group_id, assignment.active_from AS assignment_active_from,
-  rd.id, rd.route_id, rd.direction_label, rd.origin_name, rd.destination_name,
-  ST_AsGeoJSON(rd.geometry)::json AS geometry, rd.corridor_m, rd.status,
-  rd.created_at, rd.updated_at
-  FROM vehicle_route_assignments assignment
-  JOIN route_directions rd ON rd.id = assignment.route_direction_id`;
+type EffectiveRouteSource = EffectiveRouteDirection['source'] | 'CONFLICT';
+
+// Canonical effective-route decision (frozen contract): an active direct jeepney assignment wins;
+// otherwise exactly one active fleet-group assignment is inherited; more than one is CONFLICT;
+// none leaves source NULL. `jeepneyScope` is a trusted SQL predicate over alias `jeepney`.
+function effectiveRouteDecisions(jeepneyScope: string): string {
+  return `scoped_jeepneys AS (
+    SELECT jeepney.id, jeepney.plate_no FROM jeepneys jeepney WHERE ${jeepneyScope}
+  ),
+  direct_active AS (
+    SELECT assignment.id, assignment.jeepney_id, assignment.route_direction_id
+    FROM vehicle_route_assignments assignment
+    JOIN scoped_jeepneys scoped ON scoped.id = assignment.jeepney_id
+    WHERE assignment.active_to IS NULL
+  ),
+  group_active AS (
+    SELECT membership.jeepney_id,
+      (array_agg(assignment.id ORDER BY assignment.active_from DESC, assignment.id))[1] AS assignment_id,
+      (array_agg(assignment.group_id ORDER BY assignment.active_from DESC, assignment.id))[1] AS group_id,
+      (array_agg(assignment.route_direction_id ORDER BY assignment.active_from DESC, assignment.id))[1]
+        AS route_direction_id,
+      array_agg(assignment.route_direction_id) AS route_direction_ids,
+      count(*) AS assignment_count
+    FROM scoped_jeepneys scoped
+    JOIN fleet_group_jeepneys membership ON membership.jeepney_id = scoped.id
+    JOIN vehicle_route_assignments assignment
+      ON assignment.group_id = membership.group_id AND assignment.active_to IS NULL
+    GROUP BY membership.jeepney_id
+  ),
+  effective_route_decisions AS (
+    SELECT scoped.id AS jeepney_id, scoped.plate_no,
+      CASE
+        WHEN direct.id IS NOT NULL THEN 'DIRECT'
+        WHEN inherited.assignment_count = 1 THEN 'GROUP'
+        WHEN inherited.assignment_count > 1 THEN 'CONFLICT'
+      END AS source,
+      CASE
+        WHEN direct.id IS NOT NULL THEN direct.id
+        WHEN inherited.assignment_count = 1 THEN inherited.assignment_id
+      END AS assignment_id,
+      CASE WHEN direct.id IS NULL AND inherited.assignment_count = 1 THEN inherited.group_id END AS group_id,
+      CASE
+        WHEN direct.id IS NOT NULL THEN direct.route_direction_id
+        WHEN inherited.assignment_count = 1 THEN inherited.route_direction_id
+      END AS route_direction_id,
+      CASE WHEN direct.id IS NULL THEN inherited.route_direction_ids END AS inherited_direction_ids
+    FROM scoped_jeepneys scoped
+    LEFT JOIN direct_active direct ON direct.jeepney_id = scoped.id
+    LEFT JOIN group_active inherited ON inherited.jeepney_id = scoped.id
+  )`;
+}
 
 function mapRoute(row: RouteRow): TransitRoute {
   return {
@@ -545,6 +805,24 @@ function mapEffectiveRoute(
     groupId: row.assignment_group_id,
     activeFrom: row.assignment_active_from,
     direction: mapDirection(row),
+  };
+}
+
+function mapAffectedJeepney(row: AffectedJeepneyRow): AffectedJeepney {
+  if (
+    row.jeepney_id === null ||
+    row.plate_no === null ||
+    row.source === null ||
+    row.assignment_id === null
+  ) {
+    throw new Error('Affected jeepney row is incomplete');
+  }
+  return {
+    jeepneyId: row.jeepney_id,
+    plateNo: row.plate_no,
+    source: row.source,
+    assignmentId: row.assignment_id,
+    groupId: row.group_id,
   };
 }
 

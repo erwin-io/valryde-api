@@ -97,7 +97,22 @@ describe('OpenAPI documentation', () => {
     expect(document.paths['/auth/register']?.post?.security).toBeUndefined();
     expect(document.paths['/transit-routes']?.get?.security).toBeUndefined();
     expect(document.paths['/transit-routes/{routeId}']?.get?.security).toBeUndefined();
+    expect(document.paths['/transit-routes/discover']?.get?.security).toBeUndefined();
+    expect(document.paths['/places/search']?.get?.security).toEqual([{ bearerAuth: [] }]);
     expect(document.paths['/auth/me']?.get?.security).toEqual([{ bearerAuth: [] }]);
     expect(document.paths['/admin/users/']?.get?.security).toEqual([{ bearerAuth: [] }]);
+  });
+
+  it('publishes the approved G1 directory operations as protected fleet contracts', () => {
+    expect(document.paths['/drivers']?.get).toMatchObject({
+      operationId: 'listDrivers',
+      tags: [openApiTagDefinitions[4]?.name],
+      security: [{ bearerAuth: [] }],
+    });
+    expect(document.paths['/operators']?.get).toMatchObject({
+      operationId: 'listOperators',
+      tags: [openApiTagDefinitions[4]?.name],
+      security: [{ bearerAuth: [] }],
+    });
   });
 });

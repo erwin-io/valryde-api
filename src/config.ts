@@ -20,7 +20,11 @@ export interface AppConfig {
   authResendCooldownSeconds: number;
   googleClientIds: string[];
   email: EmailConfig;
+  /** Absent means place search is disabled. */
+  geocoder?: GeocoderConfig;
 }
+
+export type GeocoderConfig = { provider: 'disabled' } | { provider: 'photon'; photonBaseUrl: string };
 
 export type EmailConfig =
   | { deliveryMode: 'disabled' }
@@ -116,19 +120,32 @@ export function loadConfig(source: NodeJS.ProcessEnv = process.env): AppConfig {
       .split(',')
       .map((id) => id.trim())
       .filter(Boolean),
-    email: emailConfig(source),
+    email: emailConfig(source, environment(source.NODE_ENV)),
+    geocoder: geocoderConfig(source, environment(source.NODE_ENV)),
   };
 }
 
-function emailConfig(source: NodeJS.ProcessEnv): EmailConfig {
+// The live provider stays off until the owner approves its terms and usage (G6-D4).
+function geocoderConfig(source: NodeJS.ProcessEnv, env: Environment): GeocoderConfig {
+  const bias = source.GEOCODER_COUNTRY_BIAS ?? 'ph';
+  if (bias !== 'ph') throw new Error('GEOCODER_COUNTRY_BIAS must be ph');
+  const provider = source.GEOCODER_PROVIDER ?? 'disabled';
+  if (provider === 'disabled') return { provider: 'disabled' };
+  if (provider !== 'photon') throw new Error('GEOCODER_PROVIDER must be disabled or photon');
+  const baseUrl = source.PHOTON_BASE_URL?.trim();
+  if (!baseUrl) throw new Error('PHOTON_BASE_URL is required when GEOCODER_PROVIDER=photon');
+  return { provider: 'photon', photonBaseUrl: webUrl(baseUrl, 'PHOTON_BASE_URL', env) };
+}
+
+function emailConfig(source: NodeJS.ProcessEnv, env: Environment): EmailConfig {
   const mode = source.EMAIL_DELIVERY_MODE ?? 'disabled';
   if (mode === 'disabled') return { deliveryMode: 'disabled' };
   if (mode !== 'smtp') throw new Error('EMAIL_DELIVERY_MODE must be disabled or smtp');
 
   const from = required(source, 'EMAIL_FROM');
-  const verificationOrigin = webUrl(required(source, 'APP_VERIFICATION_URL'), 'APP_VERIFICATION_URL');
-  const passwordResetOrigin = webUrl(required(source, 'APP_PASSWORD_RESET_URL'), 'APP_PASSWORD_RESET_URL');
-  const emailChangeOrigin = webUrl(required(source, 'APP_EMAIL_CHANGE_URL'), 'APP_EMAIL_CHANGE_URL');
+  const verificationOrigin = webUrl(required(source, 'APP_VERIFICATION_URL'), 'APP_VERIFICATION_URL', env);
+  const passwordResetOrigin = webUrl(required(source, 'APP_PASSWORD_RESET_URL'), 'APP_PASSWORD_RESET_URL', env);
+  const emailChangeOrigin = webUrl(required(source, 'APP_EMAIL_CHANGE_URL'), 'APP_EMAIL_CHANGE_URL', env);
   const host = required(source, 'SMTP_HOST');
   const user = source.SMTP_USER?.trim() || undefined;
   const password = source.SMTP_PASSWORD || undefined;
@@ -157,10 +174,17 @@ function required(source: NodeJS.ProcessEnv, name: string): string {
   return value;
 }
 
-function webUrl(value: string, name: string): string {
+// Emailed links carry a one-time token and provider calls carry user queries, so production URLs must be HTTPS and never embed credentials.
+function webUrl(value: string, name: string, env: Environment): string {
   const url = new URL(value);
   if (url.protocol !== 'http:' && url.protocol !== 'https:') {
     throw new Error(`${name} must use http or https`);
+  }
+  if (env === 'production' && url.protocol !== 'https:') {
+    throw new Error(`${name} must use https in production`);
+  }
+  if (url.username || url.password) {
+    throw new Error(`${name} must not contain credentials`);
   }
   return url.toString();
 }

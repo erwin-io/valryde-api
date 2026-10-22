@@ -82,11 +82,38 @@ const EffectiveRouteDirectionSchema = Type.Object({
   activeFrom: DateTime,
   direction: DirectionSchema,
 });
+const AffectedJeepneySchema = Type.Object({
+  jeepneyId: Uuid,
+  plateNo: Type.String(),
+  source: Type.Union([Type.Literal('DIRECT'), Type.Literal('GROUP')]),
+  assignmentId: Uuid,
+  groupId: Type.Union([Uuid, Type.Null()]),
+});
 const PaginationSchema = Type.Object({
   page: Type.Integer({ minimum: 1 }),
   pageSize: Type.Integer({ minimum: 1 }),
   total: Type.Integer({ minimum: 0 }),
   totalPages: Type.Integer({ minimum: 0 }),
+});
+
+// Philippines envelope (G6 proposal §2); keep in step with philippinesBounds in geocoder-service.
+const Latitude = Type.Number({ minimum: 4.0, maximum: 21.5, examples: [10.3157] });
+const Longitude = Type.Number({ minimum: 116.0, maximum: 127.0, examples: [123.8854] });
+const DirectRouteCandidateSchema = Type.Object({
+  route: Type.Object({
+    id: Uuid,
+    routeCode: Type.String(),
+    publicName: Type.String(),
+    routeColorHex: ColorHex,
+  }),
+  direction: Type.Object({
+    id: Uuid,
+    directionLabel: Type.String(),
+    originName: Type.String(),
+    destinationName: Type.String(),
+  }),
+  originDistanceM: Type.Integer({ minimum: 0 }),
+  destinationDistanceM: Type.Integer({ minimum: 0 }),
 });
 
 export const transitRoutes: FastifyPluginAsync<TransitRoutesOptions> = async (instance, options) => {
@@ -126,6 +153,49 @@ export const transitRoutes: FastifyPluginAsync<TransitRoutesOptions> = async (in
       })),
       pagination: { page, pageSize, total: result.total, totalPages: Math.ceil(result.total / pageSize) },
     };
+    },
+  );
+
+  fastify.get(
+    '/transit-routes/discover',
+    {
+      config: { rateLimit: { max: 30, timeWindow: '1 minute' } },
+      schema: {
+        tags: [OpenApiTags.placeSearch],
+        operationId: 'discoverDirectTransitRoutes',
+        summary: 'Find direct routes between two points',
+        description:
+          'Public. Returns active route directions passing within maxWalkM of both the origin and the destination, in travel order. Direct rides only: no transfers are planned. An empty list with directRouteFound=false means "No direct route found". Coordinates are not stored or logged.',
+        querystring: Type.Object(
+          {
+            lat: Latitude,
+            lng: Longitude,
+            destinationLat: Latitude,
+            destinationLng: Longitude,
+            maxWalkM: Type.Optional(Type.Integer({ minimum: 50, maximum: 1000, default: 500 })),
+            limit: Type.Optional(Type.Integer({ minimum: 1, maximum: 10, default: 5 })),
+          },
+          { additionalProperties: false },
+        ),
+        response: {
+          200: Type.Object({
+            candidates: Type.Array(DirectRouteCandidateSchema),
+            directRouteFound: Type.Boolean(),
+          }),
+          400: ErrorSchema,
+          429: ErrorSchema,
+        },
+      },
+    },
+    async (request) => {
+      const query = request.query;
+      const candidates = await options.transitService.discoverDirectRoutes({
+        origin: { lat: query.lat, lng: query.lng },
+        destination: { lat: query.destinationLat, lng: query.destinationLng },
+        maxWalkM: query.maxWalkM ?? 500,
+        limit: query.limit ?? 5,
+      });
+      return { candidates, directRouteFound: candidates.length > 0 };
     },
   );
 
@@ -368,6 +438,114 @@ export const transitRoutes: FastifyPluginAsync<TransitRoutesOptions> = async (in
         request.body,
       );
       return reply.code(201).send({ assignment: serializeVehicleRouteAssignment(assignment) });
+    },
+  );
+
+  fastify.get(
+    '/route-assignments',
+    {
+      preHandler: fastify.requireRoles('OPERATOR', 'ADMIN'),
+      schema: {
+        tags: [OpenApiTags.transit],
+        operationId: 'listRouteAssignments',
+        summary: 'List authorized route assignments',
+        description:
+          'ADMIN can read all assignment history. OPERATOR results are restricted to owned jeepneys and fleet groups.',
+        security: [{ bearerAuth: [] }],
+        querystring: Type.Object(
+          {
+            routeDirectionId: Type.Optional(Uuid),
+            jeepneyId: Type.Optional(Uuid),
+            groupId: Type.Optional(Uuid),
+            activeOnly: Type.Optional(Type.Boolean({ default: true })),
+            page: Type.Optional(Type.Integer({ minimum: 1, default: 1 })),
+            pageSize: Type.Optional(Type.Integer({ minimum: 1, maximum: 100, default: 20 })),
+          },
+          { additionalProperties: false },
+        ),
+        response: {
+          200: Type.Object({ assignments: Type.Array(AssignmentSchema), pagination: PaginationSchema }),
+          401: ErrorSchema,
+          403: ErrorSchema,
+        },
+      },
+    },
+    async (request) => {
+      const page = request.query.page ?? 1;
+      const pageSize = request.query.pageSize ?? 20;
+      const result = await options.transitService.listRouteAssignments(
+        requireUser(request.currentUser),
+        {
+          ...(request.query.routeDirectionId === undefined
+            ? {}
+            : { routeDirectionId: request.query.routeDirectionId }),
+          ...(request.query.jeepneyId === undefined ? {} : { jeepneyId: request.query.jeepneyId }),
+          ...(request.query.groupId === undefined ? {} : { groupId: request.query.groupId }),
+          activeOnly: request.query.activeOnly ?? true,
+          page,
+          pageSize,
+        },
+      );
+      return {
+        assignments: result.assignments.map(serializeVehicleRouteAssignment),
+        pagination: { page, pageSize, total: result.total, totalPages: Math.ceil(result.total / pageSize) },
+      };
+    },
+  );
+
+  fastify.get(
+    '/admin/route-directions/:directionId/assignment-impact',
+    {
+      preHandler: fastify.requireRoles('ADMIN'),
+      schema: {
+        tags: [OpenApiTags.transit],
+        operationId: 'getRouteDirectionAssignmentImpact',
+        summary: 'Preview active vehicles affected by a route-direction change',
+        description:
+          'ADMIN-only bounded preview. Effective vehicles use direct-over-group precedence; ambiguous inherited group assignments return ROUTE_ASSIGNMENT_CONFLICT.',
+        security: [{ bearerAuth: [] }],
+        params: Type.Object({ directionId: Uuid }),
+        querystring: Type.Object(
+          {
+            page: Type.Optional(Type.Integer({ minimum: 1, default: 1 })),
+            pageSize: Type.Optional(Type.Integer({ minimum: 1, maximum: 100, default: 20 })),
+          },
+          { additionalProperties: false },
+        ),
+        response: {
+          200: Type.Object({
+            impact: Type.Object({
+              routeDirectionId: Uuid,
+              activeDirectAssignmentCount: Type.Integer({ minimum: 0 }),
+              activeGroupAssignmentCount: Type.Integer({ minimum: 0 }),
+              affectedJeepneyCount: Type.Integer({ minimum: 0 }),
+              affectedJeepneys: Type.Array(AffectedJeepneySchema),
+            }),
+            pagination: PaginationSchema,
+          }),
+          401: ErrorSchema,
+          403: ErrorSchema,
+          404: ErrorSchema,
+          409: ErrorSchema,
+        },
+      },
+    },
+    async (request) => {
+      const page = request.query.page ?? 1;
+      const pageSize = request.query.pageSize ?? 20;
+      const impact = await options.transitService.getRouteAssignmentImpact(request.params.directionId, {
+        page,
+        pageSize,
+      });
+      return {
+        impact,
+        pagination: {
+          page,
+          pageSize,
+          total: impact.affectedJeepneyCount,
+          totalPages: Math.ceil(impact.affectedJeepneyCount / pageSize),
+        },
+      };
     },
   );
 

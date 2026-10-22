@@ -99,6 +99,12 @@ try {
 
 The exact `ADMIN_BOOTSTRAP_CONFIRM` value is a deliberate one-time authorization guard. The password must contain 12 to 128 characters. The command creates a verified, active `ADMIN` account with an Argon2id password hash and an `ADMIN_BOOTSTRAPPED` audit record. It does not use public registration and does not dispatch an email. It is safe to rerun for the same active, verified Admin and will make no changes. It refuses to promote an existing non-Admin account or create a second initial Admin; additional Admin access must use a separately reviewed internal process. Never use a predictable default password, especially in preview or production.
 
+## Development business fixtures
+
+Agent C, D, and E integration can use the deterministic, development-only fixture tooling documented in [Development fixtures](docs/development/DEVELOPMENT_FIXTURES.md). It creates verified accounts with a caller-supplied Argon2id password, linked fleet/route/application/GPS scenarios, and no verification email. The command refuses production mode, non-loopback PostgreSQL, a database-name mismatch, a non-`dbo` schema, missing Valryde migrations, Traccar table markers, any non-fixture user, or a cross-boundary business/audit relationship.
+
+The seed is idempotent, while cleanup targets only the stable IDs in the fixture manifest after all ownership checks pass. Never point either command at a shared, production, or Traccar database.
+
 ## Verification
 
 ```powershell

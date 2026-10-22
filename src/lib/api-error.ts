@@ -18,6 +18,7 @@ export type ErrorCode =
   | 'VEHICLE_NOT_APPROVED'
   | 'GPS_NOT_INSTALLED'
   | 'DEVICE_MAPPING_CONFLICT'
+  | 'GEOCODER_UNAVAILABLE'
   | 'INTERNAL_ERROR';
 
 export class ApiError extends Error {

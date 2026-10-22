@@ -45,6 +45,8 @@ describeDatabase('fleet API with PostgreSQL', () => {
   let driverA1: User;
   let driverA2: User;
   let driverB: User;
+  let admin: User;
+  let commuter: User;
   let operatorAId: string;
   let operatorBId: string;
   let driverA1Id: string;
@@ -53,12 +55,14 @@ describeDatabase('fleet API with PostgreSQL', () => {
 
   beforeAll(async () => {
     app = await buildApp({ config, logger: false });
-    [operatorA, operatorB, driverA1, driverA2, driverB] = await Promise.all([
+    [operatorA, operatorB, driverA1, driverA2, driverB, admin, commuter] = await Promise.all([
       createUser('OPERATOR', 'Operator A'),
       createUser('OPERATOR', 'Operator B'),
       createUser('DRIVER', 'Driver A1'),
       createUser('DRIVER', 'Driver A2'),
       createUser('DRIVER', 'Driver B'),
+      createAdminUser(),
+      createUser('COMMUTER', 'Commuter'),
     ]);
 
     const operators = await pool.query<{ id: string; owner_user_id: string }>(
@@ -229,6 +233,44 @@ describeDatabase('fleet API with PostgreSQL', () => {
     );
     expect(assignmentState.rows[0]).toMatchObject({ active_count: '1', closed_count: '1' });
 
+    const deniedUnassign = await app.inject({
+      method: 'DELETE',
+      url: `/api/jeepneys/${jeepneyAId}/driver-assignment`,
+      headers: authorization(operatorBToken),
+    });
+    expect(deniedUnassign.statusCode).toBe(403);
+
+    const unassigned = await app.inject({
+      method: 'DELETE',
+      url: `/api/jeepneys/${jeepneyAId}/driver-assignment`,
+      headers: authorization(operatorAToken),
+    });
+    expect(unassigned.statusCode).toBe(200);
+    expect(unassigned.json()).toMatchObject({
+      assignment: {
+        driverId: driverA2Id,
+        jeepneyId: jeepneyAId,
+      },
+    });
+    expect(unassigned.json<{ assignment: { activeTo: string | null } }>().assignment.activeTo).not.toBeNull();
+
+    const noActiveAssignment = await app.inject({
+      method: 'DELETE',
+      url: `/api/jeepneys/${jeepneyAId}/driver-assignment`,
+      headers: authorization(operatorAToken),
+    });
+    expect(noActiveAssignment.statusCode).toBe(409);
+    expect(noActiveAssignment.json<{ error: { code: string } }>().error.code).toBe('CONFLICT');
+
+    const closedState = await pool.query<{ active_count: string; closed_count: string }>(
+      `SELECT
+         count(*) FILTER (WHERE active_to IS NULL)::text AS active_count,
+         count(*) FILTER (WHERE active_to IS NOT NULL)::text AS closed_count
+       FROM driver_jeepney_assignments WHERE jeepney_id = $1`,
+      [jeepneyAId],
+    );
+    expect(closedState.rows[0]).toMatchObject({ active_count: '0', closed_count: '2' });
+
     const driverAJeepneys = await app.inject({
       method: 'GET',
       url: '/api/jeepneys',
@@ -259,6 +301,13 @@ describeDatabase('fleet API with PostgreSQL', () => {
       driverBJeepneys.json<{ jeepneys: { id: string }[] }>().jeepneys.map((item) => item.id),
     ).not.toContain(jeepneyAId);
 
+    const unassignAudit = await pool.query<{ metadata: { driverId?: string } }>(
+      `SELECT metadata FROM audit_logs
+       WHERE actor_user_id = $1 AND action = 'DRIVER_JEEPNEY_UNASSIGNED' AND entity_id = $2`,
+      [operatorA.id, jeepneyAId],
+    );
+    expect(unassignAudit.rows[0]?.metadata.driverId).toBe(driverA2Id);
+
     const driverBGroups = await app.inject({
       method: 'GET',
       url: '/api/fleet-groups',
@@ -266,6 +315,114 @@ describeDatabase('fleet API with PostgreSQL', () => {
     });
     expect(driverBGroups.statusCode).toBe(200);
     expect(driverBGroups.json<{ groups: { id: string }[] }>().groups).toHaveLength(0);
+
+    const operatorMembers = await app.inject({
+      method: 'GET',
+      url: `/api/fleet-groups/${groupId}/members?page=1&pageSize=1`,
+      headers: authorization(operatorAToken),
+    });
+    expect(operatorMembers.statusCode).toBe(200);
+    expect(operatorMembers.json<{
+      members: Array<Record<string, unknown>>;
+      pagination: { page: number; pageSize: number; total: number; totalPages: number };
+    }>()).toMatchObject({ pagination: { page: 1, pageSize: 1, total: 2, totalPages: 2 } });
+
+    const adminMembers = await app.inject({
+      method: 'GET',
+      url: `/api/fleet-groups/${groupId}/members`,
+      headers: authorization(token(admin)),
+    });
+    expect(adminMembers.statusCode).toBe(200);
+    expect(adminMembers.json<{ pagination: { total: number } }>().pagination.total).toBe(2);
+
+    const driverMembers = await app.inject({
+      method: 'GET',
+      url: `/api/fleet-groups/${groupId}/members?memberType=DRIVER`,
+      headers: authorization(token(driverA1)),
+    });
+    expect(driverMembers.statusCode).toBe(200);
+    const driverMemberPayload = driverMembers.json<{
+      members: Array<Record<string, unknown>>;
+      pagination: { total: number };
+    }>();
+    expect(driverMemberPayload.pagination.total).toBe(1);
+    expect(driverMemberPayload.members[0]).toMatchObject({
+      memberType: 'DRIVER',
+      driverId: driverA1Id,
+      displayName: driverA1.displayName,
+    });
+    expect(driverMemberPayload.members[0]).not.toHaveProperty('email');
+    expect(driverMemberPayload.members[0]).not.toHaveProperty('userId');
+
+    for (const caller of [operatorB, driverB]) {
+      const denied = await app.inject({
+        method: 'GET',
+        url: `/api/fleet-groups/${groupId}/members`,
+        headers: authorization(token(caller)),
+      });
+      expect(denied.statusCode).toBe(403);
+    }
+    expect(
+      (
+        await app.inject({
+          method: 'GET',
+          url: `/api/fleet-groups/${groupId}/members`,
+          headers: authorization(token(commuter)),
+        })
+      ).statusCode,
+    ).toBe(403);
+
+    const crossOperatorRemoval = await app.inject({
+      method: 'DELETE',
+      url: `/api/fleet-groups/${groupId}/drivers/${driverA1Id}`,
+      headers: authorization(operatorBToken),
+    });
+    expect(crossOperatorRemoval.statusCode).toBe(403);
+
+    const removeDriver = await app.inject({
+      method: 'DELETE',
+      url: `/api/fleet-groups/${groupId}/drivers/${driverA1Id}`,
+      headers: authorization(operatorAToken),
+    });
+    expect(removeDriver.statusCode).toBe(204);
+    expect(
+      (
+        await app.inject({
+          method: 'DELETE',
+          url: `/api/fleet-groups/${groupId}/drivers/${driverA1Id}`,
+          headers: authorization(operatorAToken),
+        })
+      ).statusCode,
+    ).toBe(404);
+
+    const removeJeepney = await app.inject({
+      method: 'DELETE',
+      url: `/api/fleet-groups/${groupId}/jeepneys/${jeepneyAId}`,
+      headers: authorization(operatorAToken),
+    });
+    expect(removeJeepney.statusCode).toBe(204);
+
+    const emptyMembers = await app.inject({
+      method: 'GET',
+      url: `/api/fleet-groups/${groupId}/members`,
+      headers: authorization(operatorAToken),
+    });
+    expect(emptyMembers.statusCode).toBe(200);
+    expect(emptyMembers.json()).toMatchObject({
+      members: [],
+      pagination: { page: 1, pageSize: 20, total: 0, totalPages: 0 },
+    });
+
+    const auditRows = await pool.query<{ action: string }>(
+      `SELECT action FROM audit_logs
+       WHERE actor_user_id = $1
+         AND action IN ('FLEET_GROUP_DRIVER_REMOVED', 'FLEET_GROUP_JEEPNEY_REMOVED')`,
+      [operatorA.id],
+    );
+    expect(auditRows.rows.map((row) => row.action).sort()).toEqual([
+      'FLEET_GROUP_DRIVER_REMOVED',
+      'FLEET_GROUP_JEEPNEY_REMOVED',
+    ]);
   });
 
   it('associates a verified Driver by email and blocks cross-operator ownership', async () => {
@@ -325,7 +482,10 @@ describeDatabase('fleet API with PostgreSQL', () => {
     expect(unverifiedResponse.json<{ error: { code: string } }>().error.code).toBe('DRIVER_NOT_READY');
   });
 
-  async function createUser(role: 'DRIVER' | 'OPERATOR', displayName: string): Promise<User> {
+  async function createUser(
+    role: 'COMMUTER' | 'DRIVER' | 'OPERATOR',
+    displayName: string,
+  ): Promise<User> {
     const user = await repository.createUser({
       email: `${role.toLowerCase()}-${randomUUID()}@example.com`,
       passwordHash: null,
@@ -335,6 +495,15 @@ describeDatabase('fleet API with PostgreSQL', () => {
     });
     userIds.push(user.id);
     return user;
+  }
+
+  async function createAdminUser(): Promise<User> {
+    const user = await createUser('COMMUTER', 'Admin');
+    await pool.query(
+      `INSERT INTO user_roles(user_id, role) VALUES ($1, 'ADMIN')`,
+      [user.id],
+    );
+    return { ...user, roles: [...user.roles, 'ADMIN'] };
   }
 
   function token(user: User): string {

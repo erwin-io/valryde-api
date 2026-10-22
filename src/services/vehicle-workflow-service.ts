@@ -41,14 +41,14 @@ interface SetupRow {
 }
 
 interface MappingRow {
-  id: string;
-  gps_setup_request_id: string;
-  gps_device_id: string;
-  jeepney_id: string;
-  imei: string;
-  serial_number: string;
-  traccar_unique_id: string;
-  mapped_at: Date;
+  id: string | null;
+  gps_setup_request_id: string | null;
+  gps_device_id: string | null;
+  jeepney_id: string | null;
+  imei: string | null;
+  serial_number: string | null;
+  traccar_unique_id: string | null;
+  mapped_at: Date | null;
 }
 
 export class VehicleWorkflowService {
@@ -304,6 +304,24 @@ export class VehicleWorkflowService {
     }
   }
 
+  async getDeviceMapping(requestId: string): Promise<DeviceMapping | null> {
+    const result = await this.pool.query<MappingRow>(
+      `SELECT mapping.id, mapping.gps_setup_request_id, mapping.gps_device_id,
+         mapping.jeepney_id, device.imei, device.serial_number,
+         mapping.traccar_unique_id, mapping.mapped_at
+       FROM gps_setup_requests request
+       LEFT JOIN traccar_device_mappings mapping
+         ON mapping.gps_setup_request_id = request.id
+       LEFT JOIN gps_devices device ON device.id = mapping.gps_device_id
+       WHERE request.id = $1`,
+      [requestId],
+    );
+    const row = result.rows[0];
+    if (row === undefined) throw new ApiError(404, 'NOT_FOUND', 'GPS setup request not found');
+    if (row.id === null) return null;
+    return mapMapping(row);
+  }
+
   async verifyInstallation(
     actor: User,
     requestId: string,
@@ -451,6 +469,18 @@ function mapSetup(row: SetupRow): GpsSetupRequest {
 }
 
 function mapMapping(row: MappingRow): DeviceMapping {
+  if (
+    row.id === null ||
+    row.gps_setup_request_id === null ||
+    row.gps_device_id === null ||
+    row.jeepney_id === null ||
+    row.imei === null ||
+    row.serial_number === null ||
+    row.traccar_unique_id === null ||
+    row.mapped_at === null
+  ) {
+    throw new Error('Device mapping row is incomplete');
+  }
   return {
     id: row.id,
     gpsSetupRequestId: row.gps_setup_request_id,
