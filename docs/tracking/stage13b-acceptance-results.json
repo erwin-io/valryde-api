@@ -1,0 +1,308 @@
+{
+  "directive": "VALRYDE-AGENT-B-TRACKING-COMPLETION-001",
+  "baseline": "827738c0f2c33ad3082f6a4a38a8e35669d4b0ea",
+  "designHead": "149cefc82d0ccea3c1efe06aebaf157a607c1d8e",
+  "approvalState": "D01-D12 and A runtime interfaces not approved/integrated",
+  "counts": {
+    "PASS": 0,
+    "FAIL": 0,
+    "BLOCKED": 42,
+    "NOT_RUN": 0
+  },
+  "cases": [
+    {
+      "id": "B13B-01",
+      "status": "BLOCKED",
+      "scenario": "Fresh verified mapping, initial inside fix at T",
+      "blocker": "PERSISTENCE_RELEASE: D01-D07/D12 plus approved integrated A006 and B007/B008; isolated database authority",
+      "partialEvidence": "No full-case execution; design only"
+    },
+    {
+      "id": "B13B-02",
+      "status": "BLOCKED",
+      "scenario": "Out-of-bounds swapped lat/lon, bounds/NaN/Infinity",
+      "blocker": "PERSISTENCE_RELEASE: D01-D07/D12 plus approved integrated A006 and B007/B008; isolated database authority",
+      "partialEvidence": "Related independent parser/ordering/privacy/lifecycle subchecks executed; durable/gateway portion NOT_RUN"
+    },
+    {
+      "id": "B13B-03",
+      "status": "BLOCKED",
+      "scenario": "10knots, heading360, three distinct UTC source times",
+      "blocker": "PERSISTENCE_RELEASE: D01-D07/D12 plus approved integrated A006 and B007/B008; isolated database authority",
+      "partialEvidence": "Related independent parser/ordering/privacy/lifecycle subchecks executed; durable/gateway portion NOT_RUN"
+    },
+    {
+      "id": "B13B-04",
+      "status": "BLOCKED",
+      "scenario": "Outside T then T+30s, only2 fixes, continuous fresh context",
+      "blocker": "COMPLIANCE_RELEASE: D02/D03 plus A006/interfaces and approved B007/B008 schema/runtime",
+      "partialEvidence": "No full-case execution; design only"
+    },
+    {
+      "id": "B13B-05",
+      "status": "BLOCKED",
+      "scenario": "Outside T,T+10,T+20",
+      "blocker": "COMPLIANCE_RELEASE: D02/D03 plus A006/interfaces and approved B007/B008 schema/runtime",
+      "partialEvidence": "No full-case execution; design only"
+    },
+    {
+      "id": "B13B-06",
+      "status": "BLOCKED",
+      "scenario": "One outside noisy point then inside",
+      "blocker": "COMPLIANCE_RELEASE: D02/D03 plus A006/interfaces and approved B007/B008 schema/runtime",
+      "partialEvidence": "No full-case execution; design only"
+    },
+    {
+      "id": "B13B-07",
+      "status": "BLOCKED",
+      "scenario": "OFF_ROUTE then first/second inside",
+      "blocker": "COMPLIANCE_RELEASE: D02/D03 plus A006/interfaces and approved B007/B008 schema/runtime",
+      "partialEvidence": "No full-case execution; design only"
+    },
+    {
+      "id": "B13B-08",
+      "status": "BLOCKED",
+      "scenario": "OFF_ROUTE\u2192invalid/stale UNKNOWN\u2192one/two inside same context",
+      "blocker": "COMPLIANCE_RELEASE: D02/D03 plus A006/interfaces and approved B007/B008 schema/runtime",
+      "partialEvidence": "No full-case execution; design only"
+    },
+    {
+      "id": "B13B-09",
+      "status": "BLOCKED",
+      "scenario": "UNKNOWN new context with first outside",
+      "blocker": "COMPLIANCE_RELEASE: D02/D03 plus A006/interfaces and approved B007/B008 schema/runtime",
+      "partialEvidence": "No full-case execution; design only"
+    },
+    {
+      "id": "B13B-10",
+      "status": "BLOCKED",
+      "scenario": "Outside run gap>30s, or invalid sample between",
+      "blocker": "COMPLIANCE_RELEASE: D02/D03 plus A006/interfaces and approved B007/B008 schema/runtime",
+      "partialEvidence": "No full-case execution; design only"
+    },
+    {
+      "id": "B13B-11",
+      "status": "BLOCKED",
+      "scenario": "Distance99/100/101m and configured corridor150m",
+      "blocker": "COMPLIANCE_RELEASE: D02/D03 plus A006/interfaces and approved B007/B008 schema/runtime",
+      "partialEvidence": "No full-case execution; design only"
+    },
+    {
+      "id": "B13B-12",
+      "status": "BLOCKED",
+      "scenario": "Direct direction while2inherited group routes exist",
+      "blocker": "COMPLIANCE_RELEASE: D02/D03 plus A006/interfaces and approved B007/B008 schema/runtime",
+      "partialEvidence": "No full-case execution; design only"
+    },
+    {
+      "id": "B13B-13",
+      "status": "BLOCKED",
+      "scenario": "No direct with0/1/2 inherited routes",
+      "blocker": "COMPLIANCE_RELEASE: D02/D03 plus A006/interfaces and approved B007/B008 schema/runtime",
+      "partialEvidence": "No full-case execution; design only"
+    },
+    {
+      "id": "B13B-14",
+      "status": "BLOCKED",
+      "scenario": "Inactive direct direction/parent route with usable group",
+      "blocker": "COMPLIANCE_RELEASE: D02/D03 plus A006/interfaces and approved B007/B008 schema/runtime",
+      "partialEvidence": "No full-case execution; design only"
+    },
+    {
+      "id": "B13B-15",
+      "status": "BLOCKED",
+      "scenario": "Same position ID/equal time/newer serverTime/older fix",
+      "blocker": "PERSISTENCE_RELEASE: D01-D07/D12 plus approved integrated A006 and B007/B008; isolated database authority",
+      "partialEvidence": "Related independent parser/ordering/privacy/lifecycle subchecks executed; durable/gateway portion NOT_RUN"
+    },
+    {
+      "id": "B13B-16",
+      "status": "BLOCKED",
+      "scenario": "Future+5s/+5.001s (proposed boundary)",
+      "blocker": "PERSISTENCE_RELEASE: D01-D07/D12 plus approved integrated A006 and B007/B008; isolated database authority",
+      "partialEvidence": "Related independent parser/ordering/privacy/lifecycle subchecks executed; durable/gateway portion NOT_RUN"
+    },
+    {
+      "id": "B13B-17",
+      "status": "BLOCKED",
+      "scenario": "Age30s/30.001s and stale job delayed",
+      "blocker": "PERSISTENCE_RELEASE: D01-D07/D12 plus approved integrated A006 and B007/B008; isolated database authority",
+      "partialEvidence": "Stationary30.001s/60s transport/fix-age characterization executed; public-expiry/gateway implementation NOT_RUN"
+    },
+    {
+      "id": "B13B-18",
+      "status": "BLOCKED",
+      "scenario": "Newer parseable invalid then delayed older valid",
+      "blocker": "PERSISTENCE_RELEASE: D01-D07/D12 plus approved integrated A006 and B007/B008; isolated database authority",
+      "partialEvidence": "Related independent parser/ordering/privacy/lifecycle subchecks executed; durable/gateway portion NOT_RUN"
+    },
+    {
+      "id": "B13B-19",
+      "status": "BLOCKED",
+      "scenario": "Malformed/unorderable invalid after newer valid",
+      "blocker": "PERSISTENCE_RELEASE: D01-D07/D12 plus approved integrated A006 and B007/B008; isolated database authority",
+      "partialEvidence": "Related independent parser/ordering/privacy/lifecycle subchecks executed; durable/gateway portion NOT_RUN"
+    },
+    {
+      "id": "B13B-20",
+      "status": "BLOCKED",
+      "scenario": "Older status/offline, equal-time conflict, missing source time",
+      "blocker": "PERSISTENCE_RELEASE: D01-D07/D12 plus approved integrated A006 and B007/B008; isolated database authority",
+      "partialEvidence": "Related independent parser/ordering/privacy/lifecycle subchecks executed; durable/gateway portion NOT_RUN"
+    },
+    {
+      "id": "B13B-21",
+      "status": "BLOCKED",
+      "scenario": "Active jeepney but device inactive/request unverified/application rejected",
+      "blocker": "A_CONTEXT: approved integrated A006, transaction/visibility/advisory/mutation/generation contract",
+      "partialEvidence": "No full-case execution; design only"
+    },
+    {
+      "id": "B13B-22",
+      "status": "BLOCKED",
+      "scenario": "Remap to new UUID/time while old-device work queued",
+      "blocker": "A_CONTEXT: approved integrated A006, transaction/visibility/advisory/mutation/generation contract",
+      "partialEvidence": "No full-case execution; design only"
+    },
+    {
+      "id": "B13B-23",
+      "status": "BLOCKED",
+      "scenario": "Numeric provider ID reused/restore/ambiguous ABA",
+      "blocker": "A_CONTEXT: approved integrated A006, transaction/visibility/advisory/mutation/generation contract",
+      "partialEvidence": "Related independent parser/ordering/privacy/lifecycle subchecks executed; durable/gateway portion NOT_RUN"
+    },
+    {
+      "id": "B13B-24",
+      "status": "BLOCKED",
+      "scenario": "Ownership/group/route/geometry/corridor changes without GPS",
+      "blocker": "A_CONTEXT: approved integrated A006, transaction/visibility/advisory/mutation/generation contract",
+      "partialEvidence": "No full-case execution; design only"
+    },
+    {
+      "id": "B13B-25",
+      "status": "BLOCKED",
+      "scenario": "Driver matches same jeepney through2groups; unrelated Driver/Operator",
+      "blocker": "A_CONTEXT: approved integrated A006, transaction/visibility/advisory/mutation/generation contract",
+      "partialEvidence": "No full-case execution; design only"
+    },
+    {
+      "id": "B13B-26",
+      "status": "BLOCKED",
+      "scenario": "Commuter inspects all JSON keys and error bodies",
+      "blocker": "GATEWAY_CONTRACT: D09-D11 and A authorization/temporal-history approval; no released gateway/publisher",
+      "partialEvidence": "Related independent parser/ordering/privacy/lifecycle subchecks executed; durable/gateway portion NOT_RUN"
+    },
+    {
+      "id": "B13B-27",
+      "status": "BLOCKED",
+      "scenario": "Two connections first-insert same jeepney",
+      "blocker": "PERSISTENCE_RELEASE: D01-D07/D12 plus approved integrated A006 and B007/B008; isolated database authority",
+      "partialEvidence": "No full-case execution; design only"
+    },
+    {
+      "id": "B13B-28",
+      "status": "BLOCKED",
+      "scenario": "Newer T+20 and older T+10 committed in both barrier orders",
+      "blocker": "PERSISTENCE_RELEASE: D01-D07/D12 plus approved integrated A006 and B007/B008; isolated database authority",
+      "partialEvidence": "No full-case execution; design only"
+    },
+    {
+      "id": "B13B-29",
+      "status": "BLOCKED",
+      "scenario": "Duplicate trigger delivered concurrently",
+      "blocker": "COMPLIANCE_RELEASE: D02/D03 plus A006/interfaces and approved B007/B008 schema/runtime",
+      "partialEvidence": "No full-case execution; design only"
+    },
+    {
+      "id": "B13B-30",
+      "status": "BLOCKED",
+      "scenario": "Sweep selects expired row; newer fresh fix wins before sweep lock",
+      "blocker": "PERSISTENCE_RELEASE: D01-D07/D12 plus approved integrated A006 and B007/B008; isolated database authority",
+      "partialEvidence": "No full-case execution; design only"
+    },
+    {
+      "id": "B13B-31",
+      "status": "BLOCKED",
+      "scenario": "A verification/review/remap races B update",
+      "blocker": "A_CONTEXT: approved integrated A006, transaction/visibility/advisory/mutation/generation contract",
+      "partialEvidence": "No full-case execution; design only"
+    },
+    {
+      "id": "B13B-32",
+      "status": "BLOCKED",
+      "scenario": "A group/direct assignment mutation races resolver/state write",
+      "blocker": "A_CONTEXT: approved integrated A006, transaction/visibility/advisory/mutation/generation contract",
+      "partialEvidence": "No full-case execution; design only"
+    },
+    {
+      "id": "B13B-33",
+      "status": "BLOCKED",
+      "scenario": "Two owners race acquisition; expired/stale writer overlaps new fence",
+      "blocker": "PERSISTENCE_RELEASE: D01-D07/D12 plus approved integrated A006 and B007/B008; isolated database authority",
+      "partialEvidence": "No full-case execution; design only"
+    },
+    {
+      "id": "B13B-34",
+      "status": "BLOCKED",
+      "scenario": "Inject40P01/40001/55P03 and exhausted retry budget",
+      "blocker": "PERSISTENCE_RELEASE: D01-D07/D12 plus approved integrated A006 and B007/B008; isolated database authority",
+      "partialEvidence": "No full-case execution; design only"
+    },
+    {
+      "id": "B13B-35",
+      "status": "BLOCKED",
+      "scenario": "Commit succeeds but acknowledgement lost; process restarts/replays",
+      "blocker": "PERSISTENCE_RELEASE: D01-D07/D12 plus approved integrated A006 and B007/B008; isolated database authority",
+      "partialEvidence": "No full-case execution; design only"
+    },
+    {
+      "id": "B13B-36",
+      "status": "BLOCKED",
+      "scenario": "DB outage between point write and event/intent write",
+      "blocker": "PERSISTENCE_RELEASE: D01-D07/D12 plus approved integrated A006 and B007/B008; isolated database authority",
+      "partialEvidence": "No full-case execution; design only"
+    },
+    {
+      "id": "B13B-37",
+      "status": "BLOCKED",
+      "scenario": "Crash/SIGTERM during connect/backoff/in-flight DB; deadline expires",
+      "blocker": "PERSISTENCE_RELEASE: D01-D07/D12 plus approved integrated A006 and B007/B008; isolated database authority",
+      "partialEvidence": "Related independent parser/ordering/privacy/lifecycle subchecks executed; durable/gateway portion NOT_RUN"
+    },
+    {
+      "id": "B13B-38",
+      "status": "BLOCKED",
+      "scenario": "Publisher down/slow/duplicate ack then newer intent",
+      "blocker": "GATEWAY_CONTRACT: D09-D11 and A authorization/temporal-history approval; no released gateway/publisher",
+      "partialEvidence": "No full-case execution; design only"
+    },
+    {
+      "id": "B13B-39",
+      "status": "BLOCKED",
+      "scenario": "Role/group removal or disabled account with existing Pusher subscription",
+      "blocker": "GATEWAY_CONTRACT: D09-D11 and A authorization/temporal-history approval; no released gateway/publisher",
+      "partialEvidence": "No full-case execution; design only"
+    },
+    {
+      "id": "B13B-40",
+      "status": "BLOCKED",
+      "scenario": "Pusher gap/startup race/old auth-scope response/expired marker",
+      "blocker": "GATEWAY_CONTRACT: D09-D11 and A authorization/temporal-history approval; no released gateway/publisher",
+      "partialEvidence": "Stationary30.001s/60s transport/fix-age characterization executed; public-expiry/gateway implementation NOT_RUN"
+    },
+    {
+      "id": "B13B-41",
+      "status": "BLOCKED",
+      "scenario": "Event-history ownership transfer / departed memberships",
+      "blocker": "GATEWAY_CONTRACT: D09-D11 and A authorization/temporal-history approval; no released gateway/publisher",
+      "partialEvidence": "No full-case execution; design only"
+    },
+    {
+      "id": "B13B-42",
+      "status": "BLOCKED",
+      "scenario": "Empty001\u2013005-upgrade schema, invalid migration, rollback/restore drill",
+      "blocker": "PERSISTENCE_RELEASE: D01-D07/D12 plus approved integrated A006 and B007/B008; isolated database authority",
+      "partialEvidence": "No new migration or rollback executed; legacy001-005 CI is separate regression evidence"
+    }
+  ]
+}
