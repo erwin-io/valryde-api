@@ -2,18 +2,18 @@
 
 ## Current snapshot
 
-- Updated at (ISO 8601, Asia/Manila): 2026-10-23T14:00:00+08:00
+- Updated at (ISO 8601, Asia/Manila): 2026-10-23T16:00:00+08:00
 - Agent / module: A — Core Platform / Fastify API (execution owner: Claude, taken over from Codex under `VALRYDE-CLAUDE-A-CODEX-RECOVERY-AND-COMPLETION-003`)
 - Repository: `erwin-io/valryde-api`
-- Branch / head: open Agent A PR #29 (`docs/agent-a-backend-release-handoff`); base `origin/main` `810c8a13356ddbf0e28a4faf5ad7f86ce0a30479`
+- Branch / head: canonical copy carried identically by open Agent A PRs #29 (`docs/agent-a-backend-release-handoff`) and #31 (`feat/a006-tracking-context-generation`); base `origin/main` `810c8a13356ddbf0e28a4faf5ad7f86ce0a30479`
 - Checklist IDs: 1–11 (gap slices G1–G11, D3); G6 backend for ID 37
-- GitHub issues / PRs: merged into `main` by Agent G with merge commits: #1, #2, #4–#8, #10–#12, #15–#17, #19–#21, #23–#28 (and Agent B #22). Open Agent A PR: [#29](https://github.com/erwin-io/valryde-api/pull/29) backend release API handoff. Agent B [#14](https://github.com/erwin-io/valryde-api/pull/14) open.
+- GitHub issues / PRs: merged into `main` by Agent G with merge commits: #1, #2, #4–#8, #10–#12, #15–#17, #19–#21, #23–#28 (and Agent B #22). Open Agent A PRs: [#29](https://github.com/erwin-io/valryde-api/pull/29) backend release API handoff, [#31](https://github.com/erwin-io/valryde-api/pull/31) A006 tracking context generation. Agent B [#14](https://github.com/erwin-io/valryde-api/pull/14) open.
 - Implementation progress: IN_PROGRESS — every independently executable, approved Agent A slice is merged; remaining work waits on the decisions listed under "Blocked by".
-- Tech Lead review decision (if actually issued): IDs 1–11 baseline ACCEPTED (PR #1). G1–G6, G10 read, G11, D3, fixtures and mobile testing policy merged by Agent G. #17 (Stage 13b design) and #27 (G6/G7 proposals) merged as documents; no review or comment records an approval, and the merged #17 still reads "PROPOSED FOR TECH LEAD REVIEW". No decision yet on #29.
+- Tech Lead review decision (if actually issued): IDs 1–11 baseline ACCEPTED (PR #1). G1–G6, G10 read, G11, D3, fixtures and mobile testing policy merged by Agent G. Stage 13b design APPROVED: the owner confirmed on 2026-10-23 that Agent G's merge of #17 is the formal approval of X1–X8, the §13 constants, D01–D12 and the two new codes. No decision yet on #29 or #31.
 - Current objective: directive `VALRYDE-AGENT-A-FINAL-BACKEND-RELEASE-008` (milestone `AGENT_A_FULL_INDEPENDENT_BACKEND_RELEASE_READY`).
-- Last confirmed result: `main` `810c8a1` contains #17, #28 and #27; API CI `verify` passed on each merge (`0670bcb`, `08193b8`, `810c8a1`). #29 brought up to date with `main` and its matrix regenerated: 56 operations / 47 paths.
-- Next concrete action: Agent G records formal approval of the Stage 13b design (X1–X8, §13 constants, D01–D12, the two new error codes); Agent A then opens the A006 PR. Agent G reviews #29 and decides G7-D1, D3–D7.
-- Blocked by / decision owner: Agent G for the Stage 13b approval record and the G7 decisions (G6-D1, D2, D3, D5 confirmation optional now that #28 is merged); owner for the geocoding provider and its terms (G6-D4), the production callback domain and App Links hosting (G5), the first real Admin, and physical GPS/Traccar mapping.
+- Last confirmed result: A006 implemented in #31 (migration 006, shared lock/retry protocol, context and visibility services, all listed mutations retrofitted, PostgreSQL concurrency tests). Local lint, typecheck, build and unit tests pass; the CI PostGIS result for #31 is not yet recorded.
+- Next concrete action: confirm CI on #31 and fix any failure; Agent G reviews and merges #31 before Agent B's 007; after #31 and #29 merge, regenerate the handoff matrix (new 422/503 statuses). Agent G decides G7-D1, D3–D7.
+- Blocked by / decision owner: Agent G review of #29 and #31 and the G7 decisions; Agent B for B007/B008 and the Bridge-side tests (T14, T17, T18, T19 persistence, T23–T25); owner for the geocoding provider and its terms (G6-D4), the production callback domain and App Links hosting (G5), the first real Admin, and physical GPS/Traccar mapping.
 - Dependencies / affected agents: B (tracking/latest state/realtime), C (public route/live APIs), D (driver invitation and operator APIs), E (Admin APIs), F (device runbooks), G (shared-contract review).
 
 ## Checklist coverage
@@ -44,7 +44,7 @@
 | G7 | Route-change requests | BLOCKED (proposal merged as document) | #27 head `1cbf0f8`, merge `810c8a1` | Agent G: G7-D1, D3–D7. G7-D2 resolved: migration 010 or later. |
 | G10 | Admin mapping read | MERGED | #24 head `a702738`, merge `4fe8bc9` | Remap/unmap blocked on Stage 13b approval. |
 | G11 | Assignment reads + impact preview | MERGED | #25 head `397e6d6`, merge `000249b` | — |
-| Stage 13b | Shared interface design, Amendment 1 (X1–X8, constants) | DOCUMENT MERGED, APPROVAL NOT RECORDED | #17 head `c46a19a`, merge `0670bcb` | Agent G formal approval before the A006 PR. |
+| Stage 13b | Shared interface design + A006 implementation | IMPLEMENTED, READY_FOR_REVIEW (design approved) | design #17 merge `0670bcb`; A006 #31 code `ac98182` | Agent G review of #31; merge before B007. |
 | Handoff | C/D/E backend release API handoff | READY_FOR_REVIEW | #29 | Matrix regenerated after #28 merged. |
 
 ## Latest verification
@@ -127,6 +127,17 @@
 - Gate: Physical GPS/Traccar mapping and activation. Required actor: operator/Agent F/Agent B. Requested evidence: power, SIM/APN, server connectivity, GPS fix, correct IMEI/uniqueId mapping. State: OWNER_VERIFICATION_PENDING.
 
 ## Activity log (newest first; preserve prior entries)
+
+### 2026-10-23 16:00 +08:00 — A006 implemented (Stage 13b Phase C)
+
+- Action / reason: owner confirmed that Agent G's merge of #17 is the formal Stage 13b approval. Phase C of directive 008 started in the existing `.worktrees/agent-a-stage13b` worktree on a new branch from `main` `810c8a1`.
+- Checklist/issue: IDs 1–11; Stage 13b D05–D07 Agent A side; X1–X8.
+- Files/config/services affected: `migrations/006_tracking_context_generation.sql`; new `src/db/tracking-context.ts`, `src/services/tracking-context-service.ts`, `src/services/tracking-visibility-service.ts`; retrofits in `fleet-service.ts`, `transit-service.ts`, `vehicle-workflow-service.ts`; error codes `TRACKING_CONTEXT_MUTATION_TOO_LARGE` (422) and `TRACKING_CONTEXT_BUSY` (503) declared on the affected routes; design status line marked APPROVED; `test/pg-tracking-context.integration.test.ts`.
+- Observed result: mutations take sorted advisory keys first, revalidate the affected set, then commit the business change, version bump and audit together; `updateDirection` is now one transaction; `removeGroupDriver` and `unassignDriver` stay visibility-only. No Agent B file, Traccar database or B007/B008 change.
+- Validation and evidence: local lint, typecheck, build, unit tests 165 passed (59 PostgreSQL tests skipped locally by design). The new PostgreSQL tests run only on the CI disposable PostGIS database; result to be recorded at the next checkpoint.
+- Contracts / risks / dependencies: B-side tests T14, T17, T18, T19 persistence, T23, T24, T25 belong to Agent B's 007/008 PRs. A006 must merge before B007 (lexical migration order). The handoff matrix in #29 predates the new 422/503 statuses.
+- Commit/PR link or SHA: #31 code `ac9818245aa8acc49aadbf6a0108dcab306bb530`.
+- Next action / owner gate: CI on #31; Agent G review.
 
 ### 2026-10-23 14:00 +08:00 — Post-merge resync: #17, #27, #28 merged; #29 regenerated
 
