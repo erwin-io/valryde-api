@@ -4,6 +4,8 @@
 **Owner:** Agent A — Core Platform / Fastify API (checklist IDs 1–11).
 **Status:** audit of merged contracts only. This document does not add, change or approve any endpoint.
 
+> **Superseded in part (2026-10-23):** §4–§7 and the companion matrix/index/snapshot now describe `main` `99f4cb1`. See [AGENT_A_BACKEND_RELEASE_API_HANDOFF.md](AGENT_A_BACKEND_RELEASE_API_HANDOFF.md). §1–§3 below still apply.
+
 Companion files in this folder:
 
 | File | Purpose |

@@ -1,238 +1,441 @@
 {
-  "sourceCommit": "711f4c45967e192be155e05e72714b99645ecc7d",
+  "sourceCommit": "99f4cb13e875c0145b3e676e3c8d457300c5603c",
   "operations": [
     {
       "method": "GET",
       "path": "/api/health",
       "operationId": "getHealth",
+      "guard": "PUBLIC",
       "consumers": [
         "C",
         "D",
         "E"
       ],
-      "roles": [
-        "PUBLIC"
+      "pathParams": [],
+      "query": [],
+      "body": "none",
+      "success": [
+        "200 {status, database}"
+      ],
+      "paginated": false,
+      "statuses": [
+        "200",
+        "503"
       ],
       "file": "src/app.ts",
-      "line": 164
+      "line": 169
     },
     {
       "method": "POST",
       "path": "/api/auth/register",
       "operationId": "registerUser",
+      "guard": "PUBLIC",
       "consumers": [
         "C",
         "D"
       ],
-      "roles": [
-        "PUBLIC"
+      "pathParams": [],
+      "query": [],
+      "body": "email: string (len 3–254); password: string (len 12–128); displayName: string (len 1–120); role: COMMUTER/DRIVER/OPERATOR",
+      "success": [
+        "201 {user, message}"
+      ],
+      "paginated": false,
+      "statuses": [
+        "201",
+        "400",
+        "401",
+        "403",
+        "409",
+        "429"
       ],
       "file": "src/routes/auth-routes.ts",
-      "line": 38
+      "line": 44
     },
     {
       "method": "POST",
       "path": "/api/auth/verify-email",
       "operationId": "verifyEmail",
+      "guard": "PUBLIC",
       "consumers": [
         "C",
         "D",
         "E"
       ],
-      "roles": [
-        "PUBLIC"
+      "pathParams": [],
+      "query": [],
+      "body": "token: string (len 20–512)",
+      "success": [
+        "200 {user}"
+      ],
+      "paginated": false,
+      "statuses": [
+        "200",
+        "400",
+        "401",
+        "403",
+        "409",
+        "429"
       ],
       "file": "src/routes/auth-routes.ts",
-      "line": 72
+      "line": 78
     },
     {
       "method": "POST",
       "path": "/api/auth/resend-verification",
       "operationId": "resendEmailVerification",
+      "guard": "PUBLIC",
       "consumers": [
         "C",
         "D",
         "E"
       ],
-      "roles": [
-        "PUBLIC"
+      "pathParams": [],
+      "query": [],
+      "body": "email: string (len 3–254)",
+      "success": [
+        "202 {message}"
+      ],
+      "paginated": false,
+      "statuses": [
+        "202",
+        "400",
+        "401",
+        "403",
+        "409",
+        "429"
       ],
       "file": "src/routes/auth-routes.ts",
-      "line": 87
+      "line": 93
     },
     {
       "method": "POST",
       "path": "/api/auth/login",
       "operationId": "loginUser",
+      "guard": "PUBLIC",
       "consumers": [
         "C",
         "D",
         "E"
       ],
-      "roles": [
-        "PUBLIC"
+      "pathParams": [],
+      "query": [],
+      "body": "email: string (len 3–254); password: string (len 12–128)",
+      "success": [
+        "200 {accessToken, refreshToken, accessTokenExpiresIn, refreshTokenExpiresAt, user}"
+      ],
+      "paginated": false,
+      "statuses": [
+        "200",
+        "400",
+        "401",
+        "403",
+        "409",
+        "429"
       ],
       "file": "src/routes/auth-routes.ts",
-      "line": 109
+      "line": 115
     },
     {
       "method": "POST",
       "path": "/api/auth/google",
       "operationId": "signInWithGoogle",
+      "guard": "PUBLIC",
       "consumers": [
         "C",
         "D"
       ],
-      "roles": [
-        "PUBLIC"
+      "pathParams": [],
+      "query": [],
+      "body": "idToken: string (len 20–∞); role: COMMUTER/DRIVER/OPERATOR",
+      "success": [
+        "200 {accessToken, refreshToken, accessTokenExpiresIn, refreshTokenExpiresAt, user}"
+      ],
+      "paginated": false,
+      "statuses": [
+        "200",
+        "400",
+        "401",
+        "403",
+        "409",
+        "429",
+        "503"
       ],
       "file": "src/routes/auth-routes.ts",
-      "line": 133
+      "line": 139
     },
     {
       "method": "POST",
       "path": "/api/auth/refresh",
       "operationId": "refreshSession",
+      "guard": "PUBLIC",
       "consumers": [
         "C",
         "D",
         "E"
       ],
-      "roles": [
-        "PUBLIC"
+      "pathParams": [],
+      "query": [],
+      "body": "refreshToken: string (len 20–512)",
+      "success": [
+        "200 {accessToken, refreshToken, accessTokenExpiresIn, refreshTokenExpiresAt, user}"
+      ],
+      "paginated": false,
+      "statuses": [
+        "200",
+        "400",
+        "401",
+        "403",
+        "409",
+        "429"
       ],
       "file": "src/routes/auth-routes.ts",
-      "line": 157
+      "line": 163
     },
     {
       "method": "POST",
       "path": "/api/auth/logout",
       "operationId": "logoutSession",
+      "guard": "PUBLIC",
       "consumers": [
         "C",
         "D",
         "E"
       ],
-      "roles": [
-        "PUBLIC"
+      "pathParams": [],
+      "query": [],
+      "body": "refreshToken: string (len 20–512)",
+      "success": [
+        "204 no body"
+      ],
+      "paginated": false,
+      "statuses": [
+        "204",
+        "400",
+        "401",
+        "403",
+        "409",
+        "429"
       ],
       "file": "src/routes/auth-routes.ts",
-      "line": 177
+      "line": 183
     },
     {
       "method": "POST",
       "path": "/api/auth/forgot-password",
       "operationId": "requestPasswordReset",
+      "guard": "PUBLIC",
       "consumers": [
         "C",
         "D",
         "E"
       ],
-      "roles": [
-        "PUBLIC"
+      "pathParams": [],
+      "query": [],
+      "body": "email: string (len 3–254)",
+      "success": [
+        "202 {message}"
+      ],
+      "paginated": false,
+      "statuses": [
+        "202",
+        "400",
+        "401",
+        "403",
+        "409",
+        "429"
       ],
       "file": "src/routes/auth-routes.ts",
-      "line": 195
+      "line": 201
     },
     {
       "method": "POST",
       "path": "/api/auth/reset-password",
       "operationId": "resetPassword",
+      "guard": "PUBLIC",
       "consumers": [
         "C",
         "D",
         "E"
       ],
-      "roles": [
-        "PUBLIC"
+      "pathParams": [],
+      "query": [],
+      "body": "token: string (len 20–512); password: string (len 12–128)",
+      "success": [
+        "204 no body"
+      ],
+      "paginated": false,
+      "statuses": [
+        "204",
+        "400",
+        "401",
+        "403",
+        "409",
+        "429"
       ],
       "file": "src/routes/auth-routes.ts",
-      "line": 216
+      "line": 222
     },
     {
       "method": "GET",
       "path": "/api/auth/me",
       "operationId": "getCurrentUser",
+      "guard": "ANY_VERIFIED_ACTIVE_ROLE",
       "consumers": [
         "C",
         "D",
         "E"
       ],
-      "roles": [
-        "ANY_VERIFIED_ACTIVE_ROLE"
+      "pathParams": [],
+      "query": [],
+      "body": "none",
+      "success": [
+        "200 {user}"
+      ],
+      "paginated": false,
+      "statuses": [
+        "200",
+        "400",
+        "401",
+        "403",
+        "409",
+        "429"
       ],
       "file": "src/routes/auth-routes.ts",
-      "line": 237
+      "line": 243
     },
     {
       "method": "PATCH",
       "path": "/api/auth/me",
       "operationId": "updateCurrentUser",
+      "guard": "ANY_VERIFIED_ACTIVE_ROLE",
       "consumers": [
         "C",
         "D",
         "E"
       ],
-      "roles": [
-        "ANY_VERIFIED_ACTIVE_ROLE"
+      "pathParams": [],
+      "query": [],
+      "body": "displayName: string (len 1–120)",
+      "success": [
+        "200 {user}"
+      ],
+      "paginated": false,
+      "statuses": [
+        "200",
+        "400",
+        "401",
+        "403",
+        "409",
+        "429"
       ],
       "file": "src/routes/auth-routes.ts",
-      "line": 253
+      "line": 259
     },
     {
       "method": "POST",
       "path": "/api/auth/me/change-password",
       "operationId": "changeCurrentUserPassword",
+      "guard": "ANY_VERIFIED_ACTIVE_ROLE",
       "consumers": [
         "C",
         "D",
         "E"
       ],
-      "roles": [
-        "ANY_VERIFIED_ACTIVE_ROLE"
+      "pathParams": [],
+      "query": [],
+      "body": "currentPassword: string (len 12–128); newPassword: string (len 12–128)",
+      "success": [
+        "204 no body"
+      ],
+      "paginated": false,
+      "statuses": [
+        "204",
+        "400",
+        "401",
+        "403",
+        "409",
+        "429"
       ],
       "file": "src/routes/auth-routes.ts",
-      "line": 277
+      "line": 283
     },
     {
       "method": "POST",
       "path": "/api/auth/me/change-email",
       "operationId": "requestCurrentUserEmailChange",
+      "guard": "ANY_VERIFIED_ACTIVE_ROLE",
       "consumers": [
         "C",
         "D",
         "E"
       ],
-      "roles": [
-        "ANY_VERIFIED_ACTIVE_ROLE"
+      "pathParams": [],
+      "query": [],
+      "body": "email: string (len 3–254)",
+      "success": [
+        "202 {message}"
+      ],
+      "paginated": false,
+      "statuses": [
+        "202",
+        "400",
+        "401",
+        "403",
+        "409",
+        "429",
+        "503"
       ],
       "file": "src/routes/auth-routes.ts",
-      "line": 304
+      "line": 310
     },
     {
       "method": "POST",
       "path": "/api/auth/confirm-email-change",
       "operationId": "confirmCurrentUserEmailChange",
+      "guard": "PUBLIC",
       "consumers": [
         "C",
         "D",
         "E"
       ],
-      "roles": [
-        "PUBLIC"
+      "pathParams": [],
+      "query": [],
+      "body": "token: string (len 20–512)",
+      "success": [
+        "200 {user}"
+      ],
+      "paginated": false,
+      "statuses": [
+        "200",
+        "400",
+        "401",
+        "403",
+        "409",
+        "429"
       ],
       "file": "src/routes/auth-routes.ts",
-      "line": 327
+      "line": 333
     },
     {
       "method": "GET",
       "path": "/api/admin/users/",
       "operationId": "listUsersAsAdmin",
+      "guard": "ADMIN",
       "consumers": [
         "E"
       ],
-      "roles": [
-        "ADMIN"
+      "pathParams": [],
+      "query": [],
+      "body": "none",
+      "success": [
+        "200 {users}"
+      ],
+      "paginated": false,
+      "statuses": [
+        "200",
+        "401",
+        "403"
       ],
       "file": "src/routes/admin-user-routes.ts",
       "line": 21
@@ -241,303 +444,819 @@
       "method": "PATCH",
       "path": "/api/admin/users/{userId}/status",
       "operationId": "updateUserStatusAsAdmin",
+      "guard": "ADMIN",
       "consumers": [
         "E"
       ],
-      "roles": [
-        "ADMIN"
+      "pathParams": [
+        "userId: string (uuid)"
+      ],
+      "query": [],
+      "body": "status: ACTIVE/DISABLED",
+      "success": [
+        "200 {user}"
+      ],
+      "paginated": false,
+      "statuses": [
+        "200",
+        "400",
+        "401",
+        "403",
+        "404"
       ],
       "file": "src/routes/admin-user-routes.ts",
       "line": 41
     },
     {
+      "method": "GET",
+      "path": "/api/drivers",
+      "operationId": "listDrivers",
+      "guard": "OPERATOR, ADMIN",
+      "consumers": [
+        "D",
+        "E"
+      ],
+      "pathParams": [],
+      "query": [
+        "q?: string (len 1–100)",
+        "status?: ACTIVE/DISABLED",
+        "page?: integer (1–∞, default 1)",
+        "pageSize?: integer (1–100, default 20)",
+        "operatorId?: string (uuid)",
+        "associated?: boolean"
+      ],
+      "body": "none",
+      "success": [
+        "200 {drivers, pagination}"
+      ],
+      "paginated": true,
+      "statuses": [
+        "200",
+        "400",
+        "401",
+        "403",
+        "429"
+      ],
+      "file": "src/routes/fleet-routes.ts",
+      "line": 158
+    },
+    {
+      "method": "GET",
+      "path": "/api/operators",
+      "operationId": "listOperators",
+      "guard": "ADMIN",
+      "consumers": [
+        "E"
+      ],
+      "pathParams": [],
+      "query": [
+        "q?: string (len 1–100)",
+        "status?: ACTIVE/DISABLED",
+        "page?: integer (1–∞, default 1)",
+        "pageSize?: integer (1–100, default 20)"
+      ],
+      "body": "none",
+      "success": [
+        "200 {operators, pagination}"
+      ],
+      "paginated": true,
+      "statuses": [
+        "200",
+        "400",
+        "401",
+        "403",
+        "429"
+      ],
+      "file": "src/routes/fleet-routes.ts",
+      "line": 202
+    },
+    {
       "method": "POST",
       "path": "/api/driver-associations",
       "operationId": "associateDriverWithOperator",
+      "guard": "OPERATOR",
       "consumers": [
         "D"
       ],
-      "roles": [
-        "OPERATOR"
+      "pathParams": [],
+      "query": [],
+      "body": "email: string (email, len 0–320)",
+      "success": [
+        "200 {association}"
+      ],
+      "paginated": false,
+      "statuses": [
+        "200",
+        "400",
+        "401",
+        "403",
+        "409"
       ],
       "file": "src/routes/fleet-routes.ts",
-      "line": 87
+      "line": 239
     },
     {
       "method": "GET",
       "path": "/api/jeepneys",
       "operationId": "listJeepneys",
+      "guard": "DRIVER, OPERATOR, ADMIN",
       "consumers": [
         "D",
         "E"
       ],
-      "roles": [
-        "DRIVER",
-        "OPERATOR",
-        "ADMIN"
+      "pathParams": [],
+      "query": [],
+      "body": "none",
+      "success": [
+        "200 {jeepneys}"
+      ],
+      "paginated": false,
+      "statuses": [
+        "200",
+        "401",
+        "403"
       ],
       "file": "src/routes/fleet-routes.ts",
-      "line": 116
+      "line": 268
     },
     {
       "method": "POST",
       "path": "/api/jeepneys",
       "operationId": "createJeepney",
+      "guard": "DRIVER, OPERATOR, ADMIN",
       "consumers": [
         "D",
         "E"
       ],
-      "roles": [
-        "DRIVER",
-        "OPERATOR",
-        "ADMIN"
+      "pathParams": [],
+      "query": [],
+      "body": "operatorId?: string (uuid); plateNo: string (len 1–32); colorHex: string; description?: string (len 0–1000)",
+      "success": [
+        "201 {jeepney}"
+      ],
+      "paginated": false,
+      "statuses": [
+        "201",
+        "400",
+        "401",
+        "403",
+        "409"
       ],
       "file": "src/routes/fleet-routes.ts",
-      "line": 138
+      "line": 290
     },
     {
       "method": "PATCH",
       "path": "/api/jeepneys/{jeepneyId}",
       "operationId": "updateJeepney",
+      "guard": "DRIVER, OPERATOR, ADMIN",
       "consumers": [
         "D",
         "E"
       ],
-      "roles": [
-        "DRIVER",
-        "OPERATOR",
-        "ADMIN"
+      "pathParams": [
+        "jeepneyId: string (uuid)"
+      ],
+      "query": [],
+      "body": "colorHex?: string; description?: string; status?: DRAFT/PENDING_APPROVAL/APPROVED/ACTIVE/INACTIVE/REJECTED",
+      "success": [
+        "200 {jeepney}"
+      ],
+      "paginated": false,
+      "statuses": [
+        "200",
+        "400",
+        "401",
+        "403",
+        "404"
       ],
       "file": "src/routes/fleet-routes.ts",
-      "line": 172
+      "line": 324
+    },
+    {
+      "method": "GET",
+      "path": "/api/fleet-groups/{groupId}/members",
+      "operationId": "listFleetGroupMembers",
+      "guard": "DRIVER, OPERATOR, ADMIN",
+      "consumers": [
+        "D",
+        "E"
+      ],
+      "pathParams": [
+        "groupId: string (uuid)"
+      ],
+      "query": [
+        "memberType?: DRIVER/JEEPNEY",
+        "page?: integer (1–∞, default 1)",
+        "pageSize?: integer (1–100, default 20)"
+      ],
+      "body": "none",
+      "success": [
+        "200 {members, pagination}"
+      ],
+      "paginated": true,
+      "statuses": [
+        "200",
+        "400",
+        "401",
+        "403",
+        "404"
+      ],
+      "file": "src/routes/fleet-routes.ts",
+      "line": 363
     },
     {
       "method": "POST",
       "path": "/api/jeepneys/{jeepneyId}/driver-assignment",
       "operationId": "assignDriverToJeepney",
+      "guard": "OPERATOR, ADMIN",
       "consumers": [
         "D",
         "E"
       ],
-      "roles": [
-        "OPERATOR",
-        "ADMIN"
+      "pathParams": [
+        "jeepneyId: string (uuid)"
+      ],
+      "query": [],
+      "body": "driverId: string (uuid)",
+      "success": [
+        "201 {assignment}"
+      ],
+      "paginated": false,
+      "statuses": [
+        "201",
+        "400",
+        "401",
+        "403",
+        "404",
+        "409"
       ],
       "file": "src/routes/fleet-routes.ts",
-      "line": 211
+      "line": 419
+    },
+    {
+      "method": "DELETE",
+      "path": "/api/jeepneys/{jeepneyId}/driver-assignment",
+      "operationId": "unassignDriverFromJeepney",
+      "guard": "OPERATOR, ADMIN",
+      "consumers": [
+        "D",
+        "E"
+      ],
+      "pathParams": [
+        "jeepneyId: string (uuid)"
+      ],
+      "query": [],
+      "body": "none",
+      "success": [
+        "200 {assignment}"
+      ],
+      "paginated": false,
+      "statuses": [
+        "200",
+        "400",
+        "401",
+        "403",
+        "404",
+        "409"
+      ],
+      "file": "src/routes/fleet-routes.ts",
+      "line": 451
+    },
+    {
+      "method": "DELETE",
+      "path": "/api/fleet-groups/{groupId}/drivers/{driverId}",
+      "operationId": "removeDriverFromFleetGroup",
+      "guard": "OPERATOR, ADMIN",
+      "consumers": [
+        "D",
+        "E"
+      ],
+      "pathParams": [
+        "groupId: string (uuid)",
+        "driverId: string (uuid)"
+      ],
+      "query": [],
+      "body": "none",
+      "success": [
+        "204 no body"
+      ],
+      "paginated": false,
+      "statuses": [
+        "204",
+        "400",
+        "401",
+        "403",
+        "404"
+      ],
+      "file": "src/routes/fleet-routes.ts",
+      "line": 483
+    },
+    {
+      "method": "DELETE",
+      "path": "/api/fleet-groups/{groupId}/jeepneys/{jeepneyId}",
+      "operationId": "removeJeepneyFromFleetGroup",
+      "guard": "OPERATOR, ADMIN",
+      "consumers": [
+        "D",
+        "E"
+      ],
+      "pathParams": [
+        "groupId: string (uuid)",
+        "jeepneyId: string (uuid)"
+      ],
+      "query": [],
+      "body": "none",
+      "success": [
+        "204 no body"
+      ],
+      "paginated": false,
+      "statuses": [
+        "204",
+        "400",
+        "401",
+        "403",
+        "404"
+      ],
+      "file": "src/routes/fleet-routes.ts",
+      "line": 513
+    },
+    {
+      "method": "GET",
+      "path": "/api/me/assignment",
+      "operationId": "getCurrentDriverAssignment",
+      "guard": "DRIVER",
+      "consumers": [
+        "D"
+      ],
+      "pathParams": [],
+      "query": [],
+      "body": "none",
+      "success": [
+        "200 {assignment}"
+      ],
+      "paginated": false,
+      "statuses": [
+        "200",
+        "401",
+        "403"
+      ],
+      "file": "src/routes/fleet-routes.ts",
+      "line": 544
     },
     {
       "method": "GET",
       "path": "/api/fleet-groups",
       "operationId": "listFleetGroups",
+      "guard": "DRIVER, OPERATOR, ADMIN",
       "consumers": [
         "D",
         "E"
       ],
-      "roles": [
-        "DRIVER",
-        "OPERATOR",
-        "ADMIN"
+      "pathParams": [],
+      "query": [],
+      "body": "none",
+      "success": [
+        "200 {groups}"
+      ],
+      "paginated": false,
+      "statuses": [
+        "200",
+        "401",
+        "403"
       ],
       "file": "src/routes/fleet-routes.ts",
-      "line": 243
+      "line": 570
     },
     {
       "method": "POST",
       "path": "/api/fleet-groups",
       "operationId": "createFleetGroup",
+      "guard": "OPERATOR, ADMIN",
       "consumers": [
         "D",
         "E"
       ],
-      "roles": [
-        "OPERATOR",
-        "ADMIN"
+      "pathParams": [],
+      "query": [],
+      "body": "operatorId?: string (uuid); name: string (len 1–120); description?: string (len 0–1000)",
+      "success": [
+        "201 {group}"
+      ],
+      "paginated": false,
+      "statuses": [
+        "201",
+        "400",
+        "401",
+        "403"
       ],
       "file": "src/routes/fleet-routes.ts",
-      "line": 265
+      "line": 592
     },
     {
       "method": "PATCH",
       "path": "/api/fleet-groups/{groupId}",
       "operationId": "updateFleetGroup",
+      "guard": "OPERATOR, ADMIN",
       "consumers": [
         "D",
         "E"
       ],
-      "roles": [
-        "OPERATOR",
-        "ADMIN"
+      "pathParams": [
+        "groupId: string (uuid)"
+      ],
+      "query": [],
+      "body": "name?: string (len 1–120); description?: string; status?: ACTIVE/INACTIVE",
+      "success": [
+        "200 {group}"
+      ],
+      "paginated": false,
+      "statuses": [
+        "200",
+        "400",
+        "401",
+        "403",
+        "404"
       ],
       "file": "src/routes/fleet-routes.ts",
-      "line": 297
+      "line": 624
     },
     {
       "method": "POST",
       "path": "/api/fleet-groups/{groupId}/drivers",
       "operationId": "addDriverToFleetGroup",
+      "guard": "OPERATOR, ADMIN",
       "consumers": [
         "D",
         "E"
       ],
-      "roles": [
-        "OPERATOR",
-        "ADMIN"
+      "pathParams": [
+        "groupId: string (uuid)"
+      ],
+      "query": [],
+      "body": "driverId: string (uuid)",
+      "success": [
+        "200 {message}"
+      ],
+      "paginated": false,
+      "statuses": [
+        "200",
+        "400",
+        "401",
+        "403",
+        "404",
+        "409"
       ],
       "file": "src/routes/fleet-routes.ts",
-      "line": 336
+      "line": 663
     },
     {
       "method": "POST",
       "path": "/api/fleet-groups/{groupId}/jeepneys",
       "operationId": "addJeepneyToFleetGroup",
+      "guard": "OPERATOR, ADMIN",
       "consumers": [
         "D",
         "E"
       ],
-      "roles": [
-        "OPERATOR",
-        "ADMIN"
+      "pathParams": [
+        "groupId: string (uuid)"
+      ],
+      "query": [],
+      "body": "jeepneyId: string (uuid)",
+      "success": [
+        "200 {message}"
+      ],
+      "paginated": false,
+      "statuses": [
+        "200",
+        "400",
+        "401",
+        "403",
+        "404",
+        "409"
       ],
       "file": "src/routes/fleet-routes.ts",
-      "line": 368
+      "line": 695
     },
     {
       "method": "GET",
       "path": "/api/transit-routes",
       "operationId": "listPublicTransitRoutes",
+      "guard": "PUBLIC",
       "consumers": [
         "C",
         "D",
         "E"
       ],
-      "roles": [
-        "PUBLIC"
+      "pathParams": [],
+      "query": [
+        "q?: string (len 1–160)",
+        "page?: integer (1–∞, default 1)",
+        "pageSize?: integer (1–100, default 20)"
+      ],
+      "body": "none",
+      "success": [
+        "200 {routes, pagination}"
+      ],
+      "paginated": true,
+      "statuses": [
+        "200"
       ],
       "file": "src/routes/transit-routes.ts",
-      "line": 95
+      "line": 102
     },
     {
       "method": "GET",
       "path": "/api/transit-routes/{routeId}",
       "operationId": "getPublicTransitRoute",
+      "guard": "PUBLIC",
       "consumers": [
         "C",
         "D",
         "E"
       ],
-      "roles": [
-        "PUBLIC"
+      "pathParams": [
+        "routeId: string (uuid)"
+      ],
+      "query": [],
+      "body": "none",
+      "success": [
+        "200 {route}"
+      ],
+      "paginated": false,
+      "statuses": [
+        "200",
+        "404"
       ],
       "file": "src/routes/transit-routes.ts",
-      "line": 132
+      "line": 139
     },
     {
       "method": "GET",
       "path": "/api/admin/transit-routes",
       "operationId": "listTransitRoutesAsAdmin",
+      "guard": "ADMIN",
       "consumers": [
         "E"
       ],
-      "roles": [
-        "ADMIN"
+      "pathParams": [],
+      "query": [],
+      "body": "none",
+      "success": [
+        "200 {routes}"
+      ],
+      "paginated": false,
+      "statuses": [
+        "200",
+        "401",
+        "403"
       ],
       "file": "src/routes/transit-routes.ts",
-      "line": 155
+      "line": 162
     },
     {
       "method": "POST",
       "path": "/api/admin/transit-routes",
       "operationId": "createTransitRoute",
+      "guard": "ADMIN",
       "consumers": [
         "E"
       ],
-      "roles": [
-        "ADMIN"
+      "pathParams": [],
+      "query": [],
+      "body": "routeCode: string (len 1–32); publicName: string (len 1–160); description?: string (len 0–2000); routeColorHex: string",
+      "success": [
+        "201 {route}"
+      ],
+      "paginated": false,
+      "statuses": [
+        "201",
+        "400",
+        "401",
+        "403",
+        "409"
       ],
       "file": "src/routes/transit-routes.ts",
-      "line": 180
+      "line": 187
     },
     {
       "method": "PATCH",
       "path": "/api/admin/transit-routes/{routeId}",
       "operationId": "updateTransitRoute",
+      "guard": "ADMIN",
       "consumers": [
         "E"
       ],
-      "roles": [
-        "ADMIN"
+      "pathParams": [
+        "routeId: string (uuid)"
+      ],
+      "query": [],
+      "body": "publicName?: string (len 1–160); description?: string; routeColorHex?: string; status?: DRAFT/ACTIVE/INACTIVE/ARCHIVED",
+      "success": [
+        "200 {route}"
+      ],
+      "paginated": false,
+      "statuses": [
+        "200",
+        "400",
+        "401",
+        "403",
+        "404"
       ],
       "file": "src/routes/transit-routes.ts",
-      "line": 214
+      "line": 221
     },
     {
       "method": "POST",
       "path": "/api/admin/transit-routes/{routeId}/directions",
       "operationId": "createRouteDirection",
+      "guard": "ADMIN",
       "consumers": [
         "E"
       ],
-      "roles": [
-        "ADMIN"
+      "pathParams": [
+        "routeId: string (uuid)"
+      ],
+      "query": [],
+      "body": "directionLabel: string (len 1–120); originName: string (len 1–160); destinationName: string (len 1–160); geometry: object; corridorM?: integer (1–5000)",
+      "success": [
+        "201 {direction}"
+      ],
+      "paginated": false,
+      "statuses": [
+        "201",
+        "400",
+        "401",
+        "403",
+        "404",
+        "409"
       ],
       "file": "src/routes/transit-routes.ts",
-      "line": 254
+      "line": 261
     },
     {
       "method": "PATCH",
       "path": "/api/admin/route-directions/{directionId}",
       "operationId": "updateRouteDirection",
+      "guard": "ADMIN",
       "consumers": [
         "E"
       ],
-      "roles": [
-        "ADMIN"
+      "pathParams": [
+        "directionId: string (uuid)"
+      ],
+      "query": [],
+      "body": "directionLabel?: string (len 1–120); originName?: string (len 1–160); destinationName?: string (len 1–160); geometry?: object; corridorM?: integer (1–5000); status?: DRAFT/ACTIVE/INACTIVE/ARCHIVED",
+      "success": [
+        "200 {direction}"
+      ],
+      "paginated": false,
+      "statuses": [
+        "200",
+        "400",
+        "401",
+        "403",
+        "404",
+        "409"
       ],
       "file": "src/routes/transit-routes.ts",
-      "line": 295
+      "line": 302
     },
     {
       "method": "POST",
       "path": "/api/route-assignments",
       "operationId": "assignTransitRoute",
+      "guard": "OPERATOR",
       "consumers": [
         "D"
       ],
-      "roles": [
-        "OPERATOR"
+      "pathParams": [],
+      "query": [],
+      "body": "routeDirectionId: string (uuid); jeepneyId?: string (uuid); groupId?: string (uuid)",
+      "success": [
+        "201 {assignment}"
+      ],
+      "paginated": false,
+      "statuses": [
+        "201",
+        "400",
+        "401",
+        "403",
+        "409"
       ],
       "file": "src/routes/transit-routes.ts",
-      "line": 338
+      "line": 345
+    },
+    {
+      "method": "GET",
+      "path": "/api/route-assignments",
+      "operationId": "listRouteAssignments",
+      "guard": "OPERATOR, ADMIN",
+      "consumers": [
+        "D",
+        "E"
+      ],
+      "pathParams": [],
+      "query": [
+        "routeDirectionId?: string (uuid)",
+        "jeepneyId?: string (uuid)",
+        "groupId?: string (uuid)",
+        "activeOnly?: boolean (default true)",
+        "page?: integer (1–∞, default 1)",
+        "pageSize?: integer (1–100, default 20)"
+      ],
+      "body": "none",
+      "success": [
+        "200 {assignments, pagination}"
+      ],
+      "paginated": true,
+      "statuses": [
+        "200",
+        "401",
+        "403"
+      ],
+      "file": "src/routes/transit-routes.ts",
+      "line": 381
+    },
+    {
+      "method": "GET",
+      "path": "/api/admin/route-directions/{directionId}/assignment-impact",
+      "operationId": "getRouteDirectionAssignmentImpact",
+      "guard": "ADMIN",
+      "consumers": [
+        "E"
+      ],
+      "pathParams": [
+        "directionId: string (uuid)"
+      ],
+      "query": [
+        "page?: integer (1–∞, default 1)",
+        "pageSize?: integer (1–100, default 20)"
+      ],
+      "body": "none",
+      "success": [
+        "200 {impact, pagination}"
+      ],
+      "paginated": true,
+      "statuses": [
+        "200",
+        "401",
+        "403",
+        "404",
+        "409"
+      ],
+      "file": "src/routes/transit-routes.ts",
+      "line": 433
     },
     {
       "method": "GET",
       "path": "/api/jeepneys/{jeepneyId}/effective-route",
       "operationId": "getJeepneyEffectiveRoute",
+      "guard": "DRIVER, OPERATOR, ADMIN",
       "consumers": [
         "D",
         "E"
       ],
-      "roles": [
-        "DRIVER",
-        "OPERATOR",
-        "ADMIN"
+      "pathParams": [
+        "jeepneyId: string (uuid)"
+      ],
+      "query": [],
+      "body": "none",
+      "success": [
+        "200 {effectiveRouteDirection}"
+      ],
+      "paginated": false,
+      "statuses": [
+        "200",
+        "401",
+        "403",
+        "404",
+        "409"
       ],
       "file": "src/routes/transit-routes.ts",
-      "line": 374
+      "line": 489
     },
     {
       "method": "GET",
       "path": "/api/vehicle-applications",
       "operationId": "listVehicleApplications",
+      "guard": "DRIVER, OPERATOR, ADMIN",
       "consumers": [
         "D",
         "E"
       ],
-      "roles": [
-        "DRIVER",
-        "OPERATOR",
-        "ADMIN"
+      "pathParams": [],
+      "query": [],
+      "body": "none",
+      "success": [
+        "200 {applications}"
+      ],
+      "paginated": false,
+      "statuses": [
+        "200",
+        "401",
+        "403"
       ],
       "file": "src/routes/vehicle-workflow-routes.ts",
       "line": 88
@@ -546,12 +1265,23 @@
       "method": "POST",
       "path": "/api/vehicle-applications",
       "operationId": "submitVehicleApplication",
+      "guard": "DRIVER, OPERATOR",
       "consumers": [
         "D"
       ],
-      "roles": [
-        "DRIVER",
-        "OPERATOR"
+      "pathParams": [],
+      "query": [],
+      "body": "jeepneyId: string (uuid); applicantNotes?: string (len 0–2000)",
+      "success": [
+        "201 {application}"
+      ],
+      "paginated": false,
+      "statuses": [
+        "201",
+        "400",
+        "401",
+        "403",
+        "409"
       ],
       "file": "src/routes/vehicle-workflow-routes.ts",
       "line": 112
@@ -560,11 +1290,26 @@
       "method": "PATCH",
       "path": "/api/admin/vehicle-applications/{applicationId}/review",
       "operationId": "reviewVehicleApplication",
+      "guard": "ADMIN",
       "consumers": [
         "E"
       ],
-      "roles": [
-        "ADMIN"
+      "pathParams": [
+        "applicationId: string (uuid)"
+      ],
+      "query": [],
+      "body": "decision: APPROVED/REJECTED; reviewNotes?: string (len 0–2000)",
+      "success": [
+        "200 {application}"
+      ],
+      "paginated": false,
+      "statuses": [
+        "200",
+        "400",
+        "401",
+        "403",
+        "404",
+        "409"
       ],
       "file": "src/routes/vehicle-workflow-routes.ts",
       "line": 148
@@ -573,14 +1318,22 @@
       "method": "GET",
       "path": "/api/gps-setup-requests",
       "operationId": "listGpsSetupRequests",
+      "guard": "DRIVER, OPERATOR, ADMIN",
       "consumers": [
         "D",
         "E"
       ],
-      "roles": [
-        "DRIVER",
-        "OPERATOR",
-        "ADMIN"
+      "pathParams": [],
+      "query": [],
+      "body": "none",
+      "success": [
+        "200 {requests}"
+      ],
+      "paginated": false,
+      "statuses": [
+        "200",
+        "401",
+        "403"
       ],
       "file": "src/routes/vehicle-workflow-routes.ts",
       "line": 188
@@ -589,12 +1342,24 @@
       "method": "POST",
       "path": "/api/gps-setup-requests",
       "operationId": "submitGpsSetupRequest",
+      "guard": "DRIVER, OPERATOR",
       "consumers": [
         "D"
       ],
-      "roles": [
-        "DRIVER",
-        "OPERATOR"
+      "pathParams": [],
+      "query": [],
+      "body": "vehicleApplicationId: string (uuid)",
+      "success": [
+        "201 {request}"
+      ],
+      "paginated": false,
+      "statuses": [
+        "201",
+        "400",
+        "401",
+        "403",
+        "404",
+        "409"
       ],
       "file": "src/routes/vehicle-workflow-routes.ts",
       "line": 212
@@ -603,11 +1368,26 @@
       "method": "PATCH",
       "path": "/api/admin/gps-setup-requests/{requestId}/status",
       "operationId": "transitionGpsSetupStatus",
+      "guard": "ADMIN",
       "consumers": [
         "E"
       ],
-      "roles": [
-        "ADMIN"
+      "pathParams": [
+        "requestId: string (uuid)"
+      ],
+      "query": [],
+      "body": "status: APPROVED/SCHEDULED/INSTALLED/REJECTED; scheduledAt?: string (date-time); rejectedReason?: string (len 1–2000)",
+      "success": [
+        "200 {request}"
+      ],
+      "paginated": false,
+      "statuses": [
+        "200",
+        "400",
+        "401",
+        "403",
+        "404",
+        "409"
       ],
       "file": "src/routes/vehicle-workflow-routes.ts",
       "line": 242
@@ -616,27 +1396,83 @@
       "method": "POST",
       "path": "/api/admin/gps-setup-requests/{requestId}/device-mapping",
       "operationId": "mapGpsDevice",
+      "guard": "ADMIN",
       "consumers": [
         "E"
       ],
-      "roles": [
-        "ADMIN"
+      "pathParams": [
+        "requestId: string (uuid)"
+      ],
+      "query": [],
+      "body": "imei: string; serialNumber: string (len 1–128); traccarUniqueId: string (len 1–128)",
+      "success": [
+        "201 {mapping}"
+      ],
+      "paginated": false,
+      "statuses": [
+        "201",
+        "400",
+        "401",
+        "403",
+        "404",
+        "409"
       ],
       "file": "src/routes/vehicle-workflow-routes.ts",
       "line": 288
     },
     {
-      "method": "POST",
-      "path": "/api/admin/gps-setup-requests/{requestId}/verification",
-      "operationId": "verifyGpsInstallation",
+      "method": "GET",
+      "path": "/api/admin/gps-setup-requests/{requestId}/device-mapping",
+      "operationId": "getGpsDeviceMapping",
+      "guard": "ADMIN",
       "consumers": [
         "E"
       ],
-      "roles": [
-        "ADMIN"
+      "pathParams": [
+        "requestId: string (uuid)"
+      ],
+      "query": [],
+      "body": "none",
+      "success": [
+        "200 {mapping}"
+      ],
+      "paginated": false,
+      "statuses": [
+        "200",
+        "401",
+        "403",
+        "404"
       ],
       "file": "src/routes/vehicle-workflow-routes.ts",
       "line": 331
+    },
+    {
+      "method": "POST",
+      "path": "/api/admin/gps-setup-requests/{requestId}/verification",
+      "operationId": "verifyGpsInstallation",
+      "guard": "ADMIN",
+      "consumers": [
+        "E"
+      ],
+      "pathParams": [
+        "requestId: string (uuid)"
+      ],
+      "query": [],
+      "body": "powerOk: boolean; simOk: boolean; serverOk: boolean; gpsFixOk: boolean; notes?: string (len 0–2000)",
+      "success": [
+        "200 {request}"
+      ],
+      "paginated": false,
+      "statuses": [
+        "200",
+        "400",
+        "401",
+        "403",
+        "404",
+        "409"
+      ],
+      "file": "src/routes/vehicle-workflow-routes.ts",
+      "line": 357
     }
   ]
 }
