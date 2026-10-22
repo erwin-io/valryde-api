@@ -65,6 +65,26 @@ interface AffectedJeepneyRow {
   group_assignment_count: string;
 }
 
+export interface DirectRouteCandidate {
+  route: { id: string; routeCode: string; publicName: string; routeColorHex: string };
+  direction: { id: string; directionLabel: string; originName: string; destinationName: string };
+  originDistanceM: number;
+  destinationDistanceM: number;
+}
+
+interface DirectRouteCandidateRow {
+  route_id: string;
+  route_code: string;
+  public_name: string;
+  route_color_hex: string;
+  direction_id: string;
+  direction_label: string;
+  origin_name: string;
+  destination_name: string;
+  origin_distance_m: number;
+  destination_distance_m: number;
+}
+
 export class TransitService {
   constructor(private readonly pool: pg.Pool) {}
 
@@ -131,6 +151,63 @@ export class TransitService {
       [routeId],
     );
     return { ...mapRoute(route), directions: directions.rows.map(mapDirection) };
+  }
+
+  // Direct (single-ride) candidates only; VALRYDE has no multi-transfer planner.
+  async discoverDirectRoutes(input: {
+    origin: { lat: number; lng: number };
+    destination: { lat: number; lng: number };
+    maxWalkM: number;
+    limit: number;
+  }): Promise<DirectRouteCandidate[]> {
+    const result = await this.pool.query<DirectRouteCandidateRow>(
+      `WITH input AS (
+         SELECT ST_SetSRID(ST_MakePoint($2, $1), 4326) AS origin,
+                ST_SetSRID(ST_MakePoint($4, $3), 4326) AS destination
+       )
+       SELECT tr.id AS route_id, tr.route_code, tr.public_name, tr.route_color_hex,
+         rd.id AS direction_id, rd.direction_label, rd.origin_name, rd.destination_name,
+         round(ST_Distance(rd.geometry::geography, input.origin::geography))::int AS origin_distance_m,
+         round(ST_Distance(rd.geometry::geography, input.destination::geography))::int
+           AS destination_distance_m
+       FROM route_directions rd
+       JOIN transit_routes tr ON tr.id = rd.route_id
+       CROSS JOIN input
+       WHERE tr.status = 'ACTIVE' AND rd.status = 'ACTIVE'
+         -- Degree prefilter lets the GiST index apply; one degree is over 100 km inside the PH envelope.
+         AND ST_DWithin(rd.geometry, input.origin, $5 / 100000.0)
+         AND ST_DWithin(rd.geometry, input.destination, $5 / 100000.0)
+         AND ST_DWithin(rd.geometry::geography, input.origin::geography, $5)
+         AND ST_DWithin(rd.geometry::geography, input.destination::geography, $5)
+         AND ST_LineLocatePoint(rd.geometry, input.origin)
+           < ST_LineLocatePoint(rd.geometry, input.destination)
+       ORDER BY origin_distance_m + destination_distance_m, tr.route_code, rd.direction_label
+       LIMIT $6`,
+      [
+        input.origin.lat,
+        input.origin.lng,
+        input.destination.lat,
+        input.destination.lng,
+        input.maxWalkM,
+        input.limit,
+      ],
+    );
+    return result.rows.map((row) => ({
+      route: {
+        id: row.route_id,
+        routeCode: row.route_code,
+        publicName: row.public_name,
+        routeColorHex: row.route_color_hex,
+      },
+      direction: {
+        id: row.direction_id,
+        directionLabel: row.direction_label,
+        originName: row.origin_name,
+        destinationName: row.destination_name,
+      },
+      originDistanceM: row.origin_distance_m,
+      destinationDistanceM: row.destination_distance_m,
+    }));
   }
 
   async listAdminRoutes(): Promise<Array<TransitRoute & { directions: RouteDirection[] }>> {
