@@ -2,17 +2,17 @@
 
 ## Current snapshot
 
-- Updated at (ISO 8601, Asia/Manila): 2026-10-22T22:45:00+08:00
+- Updated at (ISO 8601, Asia/Manila): 2026-10-22T23:50:00+08:00
 - Agent / module: A — Core Platform / Fastify API (execution owner: Claude, taken over from Codex under `VALRYDE-CLAUDE-A-CODEX-RECOVERY-AND-COMPLETION-003`)
 - Repository: `erwin-io/valryde-api`
 - Branch / head: `docs/agent-a-independent-completion` / base `origin/main` `827738c0f2c33ad3082f6a4a38a8e35669d4b0ea`
 - Checklist IDs: 1–11 (gap slices G1–G11, D3)
-- GitHub issues / PRs: PRs #1, #2, #4–#8, #10, #11 merged. Open Agent A PRs, none reviewed: [#12](https://github.com/erwin-io/valryde-api/pull/12) G1, [#15](https://github.com/erwin-io/valryde-api/pull/15) fixtures, [#16](https://github.com/erwin-io/valryde-api/pull/16) mobile testing policy, [#17](https://github.com/erwin-io/valryde-api/pull/17) Stage 13b design, [#19](https://github.com/erwin-io/valryde-api/pull/19) G2, [#20](https://github.com/erwin-io/valryde-api/pull/20) G3, [#21](https://github.com/erwin-io/valryde-api/pull/21) G4, [#23](https://github.com/erwin-io/valryde-api/pull/23) D3, [#24](https://github.com/erwin-io/valryde-api/pull/24) G10 read, [#25](https://github.com/erwin-io/valryde-api/pull/25) G11.
+- GitHub issues / PRs: PRs #1, #2, #4–#8, #10, #11 merged. Open Agent A PRs, none reviewed: [#12](https://github.com/erwin-io/valryde-api/pull/12) G1, [#15](https://github.com/erwin-io/valryde-api/pull/15) fixtures, [#16](https://github.com/erwin-io/valryde-api/pull/16) mobile testing policy, [#17](https://github.com/erwin-io/valryde-api/pull/17) Stage 13b design, [#19](https://github.com/erwin-io/valryde-api/pull/19) G2, [#20](https://github.com/erwin-io/valryde-api/pull/20) G3, [#21](https://github.com/erwin-io/valryde-api/pull/21) G4, [#23](https://github.com/erwin-io/valryde-api/pull/23) D3, [#24](https://github.com/erwin-io/valryde-api/pull/24) G10 read, [#25](https://github.com/erwin-io/valryde-api/pull/25) G11, [#26](https://github.com/erwin-io/valryde-api/pull/26) G5, [#27](https://github.com/erwin-io/valryde-api/pull/27) G6/G7 proposals.
 - Implementation progress: IN_PROGRESS
-- Tech Lead review decision (if actually issued): IDs 1–11 baseline ACCEPTED (PR #1). No decision issued on PRs #12–#25.
-- Current objective: Codex → Claude takeover recovery (checkpoint `AGENT_A_CLAUDE_TAKEOVER_RECOVERY_COMPLETE`), then the independent G5/G6/G7 scope of `VALRYDE-AGENT-A-BACKEND-COMPLETION-001`.
-- Last confirmed result: All Agent A worktrees are clean and equal to their remotes; no uncommitted Codex work exists. All open PR heads match the takeover record, and all have green `verify` (PostGIS) and GitGuardian checks.
-- Next concrete action: G5 callback/origin audit and documentation; G6/G7 review-ready contract proposals (no migration/API without approval).
+- Tech Lead review decision (if actually issued): IDs 1–11 baseline ACCEPTED (PR #1). No decision issued on PRs #12–#27.
+- Current objective: Phase 4 independent gaps submitted (checkpoint `AGENT_A_PHASE4_INDEPENDENT_GAPS_READY_FOR_REVIEW`); awaiting Agent G decisions.
+- Last confirmed result: G5 fix PR #26 and G6/G7 proposal PR #27 opened; both green on `verify` (PostGIS) and GitGuardian.
+- Next concrete action: implement G6/G7 only after Agent G decisions on PR #27; rebase overlapping PRs in the merge order Agent G chooses.
 - Blocked by / decision owner: Agent G review of PRs #12–#25 and Stage 13b D01–D12; owner for production domain/app scheme (G5), geocoding provider terms (G6), and G7 lifecycle approval.
 - Dependencies / affected agents: B (tracking/latest state/realtime), C (public route/live APIs), D (driver invitation and operator APIs), E (Admin APIs), F (device runbooks), G (shared-contract review).
 
@@ -39,9 +39,9 @@
 | G3 | `GET /api/me/assignment` | READY_FOR_REVIEW | #20 `4c58f2d2e750f79605512b070a96dfa4f0b7cedf` | Agent G review; conflicts with #21 in `src/services/fleet-service.ts`, `docs/OPENAPI_ENDPOINT_TAGS.md`. |
 | G4 | Driver unassignment | READY_FOR_REVIEW | #21 `6f1c789c0b53511e81c54619a7030091b7afb243` | Agent G review; rebase after #19/#20. |
 | D3 | Duplicate direction label → 409 | READY_FOR_REVIEW | #23 `ccdb700f29e2f4de2ea6a4731d5c5401a750d3a9` | Agent G review. |
-| G5 | Mobile email links | NOT_STARTED | — | Server-side audit/documentation; app scheme/domain owner-gated. |
-| G6 | Place discovery | BLOCKED | — | Provider terms/privacy/rate limits and DTO not approved; proposal only. |
-| G7 | Route-change requests | BLOCKED | — | Lifecycle/DTO/migration not frozen; proposal only. |
+| G5 | Mobile email links (backend portion) | READY_FOR_REVIEW | #26 `407acde276517ae7543e885ecfb8eca9e671460a` | App Links/Universal Links hosting, callback domain and per-role destinations owner-gated. |
+| G6 | Place discovery | BLOCKED (proposal READY_FOR_REVIEW) | #27 `0ccd69c5f95a923231913e15442e517617698410` | Decisions G6-D1…D6; provider terms owner-gated. |
+| G7 | Route-change requests | BLOCKED (proposal READY_FOR_REVIEW) | #27 `0ccd69c5f95a923231913e15442e517617698410` | Decisions G7-D1…D7; migration numbering vs A006. |
 | G10 | Admin mapping read | READY_FOR_REVIEW | #24 `e555033872373d836e8ea60392fd339f0e1bbda6` | Remap/unmap gated on Stage 13b context invalidation/locking approval. |
 | G11 | Assignment reads + impact preview | READY_FOR_REVIEW | #25 `22b6462f2bb6da4ef18c7cfaf2cee7638b191297` | Agent G review. |
 | Stage 13b | Shared interface design (A006 proposed) | READY_FOR_REVIEW | #17 `fd76cb54000ec47c383c6641359f3e3cf59e4340` | Agent G D01–D12 approval before any A006 migration. |
@@ -50,6 +50,8 @@
 
 | Command / check | Environment | Result | Date/time | Evidence / notes |
 |---|---|---|---|---|
+| GitHub `verify` (PostGIS) and GitGuardian | PR #26 head `407acde`, PR #27 head `0ccd69c` | PASSED | 2026-10-22 23:45 +08:00 | Both MERGEABLE against `main` `827738c`. |
+| `npm run lint`, `npm run typecheck`, `npm run build`, `vitest run`, `npm audit --audit-level=high`, `git diff --check` | G5 branch; local Node.js, no `TEST_DATABASE_URL` | PASSED | 2026-10-22 23:05 +08:00 | 105 passed, 15 PostgreSQL-backed skipped locally; 0 vulnerabilities. |
 | `npm run lint`, `npm run typecheck`, `npm run build`, `vitest run` (no `TEST_DATABASE_URL`) | All 8 Agent A code worktrees (#12, #15, #19, #20, #21, #23, #24, #25 heads); local Node.js | PASSED | 2026-10-22 22:35 +08:00 | 99–100 tests passed per branch; PostgreSQL suites skipped locally because the only local database (`valrydedb`) is not proven disposable. Worktrees still clean after the run. |
 | GitHub `verify` (PostGIS 16-3.4 service; migrate, lint, typecheck, full test, build) and GitGuardian | PRs #12, #15, #16, #17, #19, #20, #21, #23, #24, #25 at the recorded heads | PASSED | 2026-10-22 22:30 +08:00 | Re-read via `gh pr checks`; all mergeable against `main` `827738c`. |
 | GitHub API CI and GitGuardian | PR #15 head `aa989254f62a7d7dab899fd1b4eb78171598ccb5` | PASSED | 2026-10-22 03:36 +08:00 | API `verify` passed in 63 seconds; GitGuardian passed; PR is open and mergeable. |
@@ -118,6 +120,18 @@
 - Gate: Physical GPS/Traccar mapping and activation. Required actor: operator/Agent F/Agent B. Requested evidence: power, SIM/APN, server connectivity, GPS fix, correct IMEI/uniqueId mapping. State: OWNER_VERIFICATION_PENDING.
 
 ## Activity log (newest first; preserve prior entries)
+
+### 2026-10-22 23:50 +08:00 — Phase 4 independent gaps submitted for review
+
+- Action / reason: Tech Lead Phase 4 authorization after recovery checkpoint.
+- Checklist/issue: IDs 1 (G5), 37 (G6), 52 (G7), 10 (G11 review).
+- Files/config/services affected: PR #26 (`src/config.ts`, `test/config.test.ts`, `docs/integration/AGENT_A_G5_EMAIL_LINK_AUDIT.md`); PR #27 (`docs/integration/AGENT_A_G6_PLACE_DISCOVERY_CONTRACT_PROPOSAL.md`, `docs/integration/AGENT_A_G7_ROUTE_CHANGE_REQUEST_CONTRACT_PROPOSAL.md`). New worktrees `.worktrees/agent-a-g5-email-links`, `.worktrees/agent-a-g6-g7-proposals`.
+- Observed result: G5 token lifecycle already compliant; fixed production HTTP callbacks and credential-bearing callback URLs. G6/G7 proposals list exact DTOs, RBAC, errors, fixtures and decisions; no unapproved code. G10 remains create-only; no A006/B007/B008 work.
+- G11 review (PR #25, not modified): RBAC negatives cover Driver list (403), non-Admin impact (403) and cross-Operator list scoping; inherited ambiguity returns 409 rather than guessing. The impact query re-encodes the resolver's precedence in set-based SQL; semantics match `resolveEffectiveRouteDirection` today (direct wins; >1 active inherited group assignment conflicts) but the rule now lives in two places. Minor gaps: no test for unknown direction (404) or COMMUTER denial; conflict check and listing run as two queries without a shared snapshot (read-only, low impact).
+- Validation and evidence: see verification rows dated 2026-10-22 23:05 and 23:45. No local PostgreSQL run (no proven-disposable database); CI PostGIS passed.
+- Contracts / risks / dependencies: production startup now requires HTTPS `APP_*_URL`. G6-D1…D6, G7-D1…D7 await Agent G/owner.
+- Commit/PR link or SHA: #26 `407acde276517ae7543e885ecfb8eca9e671460a`; #27 `0ccd69c5f95a923231913e15442e517617698410`.
+- Next action / owner gate: Agent G review/decisions; this status branch stays local until Agent G directs how to land it.
 
 ### 2026-10-22 22:45 +08:00 — Codex → Claude takeover recovery
 
