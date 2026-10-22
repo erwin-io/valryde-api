@@ -2,7 +2,7 @@
   "directive": "VALRYDE-AGENT-B-TRACKING-COMPLETION-001",
   "baseline": "827738c0f2c33ad3082f6a4a38a8e35669d4b0ea",
   "designHead": "149cefc82d0ccea3c1efe06aebaf157a607c1d8e",
-  "approvalState": "D01-D12 and A runtime interfaces not approved/integrated",
+  "approvalState": "GATES-001: M1-M3 approved, M4 conditional, M5/M6/M7 pending, M8 infrastructure-gated; A006 not merged",
   "counts": {
     "PASS": 0,
     "FAIL": 0,
@@ -62,7 +62,7 @@
     {
       "id": "B13B-08",
       "status": "BLOCKED",
-      "scenario": "OFF_ROUTE\u2192invalid/stale UNKNOWN\u2192one/two inside same context",
+      "scenario": "OFF_ROUTE→invalid/stale UNKNOWN→one/two inside same context",
       "blocker": "COMPLIANCE_RELEASE: D02/D03 plus A006/interfaces and approved B007/B008 schema/runtime",
       "partialEvidence": "No full-case execution; design only"
     },
@@ -300,9 +300,9 @@
     {
       "id": "B13B-42",
       "status": "BLOCKED",
-      "scenario": "Empty001\u2013005-upgrade schema, invalid migration, rollback/restore drill",
-      "blocker": "PERSISTENCE_RELEASE: D01-D07/D12 plus approved integrated A006 and B007/B008; isolated database authority",
-      "partialEvidence": "No new migration or rollback executed; legacy001-005 CI is separate regression evidence"
+      "scenario": "Empty001–005-upgrade schema, invalid migration, rollback/restore drill",
+      "blocker": "A006 not merged (B007/B008 must follow it); writer and rollback/restore drill not implemented",
+      "partialEvidence": "PR30 f4946c0 CI 39849329806: 001-005 then 007/008 applied on empty disposable PostGIS; re-applying 007 fails 42P07; catalog/check/null-group/finite/counter/generated-point/event-idempotency and M4 privilege tests pass. Not integrated with A006; no rollback/restore drill."
     }
   ],
   "independentVerification": {
@@ -314,5 +314,20 @@
     "localTestsPassed": 139,
     "localTestsSkipped": 16,
     "newMigrations": 0
+  },
+  "implementationEvidence": {
+    "pr": 30,
+    "sourceHead": "f4946c059ce6917eb4c1c483e1a3e0985bef5a02",
+    "ciRunId": 39849329806,
+    "ciJobId": 120070979523,
+    "ciTestsPassed": 213,
+    "ciTestsSkipped": 1,
+    "schemaTests": 7,
+    "ciEnvironment": "disposable GitHub Actions PostGIS 16-3.4; migrations 001-005, 007, 008 (A006 absent)",
+    "newMigrations": [
+      "007_tracking_latest_state.sql",
+      "008_route_compliance_events.sql"
+    ],
+    "note": "Schema-only partial evidence. No writer, A006 integration or rollback drill; no case upgraded."
   }
 }
