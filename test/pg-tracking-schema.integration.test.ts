@@ -150,9 +150,9 @@ describeDatabase('Stage 13b B007/B008 tracking schema', () => {
       ['status without source', freshState({ tracker_status: 'ONLINE' })],
     ];
     for (const [label, row] of invalid) {
-      await client.query('SAVEPOINT case');
+      await client.query('SAVEPOINT invalid_case');
       const error = await insert('vehicle_latest_states', row).then(() => null, (caught: unknown) => caught as { code?: string });
-      await client.query('ROLLBACK TO SAVEPOINT case');
+      await client.query('ROLLBACK TO SAVEPOINT invalid_case');
       expect(error?.code, label).toBe('23514');
     }
     await accepts(() => insert('vehicle_latest_states', freshState({ speed_kph: 300 })));
@@ -175,9 +175,9 @@ describeDatabase('Stage 13b B007/B008 tracking schema', () => {
       ['infinite distance', onRoute({ distance_m: Number.POSITIVE_INFINITY })],
     ];
     for (const [label, row] of invalid) {
-      await client.query('SAVEPOINT case');
+      await client.query('SAVEPOINT invalid_case');
       const error = await insert('vehicle_latest_states', row).then(() => null, (caught: unknown) => caught as { code?: string });
-      await client.query('ROLLBACK TO SAVEPOINT case');
+      await client.query('ROLLBACK TO SAVEPOINT invalid_case');
       expect(error?.code, label).toBe('23514');
     }
     // Initial UNKNOWN may accumulate an outside run, and UNKNOWN may keep a same-context re-entry latch.
@@ -208,9 +208,9 @@ describeDatabase('Stage 13b B007/B008 tracking schema', () => {
         ['corridor out of range', event({ state_revision: 6, corridor_m: 5001 })],
       ];
       for (const [label, row] of invalid) {
-        await client.query('SAVEPOINT case');
+        await client.query('SAVEPOINT invalid_case');
         const error = await insert('route_compliance_events', row).then(() => null, (caught: unknown) => caught as { code?: string });
-        await client.query('ROLLBACK TO SAVEPOINT case');
+        await client.query('ROLLBACK TO SAVEPOINT invalid_case');
         expect(error?.code, label).toBe('23514');
       }
       await accepts(() => insert('route_compliance_events', event({
