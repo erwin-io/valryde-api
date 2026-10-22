@@ -3,9 +3,13 @@ import type pg from 'pg';
 import type { User } from '../domain/identity.js';
 import type {
   DriverAssignment,
+  DriverDirectoryEntry,
   FleetGroup,
+  FleetGroupMember,
   Jeepney,
   JeepneyStatus,
+  OperatorDirectoryEntry,
+  PaginationResult,
 } from '../domain/fleet.js';
 import { ApiError } from '../lib/api-error.js';
 
@@ -49,8 +53,208 @@ interface DriverAssociationRow {
   operator_id: string | null;
 }
 
+interface GroupMemberRow {
+  member_type: 'DRIVER' | 'JEEPNEY';
+  member_id: string;
+  display_name: string | null;
+  driver_status: 'ACTIVE' | 'DISABLED' | null;
+  active_jeepney_id: string | null;
+  plate_no: string | null;
+  color_hex: string | null;
+  description: string | null;
+  jeepney_status: JeepneyStatus | null;
+  active_driver_id: string | null;
+  joined_at: Date;
+}
+
+interface DriverDirectoryRow {
+  driver_id: string;
+  user_id: string;
+  email: string;
+  display_name: string;
+  status: 'ACTIVE' | 'DISABLED';
+  user_status: 'ACTIVE' | 'DISABLED';
+  email_verified: boolean;
+  operator_id: string | null;
+  active_jeepney_id: string | null;
+  group_ids: string[];
+  created_at: Date;
+}
+
+interface OperatorDirectoryRow {
+  operator_id: string;
+  owner_user_id: string;
+  email: string;
+  display_name: string;
+  status: 'ACTIVE' | 'DISABLED';
+  user_status: 'ACTIVE' | 'DISABLED';
+  driver_count: number;
+  jeepney_count: number;
+  group_count: number;
+  created_at: Date;
+}
+
+interface DirectoryQuery {
+  q?: string;
+  status?: 'ACTIVE' | 'DISABLED';
+  page: number;
+  pageSize: number;
+}
+
+interface DriverDirectoryQuery extends DirectoryQuery {
+  operatorId?: string;
+  associated?: boolean;
+}
+
 export class FleetService {
   constructor(private readonly pool: pg.Pool) {}
+
+  async listDrivers(
+    actor: User,
+    query: DriverDirectoryQuery,
+  ): Promise<{ drivers: DriverDirectoryEntry[]; pagination: PaginationResult }> {
+    const isAdmin = actor.roles.includes('ADMIN');
+    let operatorId: string | undefined;
+    if (!isAdmin) {
+      if (!actor.roles.includes('OPERATOR')) {
+        throw new ApiError(403, 'FORBIDDEN', 'This role cannot view the Driver directory');
+      }
+      if (query.operatorId !== undefined || query.associated !== undefined) {
+        throw new ApiError(403, 'FORBIDDEN', 'Operator scope cannot be changed by query filters');
+      }
+      operatorId = await this.requireActorOperator(actor.id);
+    }
+
+    const values: unknown[] = [];
+    const conditions: string[] = [];
+    const parameter = (value: unknown): string => {
+      values.push(value);
+      return `$${values.length}`;
+    };
+
+    if (operatorId !== undefined) {
+      conditions.push(`d.operator_id = ${parameter(operatorId)}::uuid`);
+    } else if (query.operatorId !== undefined) {
+      conditions.push(`d.operator_id = ${parameter(query.operatorId)}::uuid`);
+    }
+    if (isAdmin && query.associated !== undefined) {
+      conditions.push(query.associated ? 'd.operator_id IS NOT NULL' : 'd.operator_id IS NULL');
+    }
+    if (query.status !== undefined) {
+      conditions.push(`d.status = ${parameter(query.status)}::user_status`);
+    }
+    if (query.q !== undefined) {
+      const q = parameter(`%${query.q.trim()}%`);
+      conditions.push(`(u.display_name ILIKE ${q} OR u.email::text ILIKE ${q})`);
+    }
+    const where = conditions.length === 0 ? '' : `WHERE ${conditions.join(' AND ')}`;
+    const countResult = await this.pool.query<{ total: number }>(
+      `SELECT count(*)::integer AS total
+       FROM drivers d
+       JOIN users u ON u.id = d.user_id
+       ${where}`,
+      values,
+    );
+    const total = countResult.rows[0]?.total ?? 0;
+    const limit = parameter(query.pageSize);
+    const offset = parameter((query.page - 1) * query.pageSize);
+    const result = await this.pool.query<DriverDirectoryRow>(
+      `SELECT
+         d.id AS driver_id,
+         d.user_id,
+         u.email::text,
+         u.display_name,
+         d.status,
+         u.status AS user_status,
+         (u.email_verified_at IS NOT NULL) AS email_verified,
+         d.operator_id,
+         (
+           SELECT dja.jeepney_id
+           FROM driver_jeepney_assignments dja
+           WHERE dja.driver_id = d.id AND dja.active_to IS NULL
+           ORDER BY dja.active_from DESC, dja.id
+           LIMIT 1
+         ) AS active_jeepney_id,
+         COALESCE(
+           ARRAY(
+             SELECT fgd.group_id
+             FROM fleet_group_drivers fgd
+             JOIN fleet_groups fg ON fg.id = fgd.group_id
+             WHERE fgd.driver_id = d.id
+               AND (d.operator_id IS NULL OR fg.operator_id = d.operator_id)
+             ORDER BY fgd.group_id
+           ),
+           ARRAY[]::uuid[]
+         ) AS group_ids,
+         d.created_at
+       FROM drivers d
+       JOIN users u ON u.id = d.user_id
+       ${where}
+       ORDER BY u.display_name ASC, d.id ASC
+       LIMIT ${limit} OFFSET ${offset}`,
+      values,
+    );
+    return {
+      drivers: result.rows.map(mapDriverDirectoryEntry),
+      pagination: pagination(query.page, query.pageSize, total),
+    };
+  }
+
+  async listOperators(
+    actor: User,
+    query: DirectoryQuery,
+  ): Promise<{ operators: OperatorDirectoryEntry[]; pagination: PaginationResult }> {
+    if (!actor.roles.includes('ADMIN')) {
+      throw new ApiError(403, 'FORBIDDEN', 'Only Admin may view the Operator directory');
+    }
+    const values: unknown[] = [];
+    const conditions: string[] = [];
+    const parameter = (value: unknown): string => {
+      values.push(value);
+      return `$${values.length}`;
+    };
+    if (query.status !== undefined) {
+      conditions.push(`o.status = ${parameter(query.status)}::user_status`);
+    }
+    if (query.q !== undefined) {
+      const q = parameter(`%${query.q.trim()}%`);
+      conditions.push(`(u.display_name ILIKE ${q} OR u.email::text ILIKE ${q})`);
+    }
+    const where = conditions.length === 0 ? '' : `WHERE ${conditions.join(' AND ')}`;
+    const countResult = await this.pool.query<{ total: number }>(
+      `SELECT count(*)::integer AS total
+       FROM operators o
+       JOIN users u ON u.id = o.owner_user_id
+       ${where}`,
+      values,
+    );
+    const total = countResult.rows[0]?.total ?? 0;
+    const limit = parameter(query.pageSize);
+    const offset = parameter((query.page - 1) * query.pageSize);
+    const result = await this.pool.query<OperatorDirectoryRow>(
+      `SELECT
+         o.id AS operator_id,
+         o.owner_user_id,
+         u.email::text,
+         u.display_name,
+         o.status,
+         u.status AS user_status,
+         (SELECT count(*)::integer FROM drivers d WHERE d.operator_id = o.id) AS driver_count,
+         (SELECT count(*)::integer FROM jeepneys j WHERE j.operator_id = o.id) AS jeepney_count,
+         (SELECT count(*)::integer FROM fleet_groups fg WHERE fg.operator_id = o.id) AS group_count,
+         o.created_at
+       FROM operators o
+       JOIN users u ON u.id = o.owner_user_id
+       ${where}
+       ORDER BY u.display_name ASC, o.id ASC
+       LIMIT ${limit} OFFSET ${offset}`,
+      values,
+    );
+    return {
+      operators: result.rows.map(mapOperatorDirectoryEntry),
+      pagination: pagination(query.page, query.pageSize, total),
+    };
+  }
 
   async associateDriver(actor: User, email: string): Promise<{
     driverId: string;
@@ -284,6 +488,68 @@ export class FleetService {
     return updated;
   }
 
+  async listGroupMembers(
+    actor: User,
+    groupId: string,
+    input: { memberType?: 'DRIVER' | 'JEEPNEY'; page: number; pageSize: number },
+  ): Promise<{ members: FleetGroupMember[]; total: number }> {
+    const group = await this.requireGroup(groupId);
+    await this.assertCanReadGroupMembers(actor, group);
+    const offset = (input.page - 1) * input.pageSize;
+    const memberType = input.memberType ?? null;
+    const members = await this.pool.query<GroupMemberRow>(
+      `WITH group_members AS (
+         SELECT 'DRIVER'::text AS member_type, d.id AS member_id,
+                u.display_name, d.status::text AS driver_status,
+                dja.jeepney_id AS active_jeepney_id,
+                NULL::text AS plate_no, NULL::text AS color_hex,
+                NULL::text AS description, NULL::text AS jeepney_status,
+                NULL::uuid AS active_driver_id, fgd.created_at AS joined_at
+         FROM fleet_group_drivers fgd
+         JOIN drivers d ON d.id = fgd.driver_id
+         JOIN users u ON u.id = d.user_id
+         LEFT JOIN driver_jeepney_assignments dja
+           ON dja.driver_id = d.id AND dja.active_to IS NULL
+         WHERE fgd.group_id = $1
+         UNION ALL
+         SELECT 'JEEPNEY'::text AS member_type, j.id AS member_id,
+                NULL::text AS display_name, NULL::text AS driver_status,
+                NULL::uuid AS active_jeepney_id,
+                j.plate_no::text, j.color_hex, j.description,
+                j.status::text AS jeepney_status,
+                dja.driver_id AS active_driver_id, fgj.created_at AS joined_at
+         FROM fleet_group_jeepneys fgj
+         JOIN jeepneys j ON j.id = fgj.jeepney_id
+         LEFT JOIN driver_jeepney_assignments dja
+           ON dja.jeepney_id = j.id AND dja.active_to IS NULL
+         WHERE fgj.group_id = $1
+       )
+       SELECT member_type, member_id, display_name, driver_status,
+              active_jeepney_id, plate_no, color_hex, description,
+              jeepney_status, active_driver_id, joined_at
+       FROM group_members
+       WHERE ($2::text IS NULL OR member_type = $2)
+       ORDER BY member_type, COALESCE(display_name, plate_no), member_id
+       LIMIT $3 OFFSET $4`,
+      [groupId, memberType, input.pageSize, offset],
+    );
+    const count = await this.pool.query<{ total: string }>(
+      `SELECT (
+         CASE WHEN $2::text IS NULL OR $2 = 'DRIVER'
+           THEN (SELECT count(*) FROM fleet_group_drivers WHERE group_id = $1)
+           ELSE 0 END
+         + CASE WHEN $2::text IS NULL OR $2 = 'JEEPNEY'
+           THEN (SELECT count(*) FROM fleet_group_jeepneys WHERE group_id = $1)
+           ELSE 0 END
+       )::text AS total`,
+      [groupId, memberType],
+    );
+    return {
+      members: members.rows.map(mapGroupMember),
+      total: Number(count.rows[0]?.total ?? 0),
+    };
+  }
+
   async addGroupDriver(actor: User, groupId: string, driverId: string): Promise<void> {
     const group = await this.requireGroup(groupId);
     await this.assertOperatorScope(actor, group.operatorId);
@@ -354,6 +620,69 @@ export class FleetService {
     }
   }
 
+  async removeGroupDriver(actor: User, groupId: string, driverId: string): Promise<void> {
+    const group = await this.requireGroup(groupId);
+    await this.assertOperatorScope(actor, group.operatorId);
+    const client = await this.pool.connect();
+    try {
+      await client.query('BEGIN');
+      await client.query('SELECT 1 FROM fleet_groups WHERE id = $1 FOR UPDATE', [groupId]);
+      const removed = await client.query(
+        'DELETE FROM fleet_group_drivers WHERE group_id = $1 AND driver_id = $2 RETURNING 1',
+        [groupId, driverId],
+      );
+      if (removed.rowCount !== 1) {
+        throw new ApiError(404, 'NOT_FOUND', 'Driver membership not found');
+      }
+      await this.audit(
+        actor.id,
+        'FLEET_GROUP_DRIVER_REMOVED',
+        'FLEET_GROUP',
+        groupId,
+        { driverId },
+        client,
+      );
+      await client.query('COMMIT');
+    } catch (error) {
+      await client.query('ROLLBACK');
+      throw error;
+    } finally {
+      client.release();
+    }
+  }
+
+  async removeGroupJeepney(actor: User, groupId: string, jeepneyId: string): Promise<void> {
+    const group = await this.requireGroup(groupId);
+    await this.assertOperatorScope(actor, group.operatorId);
+    const client = await this.pool.connect();
+    try {
+      await client.query('BEGIN');
+      await client.query('SELECT 1 FROM fleet_groups WHERE id = $1 FOR UPDATE', [groupId]);
+      await client.query('SELECT 1 FROM jeepneys WHERE id = $1 FOR UPDATE', [jeepneyId]);
+      const removed = await client.query(
+        'DELETE FROM fleet_group_jeepneys WHERE group_id = $1 AND jeepney_id = $2 RETURNING 1',
+        [groupId, jeepneyId],
+      );
+      if (removed.rowCount !== 1) {
+        throw new ApiError(404, 'NOT_FOUND', 'Jeepney membership not found');
+      }
+      await this.audit(
+        actor.id,
+        'FLEET_GROUP_JEEPNEY_REMOVED',
+        'FLEET_GROUP',
+        groupId,
+        { jeepneyId },
+        client,
+      );
+      await client.query('COMMIT');
+    } catch (error) {
+      await client.query('ROLLBACK');
+      throw error;
+    } finally {
+      client.release();
+    }
+  }
+
   async assignDriver(actor: User, jeepneyId: string, driverId: string): Promise<DriverAssignment> {
     const jeepney = await this.requireJeepney(jeepneyId);
     if (jeepney.operatorId === null) {
@@ -394,6 +723,60 @@ export class FleetService {
     } finally {
       client.release();
     }
+  }
+
+  async unassignDriver(actor: User, jeepneyId: string): Promise<DriverAssignment> {
+    const jeepney = await this.requireJeepney(jeepneyId);
+    if (jeepney.operatorId === null) {
+      throw new ApiError(409, 'CONFLICT', 'Jeepney must belong to an operator before unassignment');
+    }
+    await this.assertOperatorScope(actor, jeepney.operatorId);
+
+    const client = await this.pool.connect();
+    try {
+      await client.query('BEGIN');
+      await client.query('SELECT 1 FROM jeepneys WHERE id = $1 FOR UPDATE', [jeepneyId]);
+      const result = await client.query<AssignmentRow>(
+        `UPDATE driver_jeepney_assignments
+         SET active_to = clock_timestamp()
+         WHERE jeepney_id = $1 AND active_to IS NULL
+         RETURNING id, driver_id, jeepney_id, assigned_by_user_id, active_from, active_to`,
+        [jeepneyId],
+      );
+      const row = result.rows[0];
+      if (row === undefined) {
+        throw new ApiError(409, 'CONFLICT', 'Jeepney has no active Driver assignment');
+      }
+      await this.audit(
+        actor.id,
+        'DRIVER_JEEPNEY_UNASSIGNED',
+        'JEEPNEY',
+        jeepneyId,
+        { driverId: row.driver_id, assignmentId: row.id },
+        client,
+      );
+      await client.query('COMMIT');
+      return mapAssignment(row);
+    } catch (error) {
+      await client.query('ROLLBACK');
+      throw error;
+    } finally {
+      client.release();
+    }
+  }
+
+  async getCurrentDriverAssignment(actor: User): Promise<DriverAssignment | null> {
+    const driverId = await this.requireActorDriver(actor.id);
+    const result = await this.pool.query<AssignmentRow>(
+      `SELECT id, driver_id, jeepney_id, assigned_by_user_id, active_from, active_to
+       FROM driver_jeepney_assignments
+       WHERE driver_id = $1 AND active_to IS NULL
+       ORDER BY active_from DESC, id
+       LIMIT 1`,
+      [driverId],
+    );
+    const row = result.rows[0];
+    return row === undefined ? null : mapAssignment(row);
   }
 
   private async requireActorOperator(userId: string): Promise<string> {
@@ -481,6 +864,23 @@ export class FleetService {
     }
   }
 
+  private async assertCanReadGroupMembers(actor: User, group: FleetGroup): Promise<void> {
+    if (actor.roles.includes('ADMIN')) return;
+    if (actor.roles.includes('OPERATOR')) {
+      await this.assertOperatorScope(actor, group.operatorId);
+      return;
+    }
+    if (actor.roles.includes('DRIVER')) {
+      const driverId = await this.requireActorDriver(actor.id);
+      const membership = await this.pool.query(
+        'SELECT 1 FROM fleet_group_drivers WHERE group_id = $1 AND driver_id = $2 LIMIT 1',
+        [group.id, driverId],
+      );
+      if (membership.rowCount === 1) return;
+    }
+    throw new ApiError(403, 'FORBIDDEN', 'Fleet group members are outside the permitted scope');
+  }
+
   private async audit(
     actorUserId: string,
     action: string,
@@ -533,6 +933,70 @@ function mapAssignment(row: AssignmentRow): DriverAssignment {
     activeFrom: row.active_from,
     activeTo: row.active_to,
   };
+}
+
+function mapGroupMember(row: GroupMemberRow): FleetGroupMember {
+  if (row.member_type === 'DRIVER') {
+    if (row.display_name === null || row.driver_status === null) {
+      throw new Error('Driver group membership returned incomplete data');
+    }
+    return {
+      memberType: 'DRIVER',
+      driverId: row.member_id,
+      displayName: row.display_name,
+      status: row.driver_status,
+      activeJeepneyId: row.active_jeepney_id,
+      joinedAt: row.joined_at,
+    };
+  }
+  if (row.plate_no === null || row.color_hex === null || row.jeepney_status === null) {
+    throw new Error('Jeepney group membership returned incomplete data');
+  }
+  return {
+    memberType: 'JEEPNEY',
+    jeepneyId: row.member_id,
+    plateNo: row.plate_no,
+    colorHex: row.color_hex,
+    description: row.description,
+    status: row.jeepney_status,
+    activeDriverId: row.active_driver_id,
+    joinedAt: row.joined_at,
+  };
+}
+
+function mapDriverDirectoryEntry(row: DriverDirectoryRow): DriverDirectoryEntry {
+  return {
+    driverId: row.driver_id,
+    userId: row.user_id,
+    email: row.email,
+    displayName: row.display_name,
+    status: row.status,
+    userStatus: row.user_status,
+    emailVerified: row.email_verified,
+    operatorId: row.operator_id,
+    activeJeepneyId: row.active_jeepney_id,
+    groupIds: row.group_ids,
+    createdAt: row.created_at,
+  };
+}
+
+function mapOperatorDirectoryEntry(row: OperatorDirectoryRow): OperatorDirectoryEntry {
+  return {
+    operatorId: row.operator_id,
+    ownerUserId: row.owner_user_id,
+    email: row.email,
+    displayName: row.display_name,
+    status: row.status,
+    userStatus: row.user_status,
+    driverCount: row.driver_count,
+    jeepneyCount: row.jeepney_count,
+    groupCount: row.group_count,
+    createdAt: row.created_at,
+  };
+}
+
+function pagination(page: number, pageSize: number, total: number): PaginationResult {
+  return { page, pageSize, total, totalPages: Math.ceil(total / pageSize) };
 }
 
 function normalizePlate(plateNo: string): string {

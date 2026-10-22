@@ -112,4 +112,23 @@ describe('authorized tracking history integration boundary', () => {
     expect(await repository.uniqueIdForJeepney('unknown')).toBeNull();
     expect(query.mock.calls[0]?.[1]).toEqual(['jeepney']);
   });
+  it('rejects ambiguous duplicate provider devices even when uniqueIds agree', async () => {
+    const f = fixture(); permit(f);
+    f.traccar.devices.mockResolvedValueOnce([
+      { id: 7, uniqueId: 'tracker-7', status: 'online' },
+      { id: 8, uniqueId: 'tracker-7', status: 'online' },
+    ]);
+    await expect(f.service.history(actor('DRIVER'), 'jeepney', range)).rejects.toMatchObject({ code: 'INVALID_RESPONSE' });
+    expect(f.traccar.history).not.toHaveBeenCalled();
+  });
+
+  it('reauthorizes every read instead of retaining a revoked fleet grant', async () => {
+    const f = fixture(); permit(f); const user = actor('OPERATOR');
+    await f.service.history(user, 'jeepney', range);
+    f.fleet.listJeepneys.mockResolvedValueOnce([]);
+    await expect(f.service.events(user, 'jeepney', range)).rejects.toMatchObject({ statusCode: 403 });
+    expect(f.mappings.uniqueIdForJeepney).toHaveBeenCalledTimes(1);
+    expect(f.traccar.events).not.toHaveBeenCalled();
+  });
+
 });

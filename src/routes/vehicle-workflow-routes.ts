@@ -328,6 +328,32 @@ export const vehicleWorkflowRoutes: FastifyPluginAsync<VehicleWorkflowRoutesOpti
     },
   );
 
+  fastify.get(
+    '/admin/gps-setup-requests/:requestId/device-mapping',
+    {
+      preHandler: fastify.requireRoles('ADMIN'),
+      schema: {
+        tags: [OpenApiTags.gps],
+        operationId: 'getGpsDeviceMapping',
+        summary: 'Get the device mapping for a GPS setup request',
+        description:
+          'ADMIN-only read of the application-owned mapping identity. A valid request with no mapping returns mapping: null; raw Traccar numeric IDs are never exposed.',
+        security: [{ bearerAuth: [] }],
+        params: Type.Object({ requestId: Uuid }),
+        response: {
+          200: Type.Object({ mapping: Type.Union([MappingSchema, Type.Null()]) }),
+          401: ErrorSchema,
+          403: ErrorSchema,
+          404: ErrorSchema,
+        },
+      },
+    },
+    async (request) => {
+      const mapping = await options.workflowService.getDeviceMapping(request.params.requestId);
+      return { mapping: mapping === null ? null : serializeDeviceMapping(mapping) };
+    },
+  );
+
   fastify.post(
     '/admin/gps-setup-requests/:requestId/verification',
     {
