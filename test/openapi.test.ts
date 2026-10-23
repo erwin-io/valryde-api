@@ -103,6 +103,15 @@ describe('OpenAPI documentation', () => {
     expect(document.paths['/admin/users/']?.get?.security).toEqual([{ bearerAuth: [] }]);
   });
 
+  it('publishes the G8 audit-log read as a protected Administration operation', () => {
+    expect(document.paths['/admin/audit-logs']?.get).toMatchObject({
+      operationId: 'listAuditLogsAsAdmin',
+      tags: [openApiTagDefinitions[14]?.name],
+      security: [{ bearerAuth: [] }],
+    });
+    expect(document.paths['/admin/audit-logs']?.post).toBeUndefined();
+  });
+
   it('publishes the approved G1 directory operations as protected fleet contracts', () => {
     expect(document.paths['/drivers']?.get).toMatchObject({
       operationId: 'listDrivers',

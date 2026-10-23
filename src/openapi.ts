@@ -72,6 +72,6 @@ export const openApiTagDefinitions = [
   },
   {
     name: OpenApiTags.administration,
-    description: 'Future contract area for Admin monitoring, reporting, and exports.',
+    description: 'Admin read-only audit trail; future area for monitoring, reporting, and exports.',
   },
 ];

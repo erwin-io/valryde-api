@@ -1,6 +1,6 @@
 # VALRYDE OpenAPI endpoint-to-tag mapping
 
-The OpenAPI server URL is `/api`; paths below are relative to that base. Categories 09–12, 14 and 15 are declared as future contract areas and intentionally contain no operations until those routes are implemented.
+The OpenAPI server URL is `/api`; paths below are relative to that base. Categories 09–12 and 14 are declared as future contract areas and intentionally contain no operations until those routes are implemented. Category 15 holds only the read-only audit-log operation so far.
 
 ## 01 — System & Health
 
@@ -103,3 +103,7 @@ shared `TransitService.resolveEffectiveRouteDirection()` method instead of recre
 - `GET /transit-routes/discover` — `discoverDirectTransitRoutes` (public; 30/minute per IP)
 
 Place search is a server-side geocoder proxy. It is disabled by default (`GEOCODER_PROVIDER=disabled`) and then returns `503 GEOCODER_UNAVAILABLE`; route search and discovery keep working. Discovery returns direct rides only, never transfers. Neither route stores or logs its query string.
+
+## 15 — Administration & Reports
+
+- `GET /admin/audit-logs` — `listAuditLogsAsAdmin` (ADMIN only; read-only; filters `entityType`, `entityId`, `actorUserId`, `action`, `from` inclusive, `to` exclusive; `page`/`pageSize` max 100; newest first)
