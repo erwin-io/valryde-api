@@ -3,6 +3,8 @@
 **Status:** PROPOSED — for Agent G decision. Nothing is implemented and no migration is applied.
 **Builds on:** [AGENT_A_G7_ROUTE_CHANGE_REQUEST_CONTRACT_PROPOSAL.md](AGENT_A_G7_ROUTE_CHANGE_REQUEST_CONTRACT_PROPOSAL.md) (merged in #27). This matrix replaces that document's §9 and fixes two inconsistencies in it (§3 below).
 **Settled:** G7-D2. The migration is numbered 010 or later, never 006–009 (directive 008).
+**Accepted design directions (Agent G review checkpoint):** G7-D1 = A (approval is a decision record only, with no automatic canonical route mutation), G7-D6 = A (Operator-only submission), G7-D3 = A (cross-Operator non-disclosure, `404`). These remain directions until Agent G approves the implementation PR.
+**Still open:** G7-D4, G7-D5, G7-D7, and the §3 corrections.
 **Base:** `main` `810c8a13356ddbf0e28a4faf5ad7f86ce0a30479`
 
 ## 1. Decisions
@@ -161,4 +163,4 @@ PostgreSQL/PostGIS CI only; isolated fixtures removed by id.
 
 ## 5. What Agent G needs to answer
 
-Accept or change each of **G7-D1, D3, D4, D5, D6, D7** (recommended: A for all), and confirm the §3 corrections. Once those are approved, Agent A opens the G7 implementation PR with the migration numbered 010 or later.
+D1, D3 and D6 are accepted as directions. Still needed: **G7-D4** (target route statuses), **G7-D5** (Philippines envelope on proposals now), **G7-D7** (defer `resulting_route_id`); recommended A for each. Also confirm the §3 corrections. Once those are decided, Agent A opens the G7 implementation PR with the migration numbered 010 or later, approval as a decision record only, and no automatic canonical route mutation.
