@@ -137,6 +137,16 @@ describe('tracking bridge lifecycle', () => {
     expect(f.bridge.health().counters.positionsOutOfOrder).toBe(1);
   });
 
+  it('hands parseable invalid fixes to the sink separately so durable mode can record them (13b B4)', async () => {
+    const f = setup();
+    await running(f);
+    f.last().send({ positions: [pos(201, -2_000), pos(202, -1_000, { valid: false })] });
+    await flush();
+    expect(f.accepted()).toEqual([201]);
+    expect(f.batches.at(-1)?.invalidPositions.map((p) => p.positionId)).toEqual([202]);
+    expect(f.bridge.health().counters.positionsInvalid).toBe(1);
+  });
+
   it('ignores keepalives and unknown keys, keeps valid siblings of invalid items and skips unmapped devices (B-S02)', async () => {
     const f = setup();
     await running(f);
