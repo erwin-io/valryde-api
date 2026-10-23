@@ -2,17 +2,17 @@
 
 ## Current snapshot
 
-- Updated at (ISO 8601, Asia/Manila): 2026-10-23T16:00:00+08:00
+- Updated at (ISO 8601, Asia/Manila): 2026-10-23T18:00:00+08:00
 - Agent / module: A — Core Platform / Fastify API (execution owner: Claude, taken over from Codex under `VALRYDE-CLAUDE-A-CODEX-RECOVERY-AND-COMPLETION-003`)
 - Repository: `erwin-io/valryde-api`
 - Branch / head: canonical copy carried identically by open Agent A PRs #29 (`docs/agent-a-backend-release-handoff`) and #31 (`feat/a006-tracking-context-generation`); base `origin/main` `810c8a13356ddbf0e28a4faf5ad7f86ce0a30479`
 - Checklist IDs: 1–11 (gap slices G1–G11, D3); G6 backend for ID 37
 - GitHub issues / PRs: merged into `main` by Agent G with merge commits: #1, #2, #4–#8, #10–#12, #15–#17, #19–#21, #23–#28 (and Agent B #22). Open Agent A PRs: [#29](https://github.com/erwin-io/valryde-api/pull/29) backend release API handoff, [#31](https://github.com/erwin-io/valryde-api/pull/31) A006 tracking context generation. Agent B [#14](https://github.com/erwin-io/valryde-api/pull/14) open.
 - Implementation progress: IN_PROGRESS — every independently executable, approved Agent A slice is merged; remaining work waits on the decisions listed under "Blocked by".
-- Tech Lead review decision (if actually issued): IDs 1–11 baseline ACCEPTED (PR #1). G1–G6, G10 read, G11, D3, fixtures and mobile testing policy merged by Agent G. Stage 13b design APPROVED: the owner confirmed on 2026-10-23 that Agent G's merge of #17 is the formal approval of X1–X8, the §13 constants, D01–D12 and the two new codes. No decision yet on #29 or #31.
+- Tech Lead review decision (if actually issued): IDs 1–11 baseline ACCEPTED (PR #1). G1–G6, G10 read, G11, D3, fixtures and mobile testing policy merged by Agent G. Stage 13b design APPROVED (owner confirmed 2026-10-23 that Agent G's merge of #17 is the formal approval). #31 at `9446557`: CI ACCEPTED, code review pending (`VALRYDE-G-A006-CI-VERIFIED-001`, run 39849795193); Agent G then ordered test hardening (`VALRYDE-G-A006-TEST-HARDENING-001`). No decision yet on #29.
 - Current objective: directive `VALRYDE-AGENT-A-FINAL-BACKEND-RELEASE-008` (milestone `AGENT_A_FULL_INDEPENDENT_BACKEND_RELEASE_READY`).
-- Last confirmed result: A006 implemented in #31 (migration 006, shared lock/retry protocol, context and visibility services, all listed mutations retrofitted, PostgreSQL concurrency tests). Local lint, typecheck, build and unit tests pass; the CI PostGIS result for #31 is not yet recorded.
-- Next concrete action: confirm CI on #31 and fix any failure; Agent G reviews and merges #31 before Agent B's 007; after #31 and #29 merge, regenerate the handoff matrix (new 422/503 statuses). Agent G decides G7-D1, D3–D7.
+- Last confirmed result: #31 hardening tests committed (`7e42b52`); local lint, typecheck and unit tests pass (165 passed, 77 PostgreSQL tests skipped locally). CI on the new head not yet recorded.
+- Next concrete action: confirm CI on #31's new head, then hand #31 back to Agent G for code review; merge #31 before Agent B's 007; regenerate the handoff matrix after #29 and #31 merge. Agent G decides G7-D1, D3–D7.
 - Blocked by / decision owner: Agent G review of #29 and #31 and the G7 decisions; Agent B for B007/B008 and the Bridge-side tests (T14, T17, T18, T19 persistence, T23–T25); owner for the geocoding provider and its terms (G6-D4), the production callback domain and App Links hosting (G5), the first real Admin, and physical GPS/Traccar mapping.
 - Dependencies / affected agents: B (tracking/latest state/realtime), C (public route/live APIs), D (driver invitation and operator APIs), E (Admin APIs), F (device runbooks), G (shared-contract review).
 
@@ -127,6 +127,17 @@
 - Gate: Physical GPS/Traccar mapping and activation. Required actor: operator/Agent F/Agent B. Requested evidence: power, SIM/APN, server connectivity, GPS fix, correct IMEI/uniqueId mapping. State: OWNER_VERIFICATION_PENDING.
 
 ## Activity log (newest first; preserve prior entries)
+
+### 2026-10-23 18:00 +08:00 — A006 test hardening (#31)
+
+- Action / reason: directive `VALRYDE-G-A006-TEST-HARDENING-001` after CI was accepted on `9446557`. Test-only change; no source, migration or contract change.
+- Checklist/issue: Stage 13b X1–X8; tests T5, T6, T7, T8, T13, T15, T16, T22.
+- Files/config/services affected: `test/pg-tracking-context.integration.test.ts` only.
+- Observed result: added forced-order races for review, GPS install/verify and status change; bump tests for `updateRoute` (status only) and `addGroupJeepney`; simulated SQLSTATE injection for `55P03`/`40P01`/`40001` with an attempt counter (success after 3 retries, 503 after exactly 4 attempts, no retry for a non-retryable code), kept separate from the genuine-contention `55P03` test, which now asserts the 4 × 2 s budget; both orders for removal versus group assignment; `updateDirection` retry on set growth; competing route and direction edits; rollback for group `assignRoute`, `removeGroupJeepney`, `mapDevice`, `verifyInstallation`; a deterministic `pg_locks` key-order proof in place of the probabilistic loop; pre-lock cap proven with a held key; a post-lock cap test.
+- Validation and evidence: local lint, typecheck, unit tests 165 passed, 77 PostgreSQL tests skipped locally by design. CI result recorded at the next checkpoint.
+- Contracts / risks / dependencies: still not exercised: genuine `40P01`/`40001` from real contention (a real deadlock's victim is not deterministic; `40001` does not occur at READ COMMITTED), a forced advisory-key hash collision (keys are computed in SQL), and the Agent B tests. Queue-order tests assume each release happens within the 2 s lock timeout (normally milliseconds).
+- Commit/PR link or SHA: #31 tests `7e42b52c8b1faffd0334b3ede96e7c5ca05a0c6c`.
+- Next action / owner gate: CI on #31; Agent G code review.
 
 ### 2026-10-23 16:00 +08:00 — A006 implemented (Stage 13b Phase C)
 
