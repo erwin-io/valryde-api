@@ -66,6 +66,8 @@ describeDatabase('Stage 13b B007/B008 tracking schema', () => {
   beforeAll(async () => {
     pool = new pg.Pool({ connectionString: databaseUrl, options: `-c search_path=${schema},public` });
     client = await pool.connect();
+    // Shared with the B2 writer test, which commits lease changes to the singleton primary row.
+    await client.query('SELECT pg_advisory_lock(8642100013)');
     await client.query('BEGIN');
     userId = randomUUID(); jeepneyId = randomUUID(); gpsDeviceId = randomUUID(); directionId = randomUUID();
     const routeId = randomUUID();
@@ -86,7 +88,10 @@ describeDatabase('Stage 13b B007/B008 tracking schema', () => {
   });
 
   afterAll(async () => {
-    try { await client.query('ROLLBACK'); } finally { client.release(); await pool.end(); }
+    try {
+      await client.query('ROLLBACK');
+      await client.query('SELECT pg_advisory_unlock(8642100013)');
+    } finally { client.release(); await pool.end(); }
   });
 
   it('applies 007 before 008 and fails loudly on re-application', async () => {
@@ -103,7 +108,10 @@ describeDatabase('Stage 13b B007/B008 tracking schema', () => {
 
   it('seeds exactly one released primary lease and rejects a second deployment or partial owner', async () => {
     const leases = await client.query('SELECT deployment_key, fence, owner_id, phase FROM tracking_bridge_leases');
-    expect(leases.rows).toEqual([{ deployment_key: 'primary', fence: '0', owner_id: null, phase: 'STOPPED' }]);
+    // The fence only ever increases, so a released row may carry a fence from an earlier writer test.
+    expect(leases.rows).toHaveLength(1);
+    expect(leases.rows[0]).toMatchObject({ deployment_key: 'primary', owner_id: null, phase: 'STOPPED' });
+    expect(String((leases.rows[0] as Row).fence)).toMatch(/^[0-9]+$/);
     await rejects('23514', () => insert('tracking_bridge_leases', { deployment_key: 'secondary' }));
     await rejects('23514', () => client.query(
       "UPDATE tracking_bridge_leases SET owner_id = $1, fence = 1 WHERE deployment_key = 'primary'", [randomUUID()]));
