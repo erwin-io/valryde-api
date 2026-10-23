@@ -2,7 +2,7 @@
 
 ## Current snapshot
 
-- Updated at (ISO 8601, Asia/Manila): 2026-10-23T20:00:00+08:00
+- Updated at (ISO 8601, Asia/Manila): 2026-10-23T22:00:00+08:00
 - Agent / module: A — Core Platform / Fastify API (execution owner: Claude, taken over from Codex under `VALRYDE-CLAUDE-A-CODEX-RECOVERY-AND-COMPLETION-003`)
 - Repository: `erwin-io/valryde-api`
 - Branch / head: canonical copy on #29 (`docs/agent-a-backend-release-handoff`). #31 keeps its 18:00 copy (blob `223a802`) frozen for review; #33, #34 and #35 carry no status change. Base `origin/main` `810c8a13356ddbf0e28a4faf5ad7f86ce0a30479`
@@ -11,8 +11,8 @@
 - Implementation progress: IN_PROGRESS — every independently executable, approved Agent A slice is merged; remaining work waits on the decisions listed under "Blocked by".
 - Tech Lead review decision (if actually issued): IDs 1–11 baseline ACCEPTED (PR #1). G1–G6, G10 read, G11, D3, fixtures and mobile testing policy merged by Agent G. Stage 13b design APPROVED (merge of #17, confirmed 2026-10-23). #31 at `b4d6942`: test hardening COMPLETE, CI workflow 39881541394 passed (verified by Agent G), code review pending. No decision yet on #29, #33, #34 or #35.
 - Current objective: directive `VALRYDE-AGENT-A-FINAL-BACKEND-RELEASE-008` (milestone `AGENT_A_FULL_INDEPENDENT_BACKEND_RELEASE_READY`).
-- Last confirmed result: G8 implemented in #33 (local lint, typecheck, build, unit tests 166 passed / 53 PostgreSQL skipped; CI not yet recorded); G9 proposal #34 and G7 decision matrix #35 opened; #29 handoff blocked list updated.
-- Next concrete action: Agent G reviews #31, #33 (G8-D1 to D6), #34 (G9-D1 to D6), #35 (G7-D1, D3–D7) and #29. Agent A implements G9 and G7 once approved and fixes any review finding on #31. A006 merges before Agent B 007 (#30).
+- Last confirmed result: CI green on #29 `92da88a`, #31 `b4d6942`, #33 `13763ae`, #34 `089dd62`, #35 `e10963d`. Review corrections applied to #33 (metadata inventory and allowlist proposal), #34 (opt-in envelope, zero-record fix) and #35 (accepted D1, D3, D6). Checkpoint A-UI-READY-001 delivered in #29 (`AGENT_A_UI_READY_001.md`, availability matrix MD/JSON).
+- Next concrete action: Agent G code review of #31 and merge order #31 → #30; review #29; decide G8-D3, G9-D1/D3–D6, G7-D4/D5/D7; approve opening G12 (Admin summary) and G13 (GPS device list) proposals. Agent A then implements G9, the G8 allowlist and G7 as each is approved.
 - Blocked by / decision owner: Agent G for the reviews and decisions above; Agent B for B007/B008 and the Bridge-side tests (T14, T17, T18, T19 persistence, T23–T25); owner for the geocoding provider and its terms (G6-D4), audit retention policy (G8-D4), the production callback domain and App Links hosting (G5), the first real Admin, and physical GPS/Traccar mapping.
 - Dependencies / affected agents: B (tracking/latest state/realtime), C (public route/live APIs), D (driver invitation and operator APIs), E (Admin APIs), F (device runbooks), G (shared-contract review).
 
@@ -41,9 +41,9 @@
 | D3 | Duplicate direction label → 409 | MERGED | #23 head `bea0b7f`, merge `1a79480` | — |
 | G5 | Mobile email links (backend portion) | MERGED | #26 head `fffe141`, merge `bb799b2` | App Links/Universal Links hosting, callback domain and per-role destinations owner-gated. |
 | G6 | Place search + direct discovery | MERGED | #28 head `aead06af5a66e1750e137200471c2993095d1559`, merge `08193b8` | Owner: provider terms/caching (G6-D4); provider disabled by default. |
-| G7 | Route-change requests | BLOCKED (decision matrix READY_FOR_REVIEW) | base #27 merged; matrix #35 `8accc57` | Agent G: G7-D1, D3–D7. G7-D2 resolved: migration 010 or later. |
-| G8 | Admin audit-log read | IMPLEMENTED, READY_FOR_REVIEW (contract proposed) | #33 `5dde779` | Agent G: G8-D1 to D6; owner: retention (G8-D4). |
-| G9 | Admin list pagination and filters | PROPOSED | #34 `f936e14` | Agent G: G9-D1 to D6 (D2 compatibility is the key one). |
+| G7 | Route-change requests | BLOCKED (D1, D3, D6 accepted as directions) | base #27 merged; matrix #35 `e10963d` | Agent G: G7-D4, D5, D7 and two corrections. Migration 010 or later. |
+| G8 | Admin audit-log read | CHANGES_REQUIRED (metadata exposure G8-D3 undecided) | #33 `13763ae` | Agent G: G8-D3 (allowlist recommended), D1, D2, D5, D6; owner: retention (G8-D4). |
+| G9 | Admin list pagination and filters | PROPOSED (D2 opt-in accepted) | #34 `089dd62` | Agent G: G9-D1, D3–D6. |
 | G10 | Admin mapping read | MERGED | #24 head `a702738`, merge `4fe8bc9` | Remap/unmap blocked on Stage 13b approval. |
 | G11 | Assignment reads + impact preview | MERGED | #25 head `397e6d6`, merge `000249b` | — |
 | Stage 13b | Shared interface design + A006 implementation | IMPLEMENTED, READY_FOR_REVIEW (design approved) | design #17 merge `0670bcb`; A006 #31 code `ac98182` | Agent G review of #31; merge before B007. |
@@ -129,6 +129,21 @@
 - Gate: Physical GPS/Traccar mapping and activation. Required actor: operator/Agent F/Agent B. Requested evidence: power, SIM/APN, server connectivity, GPS fix, correct IMEI/uniqueId mapping. State: OWNER_VERIFICATION_PENDING.
 
 ## Activity log (newest first; preserve prior entries)
+
+### 2026-10-23 22:00 +08:00 — Review corrections and checkpoint A-UI-READY-001
+
+- Action / reason: Agent G review checkpoint (G8 metadata, G9 opt-in, G7 directions), then release gate `A-UI-READY-001`. #31 untouched at `b4d6942`; nothing merged; no database touched.
+- Checklist/issue: IDs 1–11, 37, 49–50, 56–64; G7, G8, G9.
+- Files/config/services affected:
+  - #33 `13763ae`: §5 metadata exposure inventory (29 actions) and read-side allowlist proposal in the G8 contract doc; marked not for merge.
+  - #34 `089dd62`: opt-in envelope; unpaged calls return every row; zero-record unpaged `pageSize: 0` defined.
+  - #35 `e10963d`: accepted directions D1, D3, D6 recorded; D4, D5, D7 and two corrections open.
+  - #29: `AGENT_A_UI_READY_001.md`, `AGENT_A_UI_ENDPOINT_AVAILABILITY.md` and `.json` (56 `main` operations, 1 pending, 6 missing); handoff no longer shows the G8 path, and the 422/503 codes are marked pending on #31.
+- Observed result: Agent B's #32, #36 and #37 contain A006 files blob-identical to #31, and their CI is green. Missing backend operations for UI: Admin summary (ID 56), GPS device list (ID 63), Operator create/approve (ID 57, policy), geofences (ID 62, scope).
+- Validation and evidence: CI `verify` and GitGuardian pass on all five Agent A heads listed in the snapshot; this #29 commit re-runs CI.
+- Contracts / risks / dependencies: no new contract implemented; G12 and G13 proposed only.
+- Commit/PR link or SHA: #33 `13763ae7ad47dce71d4116fb2acbe84f1904eb97`; #34 `089dd622bbedcc3d90f45588d7bac0859dd79321`; #35 `e10963df070656fc727d63494df3e2f328f51a9b`; #29 head after this commit.
+- Next action / owner gate: see the snapshot.
 
 ### 2026-10-23 20:00 +08:00 — G8 implementation, G9 proposal, G7 decision matrix
 

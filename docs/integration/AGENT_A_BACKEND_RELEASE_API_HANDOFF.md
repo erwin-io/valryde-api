@@ -11,6 +11,7 @@ This document replaces §4–§7 of [AGENT_A_FRONTEND_API_INTEGRATION_HANDOFF.md
 | [AGENT_A_FRONTEND_ENDPOINT_MATRIX.md](AGENT_A_FRONTEND_ENDPOINT_MATRIX.md) | All 56 operations / 47 paths with method, guard, consumers, path/query/body fields and limits, success envelope, pagination, declared statuses and source line |
 | [AGENT_A_FRONTEND_ENDPOINT_INDEX.json](AGENT_A_FRONTEND_ENDPOINT_INDEX.json) | The same inventory, machine-readable |
 | [AGENT_A_OPENAPI_AUDIT.json](AGENT_A_OPENAPI_AUDIT.json) | Exact OpenAPI 3 snapshot (server `/api`, unprefixed paths) for typed clients and contract tests |
+| [AGENT_A_UI_ENDPOINT_AVAILABILITY.md](AGENT_A_UI_ENDPOINT_AVAILABILITY.md) / [.json](AGENT_A_UI_ENDPOINT_AVAILABILITY.json) | Checkpoint A-UI-READY-001: each operation's availability (accepted `main` / pending PR / unavailable), roles, DTO, checklist IDs and UI consumer, including missing operations |
 | `scripts/generate-api-handoff.ts` | Regenerates the three files above offline: `npx tsx scripts/generate-api-handoff.ts` |
 
 ## 1. Rules for every call
@@ -58,7 +59,7 @@ All other collections are unpaginated and unfiltered by contract. Filter them cl
 | 503 | `GOOGLE_SIGN_IN_UNAVAILABLE`, `EMAIL_DELIVERY_UNAVAILABLE`, `GEOCODER_UNAVAILABLE` | Provider not configured or down. Place search returns `GEOCODER_UNAVAILABLE` while the provider is disabled (the default). |
 | 500 | `INTERNAL_ERROR` | Unexpected; show `requestId` |
 
-*Proposed, not implemented:* `422 TRACKING_CONTEXT_MUTATION_TOO_LARGE` and `503 TRACKING_CONTEXT_BUSY` (Stage 13b design, merged as a document in PR #17 and still marked proposed).
+*Not on `main` yet:* `422 TRACKING_CONTEXT_MUTATION_TOO_LARGE` and `503 TRACKING_CONTEXT_BUSY`. They are approved in the Stage 13b design (#17) and implemented in A006 PR #31, which is under review. Clients should handle a retryable 503 on context-changing mutations once #31 merges. See [AGENT_A_UI_ENDPOINT_AVAILABILITY.md](AGENT_A_UI_ENDPOINT_AVAILABILITY.md).
 
 ### 1.3 Rate limits (per client IP unless stated)
 
@@ -139,7 +140,7 @@ Classes:
 | Application review, GPS transitions, mapping create/read, verification | `/api/admin/vehicle-applications/*`, `/api/admin/gps-setup-requests/*` | 1 |
 | Device remap / unmap (G10 write) | — | 4 — not in the first release: Stage 13b fixes create-only mapping (§13.2 item 3) |
 | Route-change review queue (G7) | — | 4 — PR #35 decision matrix |
-| Audit log viewer (G8) | `GET /api/admin/audit-logs` | 4 — implemented in PR #33, contract G8-D1 to D6 pending; not on `main` |
+| Audit log viewer (G8) | — | 4 — not on `main`. PR #33 is held: metadata exposure (G8-D3) not approved. Do not build against it yet |
 | Admin list pagination (G9), settings | — | 4 — G9 proposal in PR #34; settings not started |
 | Dashboard, live map, deviations, Traccar health, reports | — | 5 / 6 |
 
