@@ -1,0 +1,1183 @@
+{
+  "checkpoint": "A-UI-READY-001",
+  "acceptedMain": "810c8a13356ddbf0e28a4faf5ad7f86ce0a30479",
+  "operations": [
+    {
+      "method": "GET",
+      "route": "/api/health",
+      "operationId": "getHealth",
+      "roles": "PUBLIC",
+      "availability": "ACCEPTED_MAIN",
+      "source": "main 810c8a1",
+      "dto": "200 {status, database}",
+      "paginated": false,
+      "checklistIds": [],
+      "uiConsumers": [
+        "C",
+        "D",
+        "E"
+      ],
+      "notes": ""
+    },
+    {
+      "method": "POST",
+      "route": "/api/auth/register",
+      "operationId": "registerUser",
+      "roles": "PUBLIC",
+      "availability": "ACCEPTED_MAIN",
+      "source": "main 810c8a1",
+      "dto": "201 {user, message}",
+      "paginated": false,
+      "checklistIds": [
+        1,
+        3
+      ],
+      "uiConsumers": [
+        "C",
+        "D"
+      ],
+      "notes": ""
+    },
+    {
+      "method": "POST",
+      "route": "/api/auth/verify-email",
+      "operationId": "verifyEmail",
+      "roles": "PUBLIC",
+      "availability": "ACCEPTED_MAIN",
+      "source": "main 810c8a1",
+      "dto": "200 {user}",
+      "paginated": false,
+      "checklistIds": [
+        1
+      ],
+      "uiConsumers": [
+        "C",
+        "D",
+        "E"
+      ],
+      "notes": ""
+    },
+    {
+      "method": "POST",
+      "route": "/api/auth/resend-verification",
+      "operationId": "resendEmailVerification",
+      "roles": "PUBLIC",
+      "availability": "ACCEPTED_MAIN",
+      "source": "main 810c8a1",
+      "dto": "202 {message}",
+      "paginated": false,
+      "checklistIds": [
+        1
+      ],
+      "uiConsumers": [
+        "C",
+        "D",
+        "E"
+      ],
+      "notes": "Real delivery owner-gated (SMTP)."
+    },
+    {
+      "method": "POST",
+      "route": "/api/auth/login",
+      "operationId": "loginUser",
+      "roles": "PUBLIC",
+      "availability": "ACCEPTED_MAIN",
+      "source": "main 810c8a1",
+      "dto": "200 {accessToken, refreshToken, accessTokenExpiresIn, refreshTokenExpiresAt, user}",
+      "paginated": false,
+      "checklistIds": [
+        1,
+        56
+      ],
+      "uiConsumers": [
+        "C",
+        "D",
+        "E"
+      ],
+      "notes": ""
+    },
+    {
+      "method": "POST",
+      "route": "/api/auth/google",
+      "operationId": "signInWithGoogle",
+      "roles": "PUBLIC",
+      "availability": "ACCEPTED_MAIN",
+      "source": "main 810c8a1",
+      "dto": "200 {accessToken, refreshToken, accessTokenExpiresIn, refreshTokenExpiresAt, user}",
+      "paginated": false,
+      "checklistIds": [
+        1
+      ],
+      "uiConsumers": [
+        "C",
+        "D"
+      ],
+      "notes": "Owner-gated: Google client IDs not provisioned; returns 503 GOOGLE_SIGN_IN_UNAVAILABLE."
+    },
+    {
+      "method": "POST",
+      "route": "/api/auth/refresh",
+      "operationId": "refreshSession",
+      "roles": "PUBLIC",
+      "availability": "ACCEPTED_MAIN",
+      "source": "main 810c8a1",
+      "dto": "200 {accessToken, refreshToken, accessTokenExpiresIn, refreshTokenExpiresAt, user}",
+      "paginated": false,
+      "checklistIds": [
+        1
+      ],
+      "uiConsumers": [
+        "C",
+        "D",
+        "E"
+      ],
+      "notes": ""
+    },
+    {
+      "method": "POST",
+      "route": "/api/auth/logout",
+      "operationId": "logoutSession",
+      "roles": "PUBLIC",
+      "availability": "ACCEPTED_MAIN",
+      "source": "main 810c8a1",
+      "dto": "204 no body",
+      "paginated": false,
+      "checklistIds": [
+        1
+      ],
+      "uiConsumers": [
+        "C",
+        "D",
+        "E"
+      ],
+      "notes": ""
+    },
+    {
+      "method": "POST",
+      "route": "/api/auth/forgot-password",
+      "operationId": "requestPasswordReset",
+      "roles": "PUBLIC",
+      "availability": "ACCEPTED_MAIN",
+      "source": "main 810c8a1",
+      "dto": "202 {message}",
+      "paginated": false,
+      "checklistIds": [
+        1
+      ],
+      "uiConsumers": [
+        "C",
+        "D",
+        "E"
+      ],
+      "notes": "Real delivery owner-gated (SMTP)."
+    },
+    {
+      "method": "POST",
+      "route": "/api/auth/reset-password",
+      "operationId": "resetPassword",
+      "roles": "PUBLIC",
+      "availability": "ACCEPTED_MAIN",
+      "source": "main 810c8a1",
+      "dto": "204 no body",
+      "paginated": false,
+      "checklistIds": [
+        1
+      ],
+      "uiConsumers": [
+        "C",
+        "D",
+        "E"
+      ],
+      "notes": ""
+    },
+    {
+      "method": "GET",
+      "route": "/api/auth/me",
+      "operationId": "getCurrentUser",
+      "roles": "ANY_VERIFIED_ACTIVE_ROLE",
+      "availability": "ACCEPTED_MAIN",
+      "source": "main 810c8a1",
+      "dto": "200 {user}",
+      "paginated": false,
+      "checklistIds": [
+        1,
+        2,
+        3
+      ],
+      "uiConsumers": [
+        "C",
+        "D",
+        "E"
+      ],
+      "notes": ""
+    },
+    {
+      "method": "PATCH",
+      "route": "/api/auth/me",
+      "operationId": "updateCurrentUser",
+      "roles": "ANY_VERIFIED_ACTIVE_ROLE",
+      "availability": "ACCEPTED_MAIN",
+      "source": "main 810c8a1",
+      "dto": "200 {user}",
+      "paginated": false,
+      "checklistIds": [
+        3
+      ],
+      "uiConsumers": [
+        "C",
+        "D",
+        "E"
+      ],
+      "notes": ""
+    },
+    {
+      "method": "POST",
+      "route": "/api/auth/me/change-password",
+      "operationId": "changeCurrentUserPassword",
+      "roles": "ANY_VERIFIED_ACTIVE_ROLE",
+      "availability": "ACCEPTED_MAIN",
+      "source": "main 810c8a1",
+      "dto": "204 no body",
+      "paginated": false,
+      "checklistIds": [
+        1,
+        3
+      ],
+      "uiConsumers": [
+        "C",
+        "D",
+        "E"
+      ],
+      "notes": ""
+    },
+    {
+      "method": "POST",
+      "route": "/api/auth/me/change-email",
+      "operationId": "requestCurrentUserEmailChange",
+      "roles": "ANY_VERIFIED_ACTIVE_ROLE",
+      "availability": "ACCEPTED_MAIN",
+      "source": "main 810c8a1",
+      "dto": "202 {message}",
+      "paginated": false,
+      "checklistIds": [
+        3
+      ],
+      "uiConsumers": [
+        "C",
+        "D",
+        "E"
+      ],
+      "notes": ""
+    },
+    {
+      "method": "POST",
+      "route": "/api/auth/confirm-email-change",
+      "operationId": "confirmCurrentUserEmailChange",
+      "roles": "PUBLIC",
+      "availability": "ACCEPTED_MAIN",
+      "source": "main 810c8a1",
+      "dto": "200 {user}",
+      "paginated": false,
+      "checklistIds": [
+        3
+      ],
+      "uiConsumers": [
+        "C",
+        "D",
+        "E"
+      ],
+      "notes": ""
+    },
+    {
+      "method": "GET",
+      "route": "/api/admin/users/",
+      "operationId": "listUsersAsAdmin",
+      "roles": "ADMIN",
+      "availability": "ACCEPTED_MAIN",
+      "source": "main 810c8a1",
+      "dto": "200 {users}",
+      "paginated": false,
+      "checklistIds": [
+        3,
+        57,
+        58,
+        59
+      ],
+      "uiConsumers": [
+        "E"
+      ],
+      "notes": "Unbounded, no filters; G9 (#34) proposes opt-in pagination."
+    },
+    {
+      "method": "PATCH",
+      "route": "/api/admin/users/{userId}/status",
+      "operationId": "updateUserStatusAsAdmin",
+      "roles": "ADMIN",
+      "availability": "ACCEPTED_MAIN",
+      "source": "main 810c8a1",
+      "dto": "200 {user}",
+      "paginated": false,
+      "checklistIds": [
+        3,
+        57,
+        58,
+        59
+      ],
+      "uiConsumers": [
+        "E"
+      ],
+      "notes": ""
+    },
+    {
+      "method": "GET",
+      "route": "/api/places/search",
+      "operationId": "searchPlaces",
+      "roles": "ANY_VERIFIED_ACTIVE_ROLE",
+      "availability": "ACCEPTED_MAIN",
+      "source": "main 810c8a1",
+      "dto": "200 {places, attribution}",
+      "paginated": false,
+      "checklistIds": [
+        37
+      ],
+      "uiConsumers": [
+        "C",
+        "D",
+        "E"
+      ],
+      "notes": "Provider disabled by default: 503 GEOCODER_UNAVAILABLE until owner approves a provider (G6-D4)."
+    },
+    {
+      "method": "GET",
+      "route": "/api/drivers",
+      "operationId": "listDrivers",
+      "roles": "OPERATOR, ADMIN",
+      "availability": "ACCEPTED_MAIN",
+      "source": "main 810c8a1",
+      "dto": "200 {drivers, pagination}",
+      "paginated": true,
+      "checklistIds": [
+        49,
+        58
+      ],
+      "uiConsumers": [
+        "D",
+        "E"
+      ],
+      "notes": ""
+    },
+    {
+      "method": "GET",
+      "route": "/api/operators",
+      "operationId": "listOperators",
+      "roles": "ADMIN",
+      "availability": "ACCEPTED_MAIN",
+      "source": "main 810c8a1",
+      "dto": "200 {operators, pagination}",
+      "paginated": true,
+      "checklistIds": [
+        57,
+        56
+      ],
+      "uiConsumers": [
+        "E"
+      ],
+      "notes": ""
+    },
+    {
+      "method": "POST",
+      "route": "/api/driver-associations",
+      "operationId": "associateDriverWithOperator",
+      "roles": "OPERATOR",
+      "availability": "ACCEPTED_MAIN",
+      "source": "main 810c8a1",
+      "dto": "200 {association}",
+      "paginated": false,
+      "checklistIds": [
+        49
+      ],
+      "uiConsumers": [
+        "D"
+      ],
+      "notes": ""
+    },
+    {
+      "method": "GET",
+      "route": "/api/jeepneys",
+      "operationId": "listJeepneys",
+      "roles": "DRIVER, OPERATOR, ADMIN",
+      "availability": "ACCEPTED_MAIN",
+      "source": "main 810c8a1",
+      "dto": "200 {jeepneys}",
+      "paginated": false,
+      "checklistIds": [
+        4,
+        56,
+        60
+      ],
+      "uiConsumers": [
+        "D",
+        "E"
+      ],
+      "notes": "Unbounded; G9 (#34). #31 adds 503 TRACKING_CONTEXT_BUSY to the status-changing PATCH only."
+    },
+    {
+      "method": "POST",
+      "route": "/api/jeepneys",
+      "operationId": "createJeepney",
+      "roles": "DRIVER, OPERATOR, ADMIN",
+      "availability": "ACCEPTED_MAIN",
+      "source": "main 810c8a1",
+      "dto": "201 {jeepney}",
+      "paginated": false,
+      "checklistIds": [
+        4
+      ],
+      "uiConsumers": [
+        "D",
+        "E"
+      ],
+      "notes": ""
+    },
+    {
+      "method": "PATCH",
+      "route": "/api/jeepneys/{jeepneyId}",
+      "operationId": "updateJeepney",
+      "roles": "DRIVER, OPERATOR, ADMIN",
+      "availability": "ACCEPTED_MAIN",
+      "source": "main 810c8a1",
+      "dto": "200 {jeepney}",
+      "paginated": false,
+      "checklistIds": [
+        4,
+        60
+      ],
+      "uiConsumers": [
+        "D",
+        "E"
+      ],
+      "notes": "After #31: may return 503 TRACKING_CONTEXT_BUSY."
+    },
+    {
+      "method": "GET",
+      "route": "/api/fleet-groups/{groupId}/members",
+      "operationId": "listFleetGroupMembers",
+      "roles": "DRIVER, OPERATOR, ADMIN",
+      "availability": "ACCEPTED_MAIN",
+      "source": "main 810c8a1",
+      "dto": "200 {members, pagination}",
+      "paginated": true,
+      "checklistIds": [
+        7,
+        50,
+        60
+      ],
+      "uiConsumers": [
+        "D",
+        "E"
+      ],
+      "notes": ""
+    },
+    {
+      "method": "POST",
+      "route": "/api/jeepneys/{jeepneyId}/driver-assignment",
+      "operationId": "assignDriverToJeepney",
+      "roles": "OPERATOR, ADMIN",
+      "availability": "ACCEPTED_MAIN",
+      "source": "main 810c8a1",
+      "dto": "201 {assignment}",
+      "paginated": false,
+      "checklistIds": [
+        5,
+        49
+      ],
+      "uiConsumers": [
+        "D",
+        "E"
+      ],
+      "notes": ""
+    },
+    {
+      "method": "DELETE",
+      "route": "/api/jeepneys/{jeepneyId}/driver-assignment",
+      "operationId": "unassignDriverFromJeepney",
+      "roles": "OPERATOR, ADMIN",
+      "availability": "ACCEPTED_MAIN",
+      "source": "main 810c8a1",
+      "dto": "200 {assignment}",
+      "paginated": false,
+      "checklistIds": [
+        5,
+        49
+      ],
+      "uiConsumers": [
+        "D",
+        "E"
+      ],
+      "notes": ""
+    },
+    {
+      "method": "DELETE",
+      "route": "/api/fleet-groups/{groupId}/drivers/{driverId}",
+      "operationId": "removeDriverFromFleetGroup",
+      "roles": "OPERATOR, ADMIN",
+      "availability": "ACCEPTED_MAIN",
+      "source": "main 810c8a1",
+      "dto": "204 no body",
+      "paginated": false,
+      "checklistIds": [
+        7,
+        50
+      ],
+      "uiConsumers": [
+        "D",
+        "E"
+      ],
+      "notes": ""
+    },
+    {
+      "method": "DELETE",
+      "route": "/api/fleet-groups/{groupId}/jeepneys/{jeepneyId}",
+      "operationId": "removeJeepneyFromFleetGroup",
+      "roles": "OPERATOR, ADMIN",
+      "availability": "ACCEPTED_MAIN",
+      "source": "main 810c8a1",
+      "dto": "204 no body",
+      "paginated": false,
+      "checklistIds": [
+        7,
+        50
+      ],
+      "uiConsumers": [
+        "D",
+        "E"
+      ],
+      "notes": "After #31: may return 503."
+    },
+    {
+      "method": "GET",
+      "route": "/api/me/assignment",
+      "operationId": "getCurrentDriverAssignment",
+      "roles": "DRIVER",
+      "availability": "ACCEPTED_MAIN",
+      "source": "main 810c8a1",
+      "dto": "200 {assignment}",
+      "paginated": false,
+      "checklistIds": [
+        5
+      ],
+      "uiConsumers": [
+        "D"
+      ],
+      "notes": ""
+    },
+    {
+      "method": "GET",
+      "route": "/api/fleet-groups",
+      "operationId": "listFleetGroups",
+      "roles": "DRIVER, OPERATOR, ADMIN",
+      "availability": "ACCEPTED_MAIN",
+      "source": "main 810c8a1",
+      "dto": "200 {groups}",
+      "paginated": false,
+      "checklistIds": [
+        6,
+        50,
+        60
+      ],
+      "uiConsumers": [
+        "D",
+        "E"
+      ],
+      "notes": "Unbounded; G9 (#34)."
+    },
+    {
+      "method": "POST",
+      "route": "/api/fleet-groups",
+      "operationId": "createFleetGroup",
+      "roles": "OPERATOR, ADMIN",
+      "availability": "ACCEPTED_MAIN",
+      "source": "main 810c8a1",
+      "dto": "201 {group}",
+      "paginated": false,
+      "checklistIds": [
+        6,
+        50
+      ],
+      "uiConsumers": [
+        "D",
+        "E"
+      ],
+      "notes": ""
+    },
+    {
+      "method": "PATCH",
+      "route": "/api/fleet-groups/{groupId}",
+      "operationId": "updateFleetGroup",
+      "roles": "OPERATOR, ADMIN",
+      "availability": "ACCEPTED_MAIN",
+      "source": "main 810c8a1",
+      "dto": "200 {group}",
+      "paginated": false,
+      "checklistIds": [
+        6,
+        50
+      ],
+      "uiConsumers": [
+        "D",
+        "E"
+      ],
+      "notes": ""
+    },
+    {
+      "method": "POST",
+      "route": "/api/fleet-groups/{groupId}/drivers",
+      "operationId": "addDriverToFleetGroup",
+      "roles": "OPERATOR, ADMIN",
+      "availability": "ACCEPTED_MAIN",
+      "source": "main 810c8a1",
+      "dto": "200 {message}",
+      "paginated": false,
+      "checklistIds": [
+        7,
+        50
+      ],
+      "uiConsumers": [
+        "D",
+        "E"
+      ],
+      "notes": ""
+    },
+    {
+      "method": "POST",
+      "route": "/api/fleet-groups/{groupId}/jeepneys",
+      "operationId": "addJeepneyToFleetGroup",
+      "roles": "OPERATOR, ADMIN",
+      "availability": "ACCEPTED_MAIN",
+      "source": "main 810c8a1",
+      "dto": "200 {message}",
+      "paginated": false,
+      "checklistIds": [
+        7,
+        50
+      ],
+      "uiConsumers": [
+        "D",
+        "E"
+      ],
+      "notes": "After #31: may return 503."
+    },
+    {
+      "method": "GET",
+      "route": "/api/transit-routes",
+      "operationId": "listPublicTransitRoutes",
+      "roles": "PUBLIC",
+      "availability": "ACCEPTED_MAIN",
+      "source": "main 810c8a1",
+      "dto": "200 {routes, pagination}",
+      "paginated": true,
+      "checklistIds": [
+        8
+      ],
+      "uiConsumers": [
+        "C",
+        "D",
+        "E"
+      ],
+      "notes": ""
+    },
+    {
+      "method": "GET",
+      "route": "/api/transit-routes/discover",
+      "operationId": "discoverDirectTransitRoutes",
+      "roles": "PUBLIC",
+      "availability": "ACCEPTED_MAIN",
+      "source": "main 810c8a1",
+      "dto": "200 {candidates, directRouteFound}",
+      "paginated": false,
+      "checklistIds": [
+        37
+      ],
+      "uiConsumers": [
+        "C",
+        "D",
+        "E"
+      ],
+      "notes": ""
+    },
+    {
+      "method": "GET",
+      "route": "/api/transit-routes/{routeId}",
+      "operationId": "getPublicTransitRoute",
+      "roles": "PUBLIC",
+      "availability": "ACCEPTED_MAIN",
+      "source": "main 810c8a1",
+      "dto": "200 {route}",
+      "paginated": false,
+      "checklistIds": [
+        8,
+        9
+      ],
+      "uiConsumers": [
+        "C",
+        "D",
+        "E"
+      ],
+      "notes": ""
+    },
+    {
+      "method": "GET",
+      "route": "/api/admin/transit-routes",
+      "operationId": "listTransitRoutesAsAdmin",
+      "roles": "ADMIN",
+      "availability": "ACCEPTED_MAIN",
+      "source": "main 810c8a1",
+      "dto": "200 {routes}",
+      "paginated": false,
+      "checklistIds": [
+        8,
+        56,
+        61
+      ],
+      "uiConsumers": [
+        "E"
+      ],
+      "notes": "Unbounded; G9 (#34)."
+    },
+    {
+      "method": "POST",
+      "route": "/api/admin/transit-routes",
+      "operationId": "createTransitRoute",
+      "roles": "ADMIN",
+      "availability": "ACCEPTED_MAIN",
+      "source": "main 810c8a1",
+      "dto": "201 {route}",
+      "paginated": false,
+      "checklistIds": [
+        8,
+        61
+      ],
+      "uiConsumers": [
+        "E"
+      ],
+      "notes": ""
+    },
+    {
+      "method": "PATCH",
+      "route": "/api/admin/transit-routes/{routeId}",
+      "operationId": "updateTransitRoute",
+      "roles": "ADMIN",
+      "availability": "ACCEPTED_MAIN",
+      "source": "main 810c8a1",
+      "dto": "200 {route}",
+      "paginated": false,
+      "checklistIds": [
+        8,
+        61
+      ],
+      "uiConsumers": [
+        "E"
+      ],
+      "notes": "After #31: may return 422 TRACKING_CONTEXT_MUTATION_TOO_LARGE or 503."
+    },
+    {
+      "method": "POST",
+      "route": "/api/admin/transit-routes/{routeId}/directions",
+      "operationId": "createRouteDirection",
+      "roles": "ADMIN",
+      "availability": "ACCEPTED_MAIN",
+      "source": "main 810c8a1",
+      "dto": "201 {direction}",
+      "paginated": false,
+      "checklistIds": [
+        9,
+        61,
+        62
+      ],
+      "uiConsumers": [
+        "E"
+      ],
+      "notes": ""
+    },
+    {
+      "method": "PATCH",
+      "route": "/api/admin/route-directions/{directionId}",
+      "operationId": "updateRouteDirection",
+      "roles": "ADMIN",
+      "availability": "ACCEPTED_MAIN",
+      "source": "main 810c8a1",
+      "dto": "200 {direction}",
+      "paginated": false,
+      "checklistIds": [
+        9,
+        61,
+        62
+      ],
+      "uiConsumers": [
+        "E"
+      ],
+      "notes": "After #31: may return 422 or 503. Deletion is status INACTIVE; no hard delete."
+    },
+    {
+      "method": "POST",
+      "route": "/api/route-assignments",
+      "operationId": "assignTransitRoute",
+      "roles": "OPERATOR",
+      "availability": "ACCEPTED_MAIN",
+      "source": "main 810c8a1",
+      "dto": "201 {assignment}",
+      "paginated": false,
+      "checklistIds": [
+        10
+      ],
+      "uiConsumers": [
+        "D"
+      ],
+      "notes": "After #31: may return 422 or 503."
+    },
+    {
+      "method": "GET",
+      "route": "/api/route-assignments",
+      "operationId": "listRouteAssignments",
+      "roles": "OPERATOR, ADMIN",
+      "availability": "ACCEPTED_MAIN",
+      "source": "main 810c8a1",
+      "dto": "200 {assignments, pagination}",
+      "paginated": true,
+      "checklistIds": [
+        10,
+        60
+      ],
+      "uiConsumers": [
+        "D",
+        "E"
+      ],
+      "notes": ""
+    },
+    {
+      "method": "GET",
+      "route": "/api/admin/route-directions/{directionId}/assignment-impact",
+      "operationId": "getRouteDirectionAssignmentImpact",
+      "roles": "ADMIN",
+      "availability": "ACCEPTED_MAIN",
+      "source": "main 810c8a1",
+      "dto": "200 {impact, pagination}",
+      "paginated": true,
+      "checklistIds": [
+        10,
+        61,
+        62
+      ],
+      "uiConsumers": [
+        "E"
+      ],
+      "notes": ""
+    },
+    {
+      "method": "GET",
+      "route": "/api/jeepneys/{jeepneyId}/effective-route",
+      "operationId": "getJeepneyEffectiveRoute",
+      "roles": "DRIVER, OPERATOR, ADMIN",
+      "availability": "ACCEPTED_MAIN",
+      "source": "main 810c8a1",
+      "dto": "200 {effectiveRouteDirection}",
+      "paginated": false,
+      "checklistIds": [
+        10,
+        60
+      ],
+      "uiConsumers": [
+        "D",
+        "E"
+      ],
+      "notes": ""
+    },
+    {
+      "method": "GET",
+      "route": "/api/vehicle-applications",
+      "operationId": "listVehicleApplications",
+      "roles": "DRIVER, OPERATOR, ADMIN",
+      "availability": "ACCEPTED_MAIN",
+      "source": "main 810c8a1",
+      "dto": "200 {applications}",
+      "paginated": false,
+      "checklistIds": [
+        11,
+        64
+      ],
+      "uiConsumers": [
+        "D",
+        "E"
+      ],
+      "notes": "Unbounded; G9 (#34)."
+    },
+    {
+      "method": "POST",
+      "route": "/api/vehicle-applications",
+      "operationId": "submitVehicleApplication",
+      "roles": "DRIVER, OPERATOR",
+      "availability": "ACCEPTED_MAIN",
+      "source": "main 810c8a1",
+      "dto": "201 {application}",
+      "paginated": false,
+      "checklistIds": [
+        11
+      ],
+      "uiConsumers": [
+        "D"
+      ],
+      "notes": "After #31: may return 503."
+    },
+    {
+      "method": "PATCH",
+      "route": "/api/admin/vehicle-applications/{applicationId}/review",
+      "operationId": "reviewVehicleApplication",
+      "roles": "ADMIN",
+      "availability": "ACCEPTED_MAIN",
+      "source": "main 810c8a1",
+      "dto": "200 {application}",
+      "paginated": false,
+      "checklistIds": [
+        11,
+        64
+      ],
+      "uiConsumers": [
+        "E"
+      ],
+      "notes": "After #31: may return 503."
+    },
+    {
+      "method": "GET",
+      "route": "/api/gps-setup-requests",
+      "operationId": "listGpsSetupRequests",
+      "roles": "DRIVER, OPERATOR, ADMIN",
+      "availability": "ACCEPTED_MAIN",
+      "source": "main 810c8a1",
+      "dto": "200 {requests}",
+      "paginated": false,
+      "checklistIds": [
+        11,
+        63,
+        64
+      ],
+      "uiConsumers": [
+        "D",
+        "E"
+      ],
+      "notes": "Unbounded; G9 (#34)."
+    },
+    {
+      "method": "POST",
+      "route": "/api/gps-setup-requests",
+      "operationId": "submitGpsSetupRequest",
+      "roles": "DRIVER, OPERATOR",
+      "availability": "ACCEPTED_MAIN",
+      "source": "main 810c8a1",
+      "dto": "201 {request}",
+      "paginated": false,
+      "checklistIds": [
+        11
+      ],
+      "uiConsumers": [
+        "D"
+      ],
+      "notes": ""
+    },
+    {
+      "method": "PATCH",
+      "route": "/api/admin/gps-setup-requests/{requestId}/status",
+      "operationId": "transitionGpsSetupStatus",
+      "roles": "ADMIN",
+      "availability": "ACCEPTED_MAIN",
+      "source": "main 810c8a1",
+      "dto": "200 {request}",
+      "paginated": false,
+      "checklistIds": [
+        11,
+        64
+      ],
+      "uiConsumers": [
+        "E"
+      ],
+      "notes": "After #31: may return 503."
+    },
+    {
+      "method": "POST",
+      "route": "/api/admin/gps-setup-requests/{requestId}/device-mapping",
+      "operationId": "mapGpsDevice",
+      "roles": "ADMIN",
+      "availability": "ACCEPTED_MAIN",
+      "source": "main 810c8a1",
+      "dto": "201 {mapping}",
+      "paginated": false,
+      "checklistIds": [
+        11,
+        63
+      ],
+      "uiConsumers": [
+        "E"
+      ],
+      "notes": "Create-only (Stage 13b). After #31: may return 503."
+    },
+    {
+      "method": "GET",
+      "route": "/api/admin/gps-setup-requests/{requestId}/device-mapping",
+      "operationId": "getGpsDeviceMapping",
+      "roles": "ADMIN",
+      "availability": "ACCEPTED_MAIN",
+      "source": "main 810c8a1",
+      "dto": "200 {mapping}",
+      "paginated": false,
+      "checklistIds": [
+        11,
+        63
+      ],
+      "uiConsumers": [
+        "E"
+      ],
+      "notes": ""
+    },
+    {
+      "method": "POST",
+      "route": "/api/admin/gps-setup-requests/{requestId}/verification",
+      "operationId": "verifyGpsInstallation",
+      "roles": "ADMIN",
+      "availability": "ACCEPTED_MAIN",
+      "source": "main 810c8a1",
+      "dto": "200 {request}",
+      "paginated": false,
+      "checklistIds": [
+        11,
+        64
+      ],
+      "uiConsumers": [
+        "E"
+      ],
+      "notes": "After #31: may return 503."
+    },
+    {
+      "method": "GET",
+      "route": "/api/admin/audit-logs",
+      "operationId": "listAuditLogsAsAdmin",
+      "roles": "ADMIN",
+      "availability": "PENDING_PR",
+      "source": "#33 (G8; metadata exposure G8-D3 not approved)",
+      "dto": "200 {auditLogs, pagination}",
+      "paginated": true,
+      "checklistIds": [
+        56,
+        60
+      ],
+      "uiConsumers": [
+        "E"
+      ],
+      "notes": "Not for merge until G8-D3 is decided; do not build against it yet."
+    },
+    {
+      "method": "GET",
+      "route": "(none) Admin dashboard summary counts",
+      "operationId": null,
+      "roles": "ADMIN",
+      "availability": "UNAVAILABLE",
+      "source": "No contract (proposed G12)",
+      "dto": null,
+      "paginated": null,
+      "checklistIds": [
+        56
+      ],
+      "uiConsumers": [
+        "E"
+      ],
+      "notes": "Counts of operators/drivers come from directory pagination.total today; jeepneys and routes need full lists."
+    },
+    {
+      "method": "GET",
+      "route": "(none) Live device online/offline, deviations",
+      "operationId": null,
+      "roles": "ADMIN, OPERATOR, DRIVER",
+      "availability": "UNAVAILABLE",
+      "source": "Agent B Stage 13b stack #30/#32/#36/#37 after #31",
+      "dto": null,
+      "paginated": null,
+      "checklistIds": [
+        56,
+        60,
+        63
+      ],
+      "uiConsumers": [
+        "D",
+        "E"
+      ],
+      "notes": "Class 5: needs A006 (#31) merged, then Agent B B007/B008 and the gateway."
+    },
+    {
+      "method": "GET",
+      "route": "(none) GPS device list",
+      "operationId": null,
+      "roles": "ADMIN",
+      "availability": "UNAVAILABLE",
+      "source": "No contract (proposed G13)",
+      "dto": null,
+      "paginated": null,
+      "checklistIds": [
+        63
+      ],
+      "uiConsumers": [
+        "E"
+      ],
+      "notes": "Today a device is reachable only through its setup request mapping (N+1 reads)."
+    },
+    {
+      "method": "POST/PATCH",
+      "route": "(none) Admin creates/approves Operator, edits operator profile",
+      "operationId": null,
+      "roles": "ADMIN",
+      "availability": "UNAVAILABLE",
+      "source": "Owner/Agent G policy decision",
+      "dto": null,
+      "paginated": null,
+      "checklistIds": [
+        57
+      ],
+      "uiConsumers": [
+        "E"
+      ],
+      "notes": "Operators self-register; Admin can view (listOperators) and disable (updateUserStatusAsAdmin). No approval state or profile fields exist."
+    },
+    {
+      "method": "*",
+      "route": "(none) Basic geofences",
+      "operationId": null,
+      "roles": "ADMIN",
+      "availability": "UNAVAILABLE",
+      "source": "Owner decision (scope) / Agent B compliance",
+      "dto": null,
+      "paginated": null,
+      "checklistIds": [
+        62
+      ],
+      "uiConsumers": [
+        "E"
+      ],
+      "notes": "Corridor tolerance exists per direction (corridorM); no geofence entity."
+    },
+    {
+      "method": "*",
+      "route": "/api/route-change-requests (5 operations)",
+      "operationId": null,
+      "roles": "OPERATOR, ADMIN",
+      "availability": "UNAVAILABLE",
+      "source": "G7: matrix #35; D4, D5, D7 open",
+      "dto": null,
+      "paginated": null,
+      "checklistIds": [
+        52
+      ],
+      "uiConsumers": [
+        "D",
+        "E"
+      ],
+      "notes": "Not in this checkpoint scope; listed for completeness."
+    }
+  ]
+}
