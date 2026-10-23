@@ -553,6 +553,11 @@
           "name": "Search places (provider may be disabled)",
           "request": { "method": "GET", "header": [{ "key": "Authorization", "value": "Bearer {{operatorAccessToken}}" }], "url": "{{baseUrl}}/places/search?q=Fuente%20Osme%C3%B1a&limit=5" },
           "event": [{ "listen": "test", "script": { "type": "text/javascript", "exec": ["pm.test('place search returns normalized places or GEOCODER_UNAVAILABLE', () => { pm.expect([200, 503]).to.include(pm.response.code); if (pm.response.code === 200) { pm.expect(pm.response.json().attribution).to.be.a('string'); } else { pm.expect(pm.response.json().error.code).to.eql('GEOCODER_UNAVAILABLE'); } });"] } }]
+        },
+        {
+          "name": "List audit log entries as Admin",
+          "request": { "method": "GET", "header": [{ "key": "Authorization", "value": "Bearer {{adminAccessToken}}" }], "url": "{{baseUrl}}/admin/audit-logs?entityType=JEEPNEY&page=1&pageSize=20" },
+          "event": [{ "listen": "test", "script": { "type": "text/javascript", "exec": ["pm.test('audit log page is returned newest first', () => { pm.response.to.have.status(200); const body = pm.response.json(); pm.expect(body.auditLogs).to.be.an('array'); pm.expect(body.pagination.pageSize).to.eql(20); });"] } }]
         }
       ]
     }

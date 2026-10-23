@@ -18,12 +18,14 @@ import { OpenApiTags, openApiTagDefinitions } from './openapi.js';
 import { authorizationPlugin } from './plugins/authorization.js';
 import type { IdentityRepository } from './repositories/identity-repository.js';
 import { PgIdentityRepository } from './repositories/pg-identity-repository.js';
+import { adminAuditRoutes } from './routes/admin-audit-routes.js';
 import { adminUserRoutes } from './routes/admin-user-routes.js';
 import { authRoutes } from './routes/auth-routes.js';
 import { fleetRoutes } from './routes/fleet-routes.js';
 import { placeRoutes } from './routes/place-routes.js';
 import { transitRoutes } from './routes/transit-routes.js';
 import { vehicleWorkflowRoutes } from './routes/vehicle-workflow-routes.js';
+import { AuditLogService } from './services/audit-log-service.js';
 import { AuthService } from './services/auth-service.js';
 import { SmtpEmailService } from './services/email-service.js';
 import { FleetService } from './services/fleet-service.js';
@@ -248,6 +250,10 @@ export async function buildApp(options: BuildAppOptions) {
     await app.register(vehicleWorkflowRoutes, {
       prefix: '/api',
       workflowService: new VehicleWorkflowService(pool),
+    });
+    await app.register(adminAuditRoutes, {
+      prefix: '/api/admin',
+      auditLogService: new AuditLogService(pool),
     });
   }
 
