@@ -465,7 +465,7 @@ describeDatabase('Stage 13b B2 durable tracking writer', () => {
   async function pointEast(meters: number): Promise<Partial<TrackingObservation>> {
     const result = await pool.query<{ latitude: number; longitude: number }>(
       `SELECT ST_Y(p::geometry) AS latitude, ST_X(p::geometry) AS longitude
-       FROM (SELECT ST_Project('SRID=4326;POINT(123.88 10.3)'::geography, $1, pi() / 2) AS p) projected`, [meters]);
+       FROM (SELECT ST_Project('SRID=4326;POINT(123.88 10.3)'::geography, $1::float8, pi() / 2) AS p) projected`, [meters]);
     const point = result.rows[0];
     if (point === undefined) throw new Error('Projection failed');
     return point;
