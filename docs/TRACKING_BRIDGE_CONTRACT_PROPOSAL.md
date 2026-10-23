@@ -1,5 +1,9 @@
 # Persistent Tracking Bridge — pre-implementation contract proposal
 
+## Stage13b design review successor — 2026-10-22
+
+The [Stage13b durable tracking package](design/stage13b/README.md) is the current **unapproved design for review**. It consolidates schema/transaction/observation/state-machine/gateway/test/rollout decisions and explicitly identifies gates D01–D12. Earlier13b alternatives below are preserved as proposal history, not concurrent normative contracts. Stage13a was accepted and merged through PR10; neither this pointer nor design review authorizes schema/runtime/client changes.
+
 Status: PROPOSED; shared schema/interface decisions below require Tech Lead approval. No runtime source or migration implemented.
 
 Clarification at Codex takeover, 2026-10-21: Stage13a lifecycle/normalization is implemented in PR10; the phrase above applies to Stage13b persistence and the proposed contracts below. No Stage13b implementation is authorized.
