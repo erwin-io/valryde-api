@@ -5,6 +5,9 @@ import type pg from 'pg';
 
 import { lockTrackingContexts } from '../db/tracking-context.js';
 import type { TrackingBusinessContext, TrackingContextService } from '../services/tracking-context-service.js';
+import {
+  applyQualifyingFix, type ComplianceFields, type ComplianceTransition, expireCompliance, resetCompliance,
+} from './route-compliance.js';
 import { LeaseLostError, type WriterLease } from './tracking-lease.js';
 
 // Frozen Stage 13b values (B0 matrix M2, Amendment 1 X7); deliberately not configuration.
@@ -62,25 +65,30 @@ type StoredState = State & { revision: string };
 interface Parsed { fix: Date; received: Date; device: Date | null; server: Date | null; qualifies: boolean }
 interface Clock {
   now: Date; lease_live: boolean; expired: boolean;
-  pre_mapping: boolean; pre_cutover: boolean; ahead: boolean; arrived_stale: boolean;
+  pre_mapping: boolean; pre_cutover: boolean; ahead: boolean; fix_ahead: boolean; arrived_stale: boolean;
 }
+interface Corridor { distance_m: number; inside: boolean; corridor_m: number }
 
 export interface WriterDependencies {
   now?: () => number;
   random?: () => number;
   sleep?: (ms: number) => Promise<unknown>;
+  /** Test hook only: replaces the post-lock clock_timestamp() reading so boundaries are deterministic. */
+  databaseNow?: () => Date;
 }
 
 /**
  * Durable, fenced latest-state writer (Stage 13b B2). One jeepney per READ COMMITTED transaction:
  * lease FOR SHARE → shared advisory key → Agent A context on the same client → state FOR UPDATE →
  * DB-clock normalization → classification → compare-and-set revision → COMMIT. No network I/O
- * happens while locks are held. Compliance stays UNKNOWN here; B3 owns the corridor state machine.
+ * happens while locks are held. Route compliance (B3) and its transition event commit in the same
+ * transaction as the state revision.
  */
 export class TrackingStateWriter {
   readonly #now: () => number;
   readonly #random: () => number;
   readonly #sleep: (ms: number) => Promise<unknown>;
+  readonly #databaseNow: (() => Date) | undefined;
 
   constructor(
     private readonly pool: pg.Pool,
@@ -90,6 +98,7 @@ export class TrackingStateWriter {
     this.#now = dependencies.now ?? Date.now;
     this.#random = dependencies.random ?? Math.random;
     this.#sleep = dependencies.sleep ?? delay;
+    this.#databaseNow = dependencies.databaseNow;
   }
 
   async apply(observation: TrackingObservation, lease: WriterLease): Promise<PersistResult> {
@@ -131,7 +140,7 @@ export class TrackingStateWriter {
     const current = stored.rows[0];
     // One DB clock reading after every lock (X4); all boundary comparisons stay in microsecond SQL time.
     const clockRow = await client.query<Clock>(
-      `WITH c AS (SELECT clock_timestamp() AS now)
+      `WITH c AS (SELECT COALESCE($6::timestamptz, clock_timestamp()) AS now)
        SELECT c.now,
          EXISTS (SELECT 1 FROM tracking_bridge_leases WHERE deployment_key = 'primary'
            AND owner_id = $1 AND fence = $2 AND expires_at > c.now) AS lease_live,
@@ -139,12 +148,13 @@ export class TrackingStateWriter {
          $5::timestamptz < m.mapped_at AS pre_mapping,
          $5::timestamptz < j.tracking_context_changed_at AS pre_cutover,
          $5::timestamptz > c.now + interval '5 seconds' AS ahead,
+         $5::timestamptz > c.now AS fix_ahead,
          c.now > $5::timestamptz + interval '30 seconds' AS arrived_stale
        FROM c
        JOIN jeepneys j ON j.id = $3
        JOIN traccar_device_mappings m ON m.id = $4
        LEFT JOIN vehicle_latest_states s ON s.jeepney_id = j.id`,
-      [lease.ownerId, lease.fence, jeepneyId, mapping.mappingId, parsed.fix],
+      [lease.ownerId, lease.fence, jeepneyId, mapping.mappingId, parsed.fix, this.#databaseNow?.() ?? null],
     );
     const clock = clockRow.rows[0];
     if (clock === undefined) throw new Error('Tracking context disappeared under its advisory key');
@@ -152,6 +162,7 @@ export class TrackingStateWriter {
     if (!clock.lease_live) throw new LeaseLostError();
 
     const next: State = current === undefined ? blankState() : pick(current);
+    const compliance = next as unknown as ComplianceFields;
     const mappingFingerprint = sha256([
       mapping.mappingId, mapping.mappedAt.toISOString(), mapping.gpsDeviceId, mapping.gpsSetupRequestId,
       mapping.traccarUniqueId,
@@ -192,7 +203,7 @@ export class TrackingStateWriter {
     // Expiry is strictly DB now > fresh_until, normalized before the observation is classified.
     if (next.location_status === 'FRESH' && clock.expired) {
       Object.assign(next, { location_status: 'STALE', location_reason: 'EXPIRED', motion_status: 'UNKNOWN' });
-      unknownCompliance(next, true, clock.now);
+      expireCompliance(compliance, clock.now);
     }
     // X5: the cutover fences use the GPS fix time only.
     if (clock.pre_mapping) return write('INVALIDATED', 'PRE_MAPPING');
@@ -205,6 +216,10 @@ export class TrackingStateWriter {
       if (parsed.fix.getTime() < next.observed_at.getTime()) return write('OUT_OF_ORDER');
     }
 
+    const priorFix = next.fix_time instanceof Date ? next.fix_time : null;
+    const continuous = priorFix !== null && next.observed_at instanceof Date &&
+      next.observed_at.getTime() === priorFix.getTime() &&
+      parsed.fix.getTime() - priorFix.getTime() <= freshnessMs;
     if (parsed.qualifies) {
       Object.assign(next, {
         traccar_position_id: observation.positionId,
@@ -225,8 +240,42 @@ export class TrackingStateWriter {
       Object.assign(next, { location_status: 'INVALID', location_reason: 'INVALID_FIX' });
     }
     Object.assign(next, { observed_at: parsed.fix, received_at: parsed.received, motion_status: 'UNKNOWN' });
-    unknownCompliance(next, true, clock.now);
-    return write('APPLIED');
+
+    // Only a newly accepted, fresh, not-ahead fix on a usable route counts toward compliance.
+    let transition: ComplianceTransition | null = null;
+    let corridor: Corridor | undefined;
+    const directionId = context.routeUsability === 'USABLE' ? effective?.direction.id : undefined;
+    if (parsed.qualifies && !clock.arrived_stale && !clock.fix_ahead && directionId !== undefined) {
+      const geometry = await client.query<Corridor>(
+        `SELECT ST_Distance(point.g, rd.geometry::geography, true) AS distance_m,
+           ST_DWithin(point.g, rd.geometry::geography, rd.corridor_m, true) AS inside, rd.corridor_m
+         FROM route_directions rd, (SELECT ST_SetSRID(ST_MakePoint($2::float8, $3::float8), 4326)::geography AS g) point
+         WHERE rd.id = $1`,
+        [directionId, observation.longitude, observation.latitude],
+      );
+      corridor = geometry.rows[0];
+      if (corridor === undefined) throw new Error('Resolved route direction disappeared under its advisory key');
+      transition = applyQualifyingFix(compliance, {
+        inside: corridor.inside, distanceM: corridor.distance_m, fixTime: parsed.fix, continuous, now: clock.now,
+      });
+    } else {
+      resetCompliance(compliance, true, clock.now);
+    }
+    const result = await write('APPLIED');
+    if (transition !== null && corridor !== undefined) {
+      // Same transaction as the revision; UNIQUE(jeepney_id, state_revision) makes a replay a no-op.
+      await client.query(
+        `INSERT INTO route_compliance_events(jeepney_id, route_direction_id, mapping_id, context_version,
+           context_fingerprint, state_revision, event_type, from_state, to_state, fix_time, traccar_position_id,
+           distance_m, corridor_m, operator_id_at_event)
+         VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14)
+         ON CONFLICT (jeepney_id, state_revision) DO NOTHING`,
+        [jeepneyId, directionId, mapping.mappingId, context.contextVersion, contextFingerprint, result.revision,
+          transition.eventType, transition.fromState, transition.toState, parsed.fix, observation.positionId,
+          corridor.distance_m, corridor.corridor_m, context.operatorId],
+      );
+    }
+    return result;
   }
 
   private async persist(
@@ -327,15 +376,7 @@ function clear(state: State, reason: string, now: Date): void {
     'motion_status',
   ] as const) state[column] = blank[column];
   Object.assign(state, { location_status: 'UNKNOWN', location_reason: reason });
-  unknownCompliance(state, false, now);
-}
-
-function unknownCompliance(state: State, keepLatch: boolean, now: Date): void {
-  if (state.route_compliance !== 'UNKNOWN') state.compliance_changed_at = now;
-  Object.assign(state, {
-    route_compliance: 'UNKNOWN', distance_m: null, outside_since: null, consecutive_outside: 0, consecutive_inside: 0,
-    reentry_required: keepLatch && state.reentry_required === true,
-  });
+  resetCompliance(state as unknown as ComplianceFields, false, now);
 }
 
 function parse(observation: TrackingObservation): Parsed | null {
