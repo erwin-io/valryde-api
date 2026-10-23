@@ -45,7 +45,7 @@ async function main(): Promise<void> {
   }
   const bridge = new TrackingBridge(config, { client: new TraccarClient(config.traccar), log, sink });
   if (persistence !== undefined) log('Durable tracking persistence enabled', { leaseHeld: await persistence.start() });
-  const health = config.healthPort === 0 ? undefined : await startHealthServer(bridge, config.healthPort);
+  const health = config.healthPort === 0 ? undefined : await startHealthServer(bridge, config.healthPort, persistence);
 
   let stopping = false;
   const shutdown = async (signal: string) => {

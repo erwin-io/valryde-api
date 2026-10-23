@@ -74,7 +74,12 @@ describe('tracking bridge over real HTTP/WebSocket transport', () => {
     const bridge = new TrackingBridge(config, { client: new TraccarClient(config.traccar), sink: (batch) => { batches.push(batch); } });
     bridge.start();
     cleanup.push(() => bridge.stop());
-    const health = await startHealthServer(bridge, 0);
+    let leaseHeld = true;
+    const persistenceHealth = { health: () => ({
+      leaseHeld, fence: leaseHeld ? '1' : null, lastCommitAt: null,
+      lastError: leaseHeld ? null : 'LEASE_LOST', dispositions: {},
+    }) };
+    const health = await startHealthServer(bridge, 0, persistenceHealth);
     cleanup.push(() => new Promise<void>((resolve) => health.close(() => resolve())));
     const healthUrl = `http://127.0.0.1:${(health.address() as AddressInfo).port}/health`;
 
@@ -83,7 +88,16 @@ describe('tracking bridge over real HTTP/WebSocket transport', () => {
     const healthy = await fetch(healthUrl);
     expect(healthy.status).toBe(200);
     const body = await healthy.text();
+    expect(body).toContain('"leaseHeld":true');
     expect(body).not.toMatch(/JSESSIONID|test-secret|VALRYDE-SIM|10\.3157/);
+    leaseHeld = false;
+    const unavailable = await fetch(healthUrl);
+    expect(unavailable.status).toBe(503);
+    const unavailableBody = await unavailable.text();
+    expect(unavailableBody).toContain('"leaseHeld":false');
+    expect(unavailableBody).toContain('"lastError":"LEASE_LOST"');
+    leaseHeld = true;
+    expect((await fetch(healthUrl)).status).toBe(200);
 
     provider.state.sockets[0]!.write(wsFrame('{}'));
     provider.state.sockets[0]!.write(wsFrame(JSON.stringify({ positions: [position(12)] })));

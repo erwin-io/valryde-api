@@ -1,17 +1,17 @@
 # VALRYDE — Agent B Status
 
 ## Current snapshot
-- Updated at: 2026-10-22T21:55:54+08:00 (Asia/Singapore; same offset as Asia/Manila).
+- Updated at: 2026-10-23T15:45:57+08:00 (Asia/Singapore; same offset as Asia/Manila).
 - Agent / module: B — Traccar / Tracking Engine. Codex executor; prior Claude/Codex evidence and history preserved below.
 - Repository: erwin-io/valryde-api. Overall checklist IDs12–21 remain IN_PROGRESS.
-- Branch / baseline HEAD: test/b-tracking-independent-preparation, based on canonical origin/main **827738c0f2c33ad3082f6a4a38a8e35669d4b0ea** in C:/Development/valryde/.worktrees/agent-b-bridge. Documentation commit HEAD is recorded in Git/PR metadata, avoiding a self-referential SHA.
+- Current branch / HEAD: feat/13b-b4-status-ingestion, 35f54b924282e11ca81566fd1ca2bfb960debd9a in C:/Development/valryde/.worktrees/agent-b-13b-status. Current origin/main: 810c8a13356ddbf0e28a4faf5ad7f86ce0a30479. PR #38 remains a draft stacked on #37/#36/#32/#30 and the unmerged #31.
 - Accepted REST foundation: PR #4 MERGED as 068da0c7cbb3bd5759d90c26ac96026eb706b999; accepted source a4062c800944457f11f6f8e97848b15c18d507b4, Tech Lead review comment6267265303. No change to accepted PR4.
 - Accepted Stage13a: [PR #10](https://github.com/erwin-io/valryde-api/pull/10) ACCEPTED per Tech Lead release and MERGED; final head9d009d5a9467c498125d54c8f844dabacd3cc6c3, merge69deb572a9e323ce5cb2f0fb0f163dafe8df2bbd. Scoped progress DONE_AFTER_ACCEPTANCE; prior runtime/live evidence preserved, not rerun for design.
-- Current objective: VALRYDE-AGENT-B-TRACKING-COMPLETION-001 independent implementation/preparation; **AGENT_B_TRACKING_INDEPENDENT_SCOPE_COMPLETE**, independent scope READY_FOR_REVIEW; overall IDs12–21 IN_PROGRESS. Stage13b schema/runtime NOT_IMPLEMENTED; no migration or client contract authorized.
-- Current review: independent [PR22](https://github.com/erwin-io/valryde-api/pull/22) OPEN/sourcef97724b3fdaa4ba9556f08b82691889a5a41d230; G review pending. Earlier architecture direction ACCEPTED IN PRINCIPLE by current Tech Lead directive; exact D01–D12/migrations/runtime/gateway NOT_APPROVED. Continuing existing PR14; no new acceptance claim. [Design issue #13](https://github.com/erwin-io/valryde-api/issues/13), [documentation PR #14](https://github.com/erwin-io/valryde-api/pull/14) OPEN; initial design source head d4884c0fb2be831701d24254cd9f70ed6592c750; earlier [Issue #9](https://github.com/erwin-io/valryde-api/issues/9) / PR10 and [Issue #3](https://github.com/erwin-io/valryde-api/issues/3) / [PR #4](https://github.com/erwin-io/valryde-api/pull/4) retained as historical slices.
-- Last confirmed result:38new independent tests +2history regressions +1read-only isolated PostGIS dependency probe, two reproduced B parser/frame defects narrowly fixed. Lint/typecheck/build/audit PASSED; final local run139PASS/16explicit DB/live skips; SQL-inclusive CI39790513191 PASSED154tests/1live skip including actual read-only PostGIS probe; security PASSED.42full13b cases BLOCKED, not PASS. Source/contract/gateway readiness report and machine-readable matrix prepared.
-- Next concrete action: review independent PR22/Issue18; after G approves D01–D12 and required A interfaces integrate, Completion-001 already authorizes Stage3 within approved DB/SQL scope. Gateway approvals enable Stages4–5;009/deployment remain separate gates. No redundant general confirmation required.
-- Shared blockers: A proposed same-client resolver/auth, per-jeepney transaction advisory keys and additive context version/cutover are delivered as A17 proposal but need G approval/exact SQL/source integration (old row-lock candidate inverted request/application workflows); immutable remap protocol; invalid-observation adapter; timing/retention/temporal-history and gateway decisions.
+- Current objective: Agent B takeover of the existing Stage 13b stack. Overall IDs 12–21 remain IN_PROGRESS. B007/B008, the writer, compliance, recovery and flag-disabled status/T1–T3 implementation exist in draft PRs #30/#32/#36/#37/#38; no merge, deployment or shared-database migration is claimed.
+- Current review: #30/#32/#36/#37/#38 are open drafts; #31 A006 is open and must be reviewed/merged first by its owner. No Agent B draft has a Tech Lead acceptance decision. Historical [PR22](https://github.com/erwin-io/valryde-api/pull/22), [PR14](https://github.com/erwin-io/valryde-api/pull/14), [PR10](https://github.com/erwin-io/valryde-api/pull/10) and [PR4](https://github.com/erwin-io/valryde-api/pull/4) retain their separate evidence.
+- Last confirmed result: loopback health now reports durable persistence state and returns 503 if the writer lease is absent, even when the Traccar socket is RUNNING. Local lint, typecheck, build, 7 focused tests and 180 full-suite tests passed; 111 DB/live tests skipped without an isolated test database. PR #38's previous remote HEAD had green CI/security; these local changes are not yet included in that result.
+- Next concrete action: review and merge #31 under owner/Tech Lead authority, then restack #30 → #32 → #36 → #37 → #38 one layer at a time without force-push. Continue B4 device reconciliation, outage and shutdown drills in isolated development scope; freeze T1–T3 auth before enabling the API.
+- Shared blockers: #31 A006 review/merge, ordered tracking-stack integration, T1–T3 public/private authorization contract, device-remap reconciliation, retention and history decisions, and isolated database/process drill evidence. Pusher remains separately gated.
 - Dependencies: A business eligibility/authorization/route precedence; C/D/E versioned DTOs and REST/Pusher reconciliation; Infrastructure/owner approved app test writer and later rollout; F stationary-reporting/physical GPS evidence.
 - Missing references: complete Version1.0 DOCX and standalone checklist unavailable in workspace; frozen handoffs/owner directives used, no requirements invented.
 
@@ -21,8 +21,8 @@
 | 12, 14 | REST/session foundation | ACCEPTED and MERGED | PR4, merge068da0c |
 | 17, 18 | Native events/history, mapping/RBAC | Internal foundation ACCEPTED and MERGED | PR4; public contract review follows |
 | 13, 14 | Stage13a lifecycle/recovery | DONE_AFTER_ACCEPTANCE | PR10 ACCEPTED and MERGED; authenticated live evidence historical |
-| 15, 16 | Normalization / durable latest state | IN_PROGRESS; Stage13b design READY_FOR_REVIEW, persistence NOT_IMPLEMENTED | docs/design/stage13b; D01–D07/D12 + explicit release |
-| 19–21 | Realtime/compliance/geospatial | Design proposed; runtime NOT_STARTED | Stage13b compliance review; gateway remains separate ID19 release |
+| 15, 16 | Normalization / durable latest state | IN_PROGRESS; draft #30/#32/#37/#38 | Review and integrate after #31; isolated outage/replay drills |
+| 19–21 | Realtime/compliance/geospatial | IN_PROGRESS; compliance draft #36; Pusher pending | T1–T3 contract freeze, then T4/T5 and Pusher gate |
 
 ## Latest verification
 Current independent completion: two minimal B-owned admission fixes,40added regressions and1read-only PostGIS CI dependency probe; no local database/live service run. Full13b case results are separately BLOCKED.
@@ -31,6 +31,10 @@ Current design verification is separate from historical implementation results b
 
 | Command/check | Result | Evidence |
 |---|---|---|
+| 2026-10-23 local lint/typecheck/build | PASSED | npm run lint; npm run typecheck; npm run build on #38 worktree with health change |
+| 2026-10-23 focused health/persistence tests | PASSED | npx vitest run test/tracking-bridge.integration.test.ts test/tracking-persistence.test.ts; 7 tests |
+| 2026-10-23 full local Vitest | PASSED WITH SKIPS | npm test -- --run --maxWorkers=1 --no-file-parallelism; 180 passed, 111 DB/live skipped |
+| 2026-10-23 initial lint/typecheck | FAILED, CORRECTED | First test assertion used unsafe JSON member access; replaced with text assertions and reran successfully |
 | Independent targeted suites | PASSED |38new parser/lifecycle/ordering/privacy cases +14history cases =52; broader initial tracking gate96passed |
 | Independent full local Vitest | PASSED WITH SKIPS |Final139passed/16skipped,12files passed/10skipped; TEST_DATABASE_URL/TRACCAR_LIVE_TEST cleared in test child; no DB/live evidence |
 | SQL-inclusive isolated GitHub CI | PASSED | Source00c8695;154tests passed/1live skipped; PostGIS probe PASS53ms; existing001–005 only; no durable13b implementation |
@@ -94,6 +98,13 @@ Current design verification is separate from historical implementation results b
 - Pusher configuration/hardware evidence are pending later slices. No physical verification claimed.
 
 ## Activity log (newest first; preserve prior entries)
+### 2026-10-23 15:45 +08:00 — Agent B takeover and durable health correction
+- Read the takeover assignment, repository instructions, B handoff and shared status policy. Inventoried all API worktrees before a non-destructive remote fetch: only the old primary checkout and runtime checkout contain untracked files; no tracked edits or stashes were found. Preserved those files and every existing Agent A/B branch.
+- Reconciled origin/main 810c8a1 and the #31 → #30 → #32 → #36 → #37 → #38 draft dependency chain. Current #38 HEAD is 35f54b9; #31 is unmerged at 9c39dcf. Existing remote CI/security for those heads is green, but this is not independent acceptance and no PR was merged.
+- Corrected the B4 operational health gap in src/tracking/bridge-health.ts and src/bridge.ts: when durable mode is enabled, loopback /health includes sanitized persistence health and returns 503 if the writer lease is missing. Added a real HTTP transport regression in test/tracking-bridge.integration.test.ts for loss and recovery while the socket remains RUNNING. No API/DTO/schema, Traccar, Pusher, shared database or production configuration was changed.
+- First lint/typecheck found unsafe test JSON access; corrected the assertion. Final npm run lint, npm run typecheck, npm run build, focused 7 tests, full local 180 tests and git diff --check passed. Full local suite skipped 111 DB/live cases because no isolated test database or live service was used. No outage/process drill claimed.
+- Branch feat/13b-b4-status-ingestion; changes are local pending commit/PR update. Next: finish reviewable B4 follow-up and CI, then progress device mapping and isolated recovery drills. Owner/Tech Lead must decide #31 merge and T1–T3 authorization before stack integration/API enablement.
+
 ### 2026-10-22 21:55 +08:00 — Completion release conditional authority clarified
 - Explicitly recorded that Completion-001 authorizes subsequent development when its stated G/A/gateway approvals/integration conditions are met; no redundant general owner reconfirmation is required. Current approvals/integration remain absent, so this session completes independent scope only. Exact schema/target/migration009, deployment/infrastructure/physical acceptance restrictions remain as specified by the owner.
 - Technical handoff/current snapshot clarified; prior activity preserved. No source/test change after verified00c8695, no new migration/DB/process action. Final evidence-only PR HEAD is reported in metadata.
