@@ -13,7 +13,6 @@ import type {
 } from '../domain/transit.js';
 import { type QueryExecutor, runContextMutation } from '../db/tracking-context.js';
 import { ApiError } from '../lib/api-error.js';
-import { TrackingVisibilityService } from './tracking-visibility-service.js';
 
 interface RouteRow {
   id: string;
@@ -88,11 +87,7 @@ interface DirectRouteCandidateRow {
 }
 
 export class TransitService {
-  private readonly visibility: TrackingVisibilityService;
-
-  constructor(private readonly pool: pg.Pool) {
-    this.visibility = new TrackingVisibilityService(pool);
-  }
+  constructor(private readonly pool: pg.Pool) {}
 
   async listPublicRoutes(input: { q?: string; page: number; pageSize: number }): Promise<{
     routes: Array<TransitRoute & { directions: RouteDirection[] }>;
@@ -623,7 +618,7 @@ export class TransitService {
     actor: User,
     jeepneyId: string,
   ): Promise<EffectiveRouteDirection | null> {
-    await this.visibility.assertCanReadPrivateTracking(actor, jeepneyId);
+    await this.assertCanReadJeepney(actor, jeepneyId);
     return this.resolveEffectiveRouteDirection(jeepneyId);
   }
 
@@ -667,6 +662,39 @@ export class TransitService {
     const id = result.rows[0]?.id;
     if (id === undefined) throw new ApiError(403, 'FORBIDDEN', 'Active operator profile required');
     return id;
+  }
+
+  private async assertCanReadJeepney(actor: User, jeepneyId: string): Promise<void> {
+    if (actor.roles.includes('ADMIN')) {
+      const result = await this.pool.query('SELECT 1 FROM jeepneys WHERE id = $1', [jeepneyId]);
+      if (result.rowCount !== 1) throw new ApiError(404, 'NOT_FOUND', 'Jeepney not found');
+      return;
+    }
+    if (actor.roles.includes('OPERATOR')) {
+      await this.requireOwned('jeepneys', jeepneyId, await this.actorOperator(actor));
+      return;
+    }
+    if (actor.roles.includes('DRIVER')) {
+      const result = await this.pool.query<{ authorized: boolean }>(
+        `SELECT EXISTS (
+           SELECT 1
+           FROM jeepneys j
+           JOIN drivers d ON d.user_id = $2
+           LEFT JOIN driver_jeepney_assignments dja
+             ON dja.jeepney_id = j.id AND dja.driver_id = d.id AND dja.active_to IS NULL
+           LEFT JOIN fleet_group_jeepneys fgj ON fgj.jeepney_id = j.id
+           LEFT JOIN fleet_group_drivers fgd ON fgd.group_id = fgj.group_id AND fgd.driver_id = d.id
+           WHERE j.id = $1
+             AND (j.created_by_user_id = $2 OR dja.id IS NOT NULL OR fgd.driver_id IS NOT NULL)
+         ) AS authorized`,
+        [jeepneyId, actor.id],
+      );
+      if (result.rows[0]?.authorized !== true) {
+        throw new ApiError(403, 'FORBIDDEN', 'Jeepney is outside driver scope');
+      }
+      return;
+    }
+    throw new ApiError(403, 'FORBIDDEN', 'This role cannot view effective route assignments');
   }
 
   private async requireOwned(table: 'jeepneys' | 'fleet_groups', id: string, operatorId: string) {

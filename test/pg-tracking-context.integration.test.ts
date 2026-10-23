@@ -436,6 +436,49 @@ describeDatabase('Stage 13b tracking context generation with PostgreSQL', () => 
     });
   });
 
+  it('T12: a Driver keeps private tracking only while ACTIVE and associated with the jeepney Operator', async () => {
+    const jeepneyId = await createJeepney();
+    const driver = await createUser('DRIVER');
+    const driverId = await associate(driver);
+    await pool.query('INSERT INTO fleet_group_drivers(group_id, driver_id) VALUES ($1, $2)', [
+      await createGroup([jeepneyId]),
+      driverId,
+    ]);
+    await expect(visibility.assertCanReadPrivateTracking(driver, jeepneyId)).resolves.toBeUndefined();
+
+    // A stale group row must not cross an Operator boundary.
+    const otherOperatorId = await operatorOf(await createUser('OPERATOR'));
+    await pool.query('UPDATE drivers SET operator_id = $2 WHERE id = $1', [driverId, otherOperatorId]);
+    await expect(visibility.assertCanReadPrivateTracking(driver, jeepneyId)).rejects.toMatchObject({
+      statusCode: 403,
+    });
+    await pool.query('UPDATE drivers SET operator_id = $2 WHERE id = $1', [driverId, operatorId]);
+    await pool.query(`UPDATE drivers SET status = 'DISABLED' WHERE id = $1`, [driverId]);
+    await expect(visibility.assertCanReadPrivateTracking(driver, jeepneyId)).rejects.toMatchObject({
+      statusCode: 403,
+    });
+  });
+
+  it('T12: the creator path covers drafts only; the effective-route read keeps its accepted rule', async () => {
+    const creator = await createUser('DRIVER');
+    await associate(creator);
+    const created = await pool.query<{ id: string }>(
+      `INSERT INTO jeepneys(operator_id, created_by_user_id, plate_no, color_hex)
+       VALUES ($1, $2, $3, '#334455') RETURNING id`,
+      [operatorId, creator.id, `A006-${suffix}-${randomUUID().slice(0, 8)}`],
+    );
+    const jeepneyId = created.rows[0]?.id ?? '';
+    jeepneyIds.push(jeepneyId);
+    await expect(visibility.assertCanReadPrivateTracking(creator, jeepneyId)).resolves.toBeUndefined();
+
+    await pool.query(`UPDATE jeepneys SET status = 'ACTIVE' WHERE id = $1`, [jeepneyId]);
+    await expect(visibility.assertCanReadPrivateTracking(creator, jeepneyId)).rejects.toMatchObject({
+      statusCode: 403,
+    });
+    // Unchanged contract on main: the creator may still read the effective route.
+    await expect(transit.getEffectiveRouteDirection(creator, jeepneyId)).resolves.toBeNull();
+  });
+
   it('T26: removeGroupDriver and unassignDriver change visibility without a context bump', async () => {
     const jeepneyId = await createJeepney();
     const driver = await createUser('DRIVER');

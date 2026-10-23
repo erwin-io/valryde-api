@@ -7,6 +7,8 @@ import { ApiError } from '../lib/api-error.js';
 /**
  * Private tracking visibility (Stage 13b §6): re-authorized against current Agent A tables on every
  * read. Existence semantics: any one valid path authorizes, however many group rows match.
+ * A Driver must be ACTIVE and currently associated with the jeepney's Operator, so a stale group,
+ * assignment or creator row never crosses an Operator boundary; the creator path covers drafts only.
  */
 export class TrackingVisibilityService {
   constructor(private readonly pool: pg.Pool) {}
@@ -40,13 +42,14 @@ export class TrackingVisibilityService {
         `SELECT EXISTS (
            SELECT 1
            FROM jeepneys j
-           JOIN drivers d ON d.user_id = $2
+           JOIN drivers d ON d.user_id = $2 AND d.status = 'ACTIVE' AND d.operator_id = j.operator_id
            LEFT JOIN driver_jeepney_assignments dja
              ON dja.jeepney_id = j.id AND dja.driver_id = d.id AND dja.active_to IS NULL
            LEFT JOIN fleet_group_jeepneys fgj ON fgj.jeepney_id = j.id
            LEFT JOIN fleet_group_drivers fgd ON fgd.group_id = fgj.group_id AND fgd.driver_id = d.id
            WHERE j.id = $1
-             AND (j.created_by_user_id = $2 OR dja.id IS NOT NULL OR fgd.driver_id IS NOT NULL)
+             AND ((j.created_by_user_id = $2 AND j.status = 'DRAFT')
+               OR dja.id IS NOT NULL OR fgd.driver_id IS NOT NULL)
          ) AS authorized`,
         [jeepneyId, actor.id],
       );
