@@ -2,7 +2,7 @@
   "directive": "VALRYDE-AGENT-B-TRACKING-COMPLETION-001",
   "baseline": "827738c0f2c33ad3082f6a4a38a8e35669d4b0ea",
   "designHead": "149cefc82d0ccea3c1efe06aebaf157a607c1d8e",
-  "approvalState": "GATES-001: M1-M3 approved, M4 conditional, M5/M6/M7 pending, M8 infrastructure-gated; A006 not merged; B2 writer draft PR #32",
+  "approvalState": "GATES-001: M1-M3 approved, M4 conditional, M5/M6/M7 pending, M8 infrastructure-gated; A006 not merged; B2 writer draft PR #32; B3 compliance draft PR #36",
   "counts": {
     "PASS": 0,
     "FAIL": 0,
@@ -15,7 +15,7 @@
       "status": "BLOCKED",
       "scenario": "Fresh verified mapping, initial inside fix at T",
       "blocker": "PERSISTENCE_RELEASE: D01-D07/D12 plus approved integrated A006 and B007/B008; isolated database authority",
-      "partialEvidence": "No full-case execution; design only"
+      "partialEvidence": "PR36 c0675bf CI 39886435363: initial inside fix bootstraps ON_ROUTE with no event (unit + PostGIS). B3 component evidence only; case stays BLOCKED until A006 merges and the full case runs."
     },
     {
       "id": "B13B-02",
@@ -36,56 +36,56 @@
       "status": "BLOCKED",
       "scenario": "Outside T then T+30s, only2 fixes, continuous fresh context",
       "blocker": "COMPLIANCE_RELEASE: D02/D03 plus A006/interfaces and approved B007/B008 schema/runtime",
-      "partialEvidence": "No full-case execution; design only"
+      "partialEvidence": "PR36 c0675bf CI 39886435363: outside fixes exactly 30 s apart deviate, also when the prior fix is seen expired at processing time; 30.001 s gap breaks the run. B3 component evidence only; case stays BLOCKED until A006 merges and the full case runs."
     },
     {
       "id": "B13B-05",
       "status": "BLOCKED",
       "scenario": "Outside T,T+10,T+20",
       "blocker": "COMPLIANCE_RELEASE: D02/D03 plus A006/interfaces and approved B007/B008 schema/runtime",
-      "partialEvidence": "No full-case execution; design only"
+      "partialEvidence": "PR36 c0675bf CI 39886435363: outside T+10/T+20/T+25 deviates on the third fix with one ROUTE_DEVIATION carrying the state revision. B3 component evidence only; case stays BLOCKED until A006 merges and the full case runs."
     },
     {
       "id": "B13B-06",
       "status": "BLOCKED",
       "scenario": "One outside noisy point then inside",
       "blocker": "COMPLIANCE_RELEASE: D02/D03 plus A006/interfaces and approved B007/B008 schema/runtime",
-      "partialEvidence": "No full-case execution; design only"
+      "partialEvidence": "PR36 c0675bf CI 39886435363: one outside point then inside stays ON_ROUTE and clears the outside run (unit). B3 component evidence only; case stays BLOCKED until A006 merges and the full case runs."
     },
     {
       "id": "B13B-07",
       "status": "BLOCKED",
       "scenario": "OFF_ROUTE then first/second inside",
       "blocker": "COMPLIANCE_RELEASE: D02/D03 plus A006/interfaces and approved B007/B008 schema/runtime",
-      "partialEvidence": "No full-case execution; design only"
+      "partialEvidence": "PR36 c0675bf CI 39886435363: OFF_ROUTE stays after the first inside fix and re-enters on the second with one ROUTE_REENTRY. B3 component evidence only; case stays BLOCKED until A006 merges and the full case runs."
     },
     {
       "id": "B13B-08",
       "status": "BLOCKED",
       "scenario": "OFF_ROUTE→invalid/stale UNKNOWN→one/two inside same context",
       "blocker": "COMPLIANCE_RELEASE: D02/D03 plus A006/interfaces and approved B007/B008 schema/runtime",
-      "partialEvidence": "No full-case execution; design only"
+      "partialEvidence": "PR36 c0675bf CI 39886435363: invalid fix sets UNKNOWN keeping the latch; one inside stays UNKNOWN, second re-enters from UNKNOWN; no duplicate deviation. B3 component evidence only; case stays BLOCKED until A006 merges and the full case runs."
     },
     {
       "id": "B13B-09",
       "status": "BLOCKED",
       "scenario": "UNKNOWN new context with first outside",
       "blocker": "COMPLIANCE_RELEASE: D02/D03 plus A006/interfaces and approved B007/B008 schema/runtime",
-      "partialEvidence": "No full-case execution; design only"
+      "partialEvidence": "PR36 c0675bf CI 39886435363: first outside fix in a new context stays UNKNOWN with the run started (unit + PostGIS). B3 component evidence only; case stays BLOCKED until A006 merges and the full case runs."
     },
     {
       "id": "B13B-10",
       "status": "BLOCKED",
       "scenario": "Outside run gap>30s, or invalid sample between",
       "blocker": "COMPLIANCE_RELEASE: D02/D03 plus A006/interfaces and approved B007/B008 schema/runtime",
-      "partialEvidence": "No full-case execution; design only"
+      "partialEvidence": "PR36 c0675bf CI 39886435363: gap > 30 s or an intervening invalid sample restarts the outside run. B3 component evidence only; case stays BLOCKED until A006 merges and the full case runs."
     },
     {
       "id": "B13B-11",
       "status": "BLOCKED",
       "scenario": "Distance99/100/101m and configured corridor150m",
       "blocker": "COMPLIANCE_RUNTIME: exact evaluator/corridor configuration integration not released; independent SQL dependency probe is not full acceptance",
-      "partialEvidence": "PASS: read-only PostGIS dependency probe in isolated CI39790513191 at00c8695; no tables/fixtures/business writes; full runtime evaluator/config NOT_RUN"
+      "partialEvidence": "PASS: read-only PostGIS dependency probe in isolated CI39790513191 at00c8695; no tables/fixtures/business writes; full runtime evaluator/config NOT_RUN | PR36 c0675bf CI 39886435363: geodesic ST_DWithin: 99 m inside / 101 m outside on 100 m, 140 m inside / 160 m outside on a 150 m corridor; 100 m verdict equals distance <= corridor. B3 component evidence only; case stays BLOCKED until A006 merges and the full case runs."
     },
     {
       "id": "B13B-12",
@@ -120,14 +120,14 @@
       "status": "BLOCKED",
       "scenario": "Future+5s/+5.001s (proposed boundary)",
       "blocker": "PERSISTENCE_RELEASE: D01-D07/D12 plus approved integrated A006 and B007/B008; isolated database authority",
-      "partialEvidence": "Related independent parser/ordering/privacy/lifecycle subchecks executed; durable/gateway portion NOT_RUN | PR32 3e47dd3 CI 39882716442 (A006 #31 head b4d6942 merged, not on main): fix 60 s ahead -> REJECTED CLOCK_AHEAD with no state change; +3 s stored; exact +5 s/+5.001 s boundary not exercised. Writer-only partial evidence; case stays BLOCKED until A006 merges and the full case runs."
+      "partialEvidence": "Related independent parser/ordering/privacy/lifecycle subchecks executed; durable/gateway portion NOT_RUN | PR32 3e47dd3 CI 39882716442 (A006 #31 head b4d6942 merged, not on main): fix 60 s ahead -> REJECTED CLOCK_AHEAD with no state change; +3 s stored; exact +5 s/+5.001 s boundary not exercised. Writer-only partial evidence; case stays BLOCKED until A006 merges and the full case runs. | PR36 c0675bf CI 39886435363: pinned DB clock: +5.000 s stored, +5.001 s REJECTED CLOCK_AHEAD; an ahead fix never counts toward compliance. B3 component evidence only; case stays BLOCKED until A006 merges and the full case runs."
     },
     {
       "id": "B13B-17",
       "status": "BLOCKED",
       "scenario": "Age30s/30.001s and stale job delayed",
       "blocker": "PERSISTENCE_RELEASE: D01-D07/D12 plus approved integrated A006 and B007/B008; isolated database authority",
-      "partialEvidence": "Stationary30.001s/60s transport/fix-age characterization executed; public-expiry/gateway implementation NOT_RUN | PR32 3e47dd3 CI 39882716442 (A006 #31 head b4d6942 merged, not on main): late fix stored STALE/EXPIRED; overdue FRESH normalized to STALE in a new revision on a later duplicate; exact 30 s/30.001 s boundary and delayed sweep (B4) not exercised. Writer-only partial evidence; case stays BLOCKED until A006 merges and the full case runs."
+      "partialEvidence": "Stationary30.001s/60s transport/fix-age characterization executed; public-expiry/gateway implementation NOT_RUN | PR32 3e47dd3 CI 39882716442 (A006 #31 head b4d6942 merged, not on main): late fix stored STALE/EXPIRED; overdue FRESH normalized to STALE in a new revision on a later duplicate; exact 30 s/30.001 s boundary and delayed sweep (B4) not exercised. Writer-only partial evidence; case stays BLOCKED until A006 merges and the full case runs. | PR36 c0675bf CI 39886435363: pinned DB clock: age 30.000 s FRESH, 30.001 s STALE; fresh_until equal still fresh, +1 ms materialized STALE. B3 component evidence only; case stays BLOCKED until A006 merges and the full case runs."
     },
     {
       "id": "B13B-18",
@@ -253,7 +253,7 @@
       "status": "BLOCKED",
       "scenario": "Commit succeeds but acknowledgement lost; process restarts/replays",
       "blocker": "PERSISTENCE_RELEASE: D01-D07/D12 plus approved integrated A006 and B007/B008; isolated database authority",
-      "partialEvidence": "PR32 3e47dd3 CI 39882716442 (A006 #31 head b4d6942 merged, not on main): restarted writer with new fence replays REST snapshot as DUPLICATE/OUT_OF_ORDER; lost-ack injection and Bridge restart wiring (B4) not exercised. Writer-only partial evidence; case stays BLOCKED until A006 merges and the full case runs."
+      "partialEvidence": "PR32 3e47dd3 CI 39882716442 (A006 #31 head b4d6942 merged, not on main): restarted writer with new fence replays REST snapshot as DUPLICATE/OUT_OF_ORDER; lost-ack injection and Bridge restart wiring (B4) not exercised. Writer-only partial evidence; case stays BLOCKED until A006 merges and the full case runs. | PR36 c0675bf CI 39886435363: lost COMMIT acknowledgement (proxy drops the connection after a real commit) replayed as DUPLICATE with no second revision or event. B3 component evidence only; case stays BLOCKED until A006 merges and the full case runs."
     },
     {
       "id": "B13B-36",
@@ -341,6 +341,18 @@
       "writerTests": 11,
       "ciEnvironment": "disposable GitHub Actions PostGIS 16-3.4; migrations 001-008 including A006 from PR #31 head b4d6942 (merged into the B2 branch, not main)",
       "note": "B2 writer/lease partial evidence only. Compliance (B3), recovery/sweeper/Bridge wiring (B4) and gateway (B5) absent; A006 not merged; no case upgraded."
+    },
+    {
+      "pr": 36,
+      "sourceHead": "c0675bf8c6cd928f111bda9dcbb05c0f42220f11",
+      "ciRunId": 39886435363,
+      "ciJobId": 120195579764,
+      "ciTestsPassed": 275,
+      "ciTestsSkipped": 1,
+      "writerIntegrationTests": 18,
+      "complianceUnitTests": 9,
+      "ciEnvironment": "disposable GitHub Actions PostGIS 16-3.4; migrations 001-008 including A006 from PR #31 head b4d6942 (merged into the stack, not main)",
+      "note": "B3 compliance engine component evidence. A006 not merged; gateway/publisher absent; no case upgraded."
     }
   ]
 }
