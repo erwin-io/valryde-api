@@ -122,7 +122,7 @@ Classes:
 | Operator: groups and membership add/list/remove | `/api/fleet-groups*` | 1 |
 | Operator: route assignment and assignment history | `POST`/`GET /api/route-assignments` | 1 |
 | Vehicle application, GPS setup request | `GET/POST /api/vehicle-applications`, `GET/POST /api/gps-setup-requests` | 1 |
-| Operator: route add/change request (G7) | — | 4 — proposal in PR #27, awaiting G7-D1, D3–D7 |
+| Operator: route add/change request (G7) | — | 4 — base proposal merged (#27); decision matrix in PR #35 awaiting G7-D1, D3–D7 |
 | Groupmate Driver names on live views (U1) | — | 5 — Stage 13b option 3.4 |
 | Live fleet map, compliance, online/offline | — | 5 |
 
@@ -137,9 +137,10 @@ Classes:
 | Route and direction CRUD | `/api/admin/transit-routes*`, `PATCH /api/admin/route-directions/{id}` | 1 |
 | Assignment history and change-impact preview | `GET /api/route-assignments`, `GET /api/admin/route-directions/{id}/assignment-impact` | 1 |
 | Application review, GPS transitions, mapping create/read, verification | `/api/admin/vehicle-applications/*`, `/api/admin/gps-setup-requests/*` | 1 |
-| Device remap / unmap (G10 write) | — | 4 — blocked on Stage 13b approval (create-only mapping in the first release) |
-| Route-change review queue (G7) | — | 4 — PR #27 proposal |
-| Audit log viewer (G8), Admin list pagination (G9), settings | — | 4 — not started; no approved contract |
+| Device remap / unmap (G10 write) | — | 4 — not in the first release: Stage 13b fixes create-only mapping (§13.2 item 3) |
+| Route-change review queue (G7) | — | 4 — PR #35 decision matrix |
+| Audit log viewer (G8) | `GET /api/admin/audit-logs` | 4 — implemented in PR #33, contract G8-D1 to D6 pending; not on `main` |
+| Admin list pagination (G9), settings | — | 4 — G9 proposal in PR #34; settings not started |
 | Dashboard, live map, deviations, Traccar health, reports | — | 5 / 6 |
 
 ## 3. What is still blocked, and on whom
@@ -148,9 +149,9 @@ Classes:
 |---|---|---|
 | G6 contract record | #28 is merged; no explicit G6-D1, D2, D3, D5 decision is recorded. Clients may build against the merged contract. | Agent G (confirm) |
 | G6 live provider and caching | Provider terms and usage approval (G6-D4) | Owner |
-| G7 route-change requests | G7-D1, D3, D4, D5, D6, D7 (D2 resolved: migration 010 or later) | Agent G |
-| A006 tracking context generation, G10 remap/unmap, every tracking dependency (class 5) | Agent G's formal approval of the Stage 13b design (X1–X8, §13 constants, D01–D12). #17 is merged as a document but still reads "PROPOSED FOR TECH LEAD REVIEW"; Agent B #14 is open; then the A006 PR, then Agent B 007/008 | Agent G, then A, then B |
-| G8 audit read, G9 Admin pagination | No approved contract | Agent G |
+| G7 route-change requests | G7-D1, D3, D4, D5, D6, D7 in PR #35 (D2 resolved: migration 010 or later) | Agent G |
+| A006 tracking context generation and every tracking dependency (class 5) | Stage 13b design approved (merge of #17). A006 is in PR #31, CI passing, awaiting Agent G code review; then Agent B 007/008 (PR #30). Migration order 006 → 007 → 008 | Agent G, then B |
+| G8 audit read, G9 Admin pagination | G8-D1 to D6 (PR #33), G9-D1 to D6 (PR #34) | Agent G |
 | Email links on phones (G5 remainder) | Callback domain, App Links / Universal Links hosting | Owner |
 | Google sign-in, real SMTP delivery, first Admin, physical GPS/Traccar | Owner credentials and hardware | Owner / Agent F |
 
