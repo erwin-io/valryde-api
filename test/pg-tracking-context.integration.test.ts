@@ -7,6 +7,7 @@ import {
   bumpTrackingContexts,
   lockTrackingContexts,
   maxAffectedJeepneys,
+  mutationRetries,
 } from '../src/db/tracking-context.js';
 import type { User } from '../src/domain/identity.js';
 import { PgIdentityRepository } from '../src/repositories/pg-identity-repository.js';
@@ -22,6 +23,8 @@ const describeDatabase = databaseUrl === undefined ? describe.skip : describe;
 
 // Stage 13b A006: real concurrent PostgreSQL clients. Barriers are a held advisory key or an open
 // transaction plus a wait for the other backend to be queued on that key; never a fixed sleep.
+const allChecks = { powerOk: true, simOk: true, serverOk: true, gpsFixOk: true };
+
 describeDatabase('Stage 13b tracking context generation with PostgreSQL', () => {
   const pool = new pg.Pool({
     connectionString: databaseUrl,
@@ -209,10 +212,13 @@ describeDatabase('Stage 13b tracking context generation with PostgreSQL', () => 
     await withClient(async (holder) => {
       await holder.query('BEGIN');
       await lockTrackingContexts(holder, [jeepneyId]);
+      const started = Date.now();
       await expect(fleet.updateJeepney(admin, jeepneyId, { status: 'INACTIVE' })).rejects.toMatchObject({
         statusCode: 503,
         code: 'TRACKING_CONTEXT_BUSY',
       });
+      // Genuine 55P03: 1 + 3 retries, each waiting out the 2 s lock_timeout.
+      expect(Date.now() - started).toBeGreaterThanOrEqual((mutationRetries + 1) * 2000 - 100);
       await holder.query('ROLLBACK');
     });
     expect(await state(jeepneyId)).toMatchObject({ version: '1', status: 'DRAFT' });
@@ -266,17 +272,30 @@ describeDatabase('Stage 13b tracking context generation with PostgreSQL', () => 
     expect((await context.resolve(jeepneyId, pool)).contextVersion).toBe('2');
   });
 
-  it('T22: opposite-order multi-key acquisition never deadlocks', async () => {
-    const first = await createJeepney();
-    const second = await createJeepney();
-    const third = await createJeepney();
-    for (let round = 0; round < 10; round += 1) {
-      await Promise.all([
-        lockedTransaction([first, second, third]),
-        lockedTransaction([third, second, first]),
-        lockedTransaction([second, first, second]),
-      ]);
-    }
+  it('T22: keys are acquired in bigint key order whatever the caller order (deterministic)', async () => {
+    const [low = '', high = ''] = await orderedByKey([await createJeepney(), await createJeepney()]);
+    await withClient(async (holder) => {
+      await withClient(async (first) => {
+        await withClient(async (second) => {
+          const firstPid = await backendPid(first);
+          await holder.query('BEGIN');
+          await lockTrackingContexts(holder, [high]);
+          await first.query('BEGIN');
+          // Caller order high-then-low: the helper must take low first, then queue on high.
+          const firstLocks = lockTrackingContexts(first, [high, low]);
+          await waitForWaiters(high, 1);
+          expect(await holdsKey(firstPid, low)).toBe(true);
+          await second.query('BEGIN');
+          const secondLocks = lockTrackingContexts(second, [low, high]);
+          await waitForWaiters(low, 1);
+          await holder.query('COMMIT');
+          await firstLocks;
+          await first.query('COMMIT');
+          await secondLocks;
+          await second.query('COMMIT');
+        });
+      });
+    });
   });
 
   it('T22: an affected set over the cap is rejected before any lock or write', async () => {
@@ -289,9 +308,15 @@ describeDatabase('Stage 13b tracking context generation with PostgreSQL', () => 
     const ids = created.rows.map((row) => row.id);
     jeepneyIds.push(...ids);
     const groupId = await createGroup(ids);
-    await expect(
-      transit.assignRoute(operator, { groupId, routeDirectionId: directionId }),
-    ).rejects.toMatchObject({ statusCode: 422, code: 'TRACKING_CONTEXT_MUTATION_TOO_LARGE' });
+    // A held member key proves the 422 is pre-lock: an attempt to lock would block, then return 503.
+    await withClient(async (holder) => {
+      await holder.query('BEGIN');
+      await lockTrackingContexts(holder, [ids[0] ?? '']);
+      await expect(
+        transit.assignRoute(operator, { groupId, routeDirectionId: directionId }),
+      ).rejects.toMatchObject({ statusCode: 422, code: 'TRACKING_CONTEXT_MUTATION_TOO_LARGE' });
+      await holder.query('ROLLBACK');
+    });
     const unchanged = await pool.query<{ bumped: string; assignments: string }>(
       `SELECT
          (SELECT count(*) FROM jeepneys WHERE id = ANY($1::uuid[]) AND tracking_context_version <> 1)::text AS bumped,
@@ -431,6 +456,388 @@ describeDatabase('Stage 13b tracking context generation with PostgreSQL', () => 
     });
   });
 
+  it('T22: the cap is enforced again after locking when the committed set grows past 250', async () => {
+    const ids = await createJeepneys(maxAffectedJeepneys);
+    const extra = await createJeepney();
+    const groupId = await createGroup(ids);
+    await withClient(async (holder) => {
+      await holder.query('BEGIN');
+      await lockTrackingContexts(holder, [ids[0] ?? '']);
+      const assignment = transit.assignRoute(operator, { groupId, routeDirectionId: directionId });
+      await waitForWaiters(ids[0] ?? '', 1);
+      await pool.query('INSERT INTO fleet_group_jeepneys(group_id, jeepney_id) VALUES ($1, $2)', [groupId, extra]);
+      await holder.query('COMMIT');
+      await expect(assignment).rejects.toMatchObject({
+        statusCode: 422,
+        code: 'TRACKING_CONTEXT_MUTATION_TOO_LARGE',
+      });
+    });
+    expect(await bumpedCount([...ids, extra])).toBe(0);
+    const assignments = await pool.query('SELECT 1 FROM vehicle_route_assignments WHERE group_id = $1', [groupId]);
+    expect(assignments.rowCount).toBe(0);
+  });
+
+  it.each(['55P03', '40P01', '40001'])(
+    'T15-X7: injected %s retries the whole transaction up to 3 times, then succeeds once',
+    async (code) => {
+      const jeepneyId = await createJeepney();
+      const attempts = await injectAuditError(jeepneyId, code, mutationRetries, () =>
+        fleet.updateJeepney(admin, jeepneyId, { status: 'INACTIVE' }).then(() => undefined),
+      );
+      expect(attempts).toBe(mutationRetries + 1);
+      expect(await state(jeepneyId)).toMatchObject({ version: '2', status: 'INACTIVE' });
+      expect(await auditCount(jeepneyId, 'JEEPNEY_UPDATED')).toBe(1);
+    },
+  );
+
+  it('T15-X7: injected 40P01 on every attempt returns 503 after exactly 4 attempts, nothing committed', async () => {
+    const jeepneyId = await createJeepney();
+    const attempts = await injectAuditError(jeepneyId, '40P01', 1_000, () =>
+      expect(fleet.updateJeepney(admin, jeepneyId, { status: 'INACTIVE' })).rejects.toMatchObject({
+        statusCode: 503,
+        code: 'TRACKING_CONTEXT_BUSY',
+      }),
+    );
+    expect(attempts).toBe(mutationRetries + 1);
+    expect(await state(jeepneyId)).toMatchObject({ version: '1', status: 'DRAFT' });
+    expect(await auditCount(jeepneyId, 'JEEPNEY_UPDATED')).toBe(0);
+  });
+
+  it('T15-X7: a non-retryable SQLSTATE fails on the first attempt without retry', async () => {
+    const jeepneyId = await createJeepney();
+    const attempts = await injectAuditError(jeepneyId, '23514', 1_000, () =>
+      expect(fleet.updateJeepney(admin, jeepneyId, { status: 'INACTIVE' })).rejects.toMatchObject({
+        code: '23514',
+      }),
+    );
+    expect(attempts).toBe(1);
+    expect(await state(jeepneyId)).toMatchObject({ version: '1', status: 'DRAFT' });
+  });
+
+  it('updateRoute bumps every assigned jeepney on a status change only', async () => {
+    const routeDirectionId = await createDirection('ROUTE-BUMP');
+    const routeId = await routeOf(routeDirectionId);
+    const direct = await createJeepney();
+    const grouped = await createJeepney();
+    const unrelated = await createJeepney();
+    await transit.assignRoute(operator, { jeepneyId: direct, routeDirectionId });
+    await transit.assignRoute(operator, { groupId: await createGroup([grouped]), routeDirectionId });
+    const before = await versions([direct, grouped, unrelated]);
+
+    await transit.updateRoute(admin, routeId, { publicName: 'Renamed only' });
+    expect(await versions([direct, grouped, unrelated])).toEqual(before);
+
+    await transit.updateRoute(admin, routeId, { status: 'INACTIVE' });
+    expect(await versions([direct, grouped, unrelated])).toEqual(before.map((version, index) => (index < 2 ? version + 1 : version)));
+    expect((await context.resolve(direct, pool)).routeUsability).toBe('INACTIVE');
+  });
+
+  it('addGroupJeepney bumps the added jeepney once and no other member', async () => {
+    const existing = await createJeepney();
+    const added = await createJeepney();
+    const groupId = await createGroup([existing]);
+    await fleet.addGroupJeepney(operator, groupId, added);
+    expect(await versions([existing, added])).toEqual([1, 2]);
+  });
+
+  it('T5: application review and a jeepney status change serialize in queue order behind a held key', async () => {
+    const { jeepneyId, applicationId } = await pendingApplication();
+    await withClient(async (holder) => {
+      await holder.query('BEGIN');
+      await lockTrackingContexts(holder, [jeepneyId]);
+      const review = workflow.reviewApplication(admin, applicationId, 'APPROVED');
+      await waitForWaiters(jeepneyId, 1);
+      const update = fleet.updateJeepney(admin, jeepneyId, { status: 'INACTIVE' });
+      await waitForWaiters(jeepneyId, 2);
+      await holder.query('COMMIT');
+      await Promise.all([review, update]);
+    });
+    // Review first (APPROVED), then the status change: one serial order, two bumps.
+    expect(await state(jeepneyId)).toMatchObject({ version: '3', status: 'INACTIVE' });
+    const application = await pool.query<{ status: string }>(
+      'SELECT status::text FROM vehicle_applications WHERE id = $1',
+      [applicationId],
+    );
+    expect(application.rows[0]?.status).toBe('APPROVED');
+  });
+
+  it('T6: GPS install then verification queued behind a held key commit in order and become eligible', async () => {
+    const { jeepneyId, requestId } = await gpsRequest('SCHEDULED');
+    await withClient(async (holder) => {
+      await holder.query('BEGIN');
+      await lockTrackingContexts(holder, [jeepneyId]);
+      const install = workflow.transitionGpsRequest(admin, requestId, 'INSTALLED', {});
+      await waitForWaiters(jeepneyId, 1);
+      const verify = workflow.verifyInstallation(admin, requestId, allChecks);
+      await waitForWaiters(jeepneyId, 2);
+      expect((await context.resolve(jeepneyId, pool)).telemetryEligible).toBe(false);
+      await holder.query('COMMIT');
+      await Promise.all([install, verify]);
+    });
+    expect(await context.resolve(jeepneyId, pool)).toMatchObject({ contextVersion: '3', telemetryEligible: true });
+  });
+
+  it('T6: a status change queued after verification wins; no false ACTIVE is left behind', async () => {
+    const { jeepneyId, requestId } = await gpsRequest('INSTALLED');
+    await withClient(async (holder) => {
+      await holder.query('BEGIN');
+      await lockTrackingContexts(holder, [jeepneyId]);
+      const verify = workflow.verifyInstallation(admin, requestId, allChecks);
+      await waitForWaiters(jeepneyId, 1);
+      const deactivate = fleet.updateJeepney(admin, jeepneyId, { status: 'INACTIVE' });
+      await waitForWaiters(jeepneyId, 2);
+      await holder.query('COMMIT');
+      await Promise.all([verify, deactivate]);
+    });
+    expect(await state(jeepneyId)).toMatchObject({ version: '3', status: 'INACTIVE' });
+    expect(await context.resolve(jeepneyId, pool)).toMatchObject({
+      telemetryEligible: false,
+      telemetryIneligibilityReason: 'JEEPNEY_NOT_ACTIVE',
+    });
+  });
+
+  it('T7-X8: a group assignment queued before a membership removal applies first; removal bumps after', async () => {
+    const removed = await createJeepney();
+    const kept = await createJeepney();
+    const groupId = await createGroup([removed, kept]);
+    await withClient(async (holder) => {
+      await holder.query('BEGIN');
+      await lockTrackingContexts(holder, [removed]);
+      const assignment = transit.assignRoute(operator, { groupId, routeDirectionId: directionId });
+      await waitForWaiters(removed, 1);
+      const removal = fleet.removeGroupJeepney(operator, groupId, removed);
+      await waitForWaiters(removed, 2);
+      await holder.query('COMMIT');
+      await Promise.all([assignment, removal]);
+    });
+    expect(await versions([removed, kept])).toEqual([3, 2]);
+    expect(await transit.resolveEffectiveRouteDirection(removed)).toBeNull();
+    expect(await transit.resolveEffectiveRouteDirection(kept)).toMatchObject({ source: 'GROUP', groupId });
+  });
+
+  it('T16: updateDirection retries when an assignment to that direction commits after discovery', async () => {
+    const ownDirectionId = await createDirection('EXPAND');
+    const assigned = await createJeepney();
+    const late = await createJeepney();
+    await transit.assignRoute(operator, { jeepneyId: assigned, routeDirectionId: ownDirectionId });
+    await withClient(async (holder) => {
+      await holder.query('BEGIN');
+      await lockTrackingContexts(holder, [assigned]);
+      const edit = transit.updateDirection(admin, ownDirectionId, { corridorM: 180 });
+      await waitForWaiters(assigned, 1);
+      await transit.assignRoute(operator, { jeepneyId: late, routeDirectionId: ownDirectionId });
+      await holder.query('COMMIT');
+      await edit;
+    });
+    // assigned: assignment + edit; late: assignment + edit (only after the retry locked it).
+    expect(await versions([assigned, late])).toEqual([3, 3]);
+  });
+
+  it('T8-X8: competing route and direction edits on one jeepney serialize; each bumps once', async () => {
+    const ownDirectionId = await createDirection('COMPETE');
+    const routeId = await routeOf(ownDirectionId);
+    const jeepneyId = await createJeepney();
+    await transit.assignRoute(operator, { jeepneyId, routeDirectionId: ownDirectionId });
+    await withClient(async (holder) => {
+      await holder.query('BEGIN');
+      await lockTrackingContexts(holder, [jeepneyId]);
+      const routeEdit = transit.updateRoute(admin, routeId, { status: 'INACTIVE' });
+      await waitForWaiters(jeepneyId, 1);
+      const directionEdit = transit.updateDirection(admin, ownDirectionId, {
+        geometry: { type: 'LineString', coordinates: [[123.8, 10.2], [123.81, 10.21]] },
+      });
+      await waitForWaiters(jeepneyId, 2);
+      await holder.query('COMMIT');
+      await Promise.all([routeEdit, directionEdit]);
+    });
+    expect(await versions([jeepneyId])).toEqual([4]);
+    const resolved = await context.resolve(jeepneyId, pool);
+    expect(resolved.routeUsability).toBe('INACTIVE');
+    expect(resolved.effectiveRouteDirection?.direction.geometry.coordinates).toHaveLength(2);
+  });
+
+  it('T13: a failed group route assignment leaves members, versions and the old assignment intact', async () => {
+    const members = [await createJeepney(), await createJeepney()];
+    const groupId = await createGroup(members);
+    const previous = await transit.assignRoute(operator, { groupId, routeDirectionId: directionId });
+    const before = await versions(members);
+    await injectAuditError(groupId, 'P0001', 1_000, () =>
+      expect(transit.assignRoute(operator, { groupId, routeDirectionId: otherDirectionId })).rejects.toMatchObject({
+        code: 'P0001',
+      }),
+    );
+    expect(await versions(members)).toEqual(before);
+    const active = await pool.query<{ id: string }>(
+      'SELECT id FROM vehicle_route_assignments WHERE group_id = $1 AND active_to IS NULL',
+      [groupId],
+    );
+    expect(active.rows).toEqual([{ id: previous.id }]);
+  });
+
+  it('T13: a failed membership removal keeps the membership and version', async () => {
+    const jeepneyId = await createJeepney();
+    const groupId = await createGroup([jeepneyId]);
+    await injectAuditError(groupId, 'P0001', 1_000, () =>
+      expect(fleet.removeGroupJeepney(operator, groupId, jeepneyId)).rejects.toMatchObject({ code: 'P0001' }),
+    );
+    expect(await versions([jeepneyId])).toEqual([1]);
+    const membership = await pool.query('SELECT 1 FROM fleet_group_jeepneys WHERE group_id = $1', [groupId]);
+    expect(membership.rowCount).toBe(1);
+  });
+
+  it('T13: a failed device mapping creates no device or mapping and no bump', async () => {
+    const { jeepneyId, requestId } = await gpsRequest('SCHEDULED', false);
+    const serialNumber = `A006-${suffix}-${randomUUID().slice(0, 6)}`;
+    await injectAuditError(requestId, 'P0001', 1_000, () =>
+      expect(
+        workflow.mapDevice(admin, requestId, { imei: nextImei(), serialNumber, traccarUniqueId: `a006-${randomUUID()}` }),
+      ).rejects.toMatchObject({ code: 'P0001' }),
+    );
+    expect(await versions([jeepneyId])).toEqual([1]);
+    const rows = await pool.query<{ devices: string; mappings: string }>(
+      `SELECT (SELECT count(*) FROM gps_devices WHERE serial_number = $1)::text AS devices,
+         (SELECT count(*) FROM traccar_device_mappings WHERE gps_setup_request_id = $2)::text AS mappings`,
+      [serialNumber, requestId],
+    );
+    expect(rows.rows[0]).toEqual({ devices: '0', mappings: '0' });
+  });
+
+  it('T13: a failed installation verification leaves the request, jeepney status and version unchanged', async () => {
+    const { jeepneyId, requestId } = await gpsRequest('INSTALLED');
+    await injectAuditError(requestId, 'P0001', 1_000, () =>
+      expect(workflow.verifyInstallation(admin, requestId, allChecks)).rejects.toMatchObject({ code: 'P0001' }),
+    );
+    expect(await state(jeepneyId)).toMatchObject({ version: '1', status: 'APPROVED' });
+    const request = await pool.query<{ verification_status: string }>(
+      'SELECT verification_status::text FROM gps_setup_requests WHERE id = $1',
+      [requestId],
+    );
+    expect(request.rows[0]?.verification_status).toBe('PENDING');
+  });
+
+  async function createJeepneys(count: number): Promise<string[]> {
+    const created = await pool.query<{ id: string }>(
+      `INSERT INTO jeepneys(operator_id, created_by_user_id, plate_no, color_hex)
+       SELECT $1, $2, 'A006-' || $3 || '-' || n, '#123456' FROM generate_series(1, $4::int) n
+       RETURNING id`,
+      [operatorId, operator.id, randomUUID().slice(0, 8), count],
+    );
+    const ids = created.rows.map((row) => row.id);
+    jeepneyIds.push(...ids);
+    return ids;
+  }
+
+  async function routeOf(routeDirectionId: string): Promise<string> {
+    const result = await pool.query<{ route_id: string }>(
+      'SELECT route_id FROM route_directions WHERE id = $1',
+      [routeDirectionId],
+    );
+    return result.rows[0]?.route_id ?? '';
+  }
+
+  async function versions(ids: string[]): Promise<number[]> {
+    const result = await pool.query<{ id: string; version: string }>(
+      'SELECT id, tracking_context_version::text AS version FROM jeepneys WHERE id = ANY($1::uuid[])',
+      [ids],
+    );
+    return ids.map((id) => Number(result.rows.find((row) => row.id === id)?.version));
+  }
+
+  async function bumpedCount(ids: string[]): Promise<number> {
+    const result = await pool.query<{ bumped: number }>(
+      'SELECT count(*)::int AS bumped FROM jeepneys WHERE id = ANY($1::uuid[]) AND tracking_context_version <> 1',
+      [ids],
+    );
+    return result.rows[0]?.bumped ?? -1;
+  }
+
+  async function auditCount(entityId: string, action: string): Promise<number> {
+    const result = await pool.query<{ total: number }>(
+      'SELECT count(*)::int AS total FROM audit_logs WHERE entity_id = $1 AND action = $2',
+      [entityId, action],
+    );
+    return result.rows[0]?.total ?? -1;
+  }
+
+  let imeiSequence = 0;
+  function nextImei(): string {
+    imeiSequence += 1;
+    return String(100_000_000_000_000 + Date.now() * 100 + imeiSequence).slice(0, 15);
+  }
+
+  async function pendingApplication(): Promise<{ jeepneyId: string; applicationId: string }> {
+    const jeepneyId = await createJeepney();
+    await pool.query(`UPDATE jeepneys SET status = 'PENDING_APPROVAL' WHERE id = $1`, [jeepneyId]);
+    const application = await pool.query<{ id: string }>(
+      'INSERT INTO vehicle_applications(jeepney_id, submitted_by_user_id) VALUES ($1, $2) RETURNING id',
+      [jeepneyId, operator.id],
+    );
+    return { jeepneyId, applicationId: application.rows[0]?.id ?? '' };
+  }
+
+  // Raw fixture up to a scheduled or installed GPS request (optionally mapped), at version 1.
+  async function gpsRequest(
+    status: 'SCHEDULED' | 'INSTALLED',
+    mapped = true,
+  ): Promise<{ jeepneyId: string; requestId: string }> {
+    const jeepneyId = await createJeepney();
+    await pool.query(`UPDATE jeepneys SET status = 'APPROVED', approved_at = now() WHERE id = $1`, [jeepneyId]);
+    const application = await pool.query<{ id: string }>(
+      `INSERT INTO vehicle_applications(jeepney_id, submitted_by_user_id, status, reviewed_by_user_id, reviewed_at)
+       VALUES ($1, $2, 'APPROVED', $3, now()) RETURNING id`,
+      [jeepneyId, operator.id, admin.id],
+    );
+    const request = await pool.query<{ id: string }>(
+      `INSERT INTO gps_setup_requests(vehicle_application_id, jeepney_id, requested_by_user_id, status,
+         scheduled_at, installed_at, verification_status)
+       VALUES ($1, $2, $3, $4::gps_setup_status, now(),
+         CASE WHEN $4 = 'INSTALLED' THEN now() END,
+         CASE WHEN $4 = 'INSTALLED' THEN 'PENDING' ELSE 'NOT_STARTED' END::gps_verification_status)
+       RETURNING id`,
+      [application.rows[0]?.id, jeepneyId, operator.id, status],
+    );
+    const requestId = request.rows[0]?.id ?? '';
+    if (mapped) {
+      const device = await pool.query<{ id: string }>(
+        'INSERT INTO gps_devices(imei, serial_number) VALUES ($1, $2) RETURNING id',
+        [nextImei(), `A006-${suffix}-${randomUUID().slice(0, 8)}`],
+      );
+      const deviceId = device.rows[0]?.id ?? '';
+      deviceIds.push(deviceId);
+      await pool.query(
+        `INSERT INTO traccar_device_mappings(gps_setup_request_id, gps_device_id, jeepney_id, traccar_unique_id,
+           mapped_by_user_id) VALUES ($1, $2, $3, $4, $5)`,
+        [requestId, deviceId, jeepneyId, `a006-${randomUUID()}`, admin.id],
+      );
+    }
+    return { jeepneyId, requestId };
+  }
+
+  async function orderedByKey(ids: string[]): Promise<string[]> {
+    const result = await pool.query<{ id: string }>(
+      `SELECT id::text FROM unnest($1::uuid[]) AS id
+       ORDER BY hashtextextended('valryde:tracking-context:' || id::text, 0)`,
+      [ids],
+    );
+    return result.rows.map((row) => row.id);
+  }
+
+  async function backendPid(client: pg.PoolClient): Promise<number> {
+    const result = await client.query<{ pid: number }>('SELECT pg_backend_pid() AS pid');
+    return result.rows[0]?.pid ?? -1;
+  }
+
+  async function holdsKey(pid: number, jeepneyId: string): Promise<boolean> {
+    const result = await pool.query(
+      `SELECT 1 FROM pg_locks
+       WHERE locktype = 'advisory' AND granted AND pid = $1 AND objsubid = 1
+         AND ((classid::bigint << 32) | objid::bigint)
+           = hashtextextended('valryde:tracking-context:' || $2::text, 0)`,
+      [pid, jeepneyId],
+    );
+    return result.rowCount === 1;
+  }
+
   async function createUser(role: 'COMMUTER' | 'DRIVER' | 'OPERATOR'): Promise<User> {
     const user = await repository.createUser({
       email: `a006-${role.toLowerCase()}-${randomUUID()}@example.com`,
@@ -520,14 +927,6 @@ describeDatabase('Stage 13b tracking context generation with PostgreSQL', () => 
     }
   }
 
-  async function lockedTransaction(ids: string[]): Promise<void> {
-    await withClient(async (client) => {
-      await client.query('BEGIN');
-      await lockTrackingContexts(client, ids);
-      await client.query('COMMIT');
-    });
-  }
-
   // Barrier: resolves once `count` backends are queued on this jeepney's advisory key.
   async function waitForWaiters(jeepneyId: string, count: number): Promise<void> {
     for (let attempt = 0; attempt < 500; attempt += 1) {
@@ -544,12 +943,25 @@ describeDatabase('Stage 13b tracking context generation with PostgreSQL', () => 
     throw new Error(`Timed out waiting for ${count} advisory-lock waiter(s)`);
   }
 
-  // Injects a failure into one audit insert, after the business UPDATE and before the version bump.
-  async function failAuditFor(entityId: string, work: () => Promise<void>): Promise<void> {
-    const name = `a006_fail_${suffix.toLowerCase()}`;
+  // Simulated SQLSTATE injection, distinct from genuine contention: a trigger on this entity's audit
+  // insert (after the business UPDATE, before the version bump) raises `code` on the first `times`
+  // attempts. A sequence counts attempts because nextval survives the rollback.
+  async function injectAuditError(
+    entityId: string,
+    code: string,
+    times: number,
+    work: () => Promise<void>,
+  ): Promise<number> {
+    const name = `a006_inject_${randomUUID().replaceAll('-', '').slice(0, 12)}`;
+    await pool.query(`CREATE SEQUENCE ${name}_attempts`);
     await pool.query(
       `CREATE FUNCTION ${name}() RETURNS trigger LANGUAGE plpgsql AS $$
-       BEGIN RAISE EXCEPTION 'injected audit failure'; END $$`,
+       BEGIN
+         IF nextval('${name}_attempts') <= ${times} THEN
+           RAISE EXCEPTION 'injected %', '${code}' USING ERRCODE = '${code}';
+         END IF;
+         RETURN NEW;
+       END $$`,
     );
     await pool.query(
       `CREATE TRIGGER ${name} BEFORE INSERT ON audit_logs FOR EACH ROW
@@ -557,9 +969,18 @@ describeDatabase('Stage 13b tracking context generation with PostgreSQL', () => 
     );
     try {
       await work();
+      const attempts = await pool.query<{ attempts: string }>(
+        `SELECT CASE WHEN is_called THEN last_value ELSE 0 END::text AS attempts FROM ${name}_attempts`,
+      );
+      return Number(attempts.rows[0]?.attempts);
     } finally {
       await pool.query(`DROP TRIGGER ${name} ON audit_logs`);
       await pool.query(`DROP FUNCTION ${name}()`);
+      await pool.query(`DROP SEQUENCE ${name}_attempts`);
     }
+  }
+
+  async function failAuditFor(entityId: string, work: () => Promise<void>): Promise<void> {
+    await injectAuditError(entityId, 'P0001', 1_000, work);
   }
 });
