@@ -2,7 +2,7 @@
   "directive": "VALRYDE-AGENT-B-TRACKING-COMPLETION-001",
   "baseline": "827738c0f2c33ad3082f6a4a38a8e35669d4b0ea",
   "designHead": "149cefc82d0ccea3c1efe06aebaf157a607c1d8e",
-  "approvalState": "GATES-001: M1-M3 approved, M4 conditional, M5/M6/M7 pending, M8 infrastructure-gated; A006 not merged; B2 writer draft PR #32; B3 compliance draft PR #36; B4 reconcile/Bridge draft PR #37",
+  "approvalState": "GATES-001: M1-M3 approved, M4 conditional, M5/M6/M7 pending, M8 infrastructure-gated; A006 not merged; B2 writer draft PR #32; B3 compliance draft PR #36; B4 reconcile/Bridge draft PR #37; status ingestion + proposed T1-T3 draft PR #38",
   "counts": {
     "PASS": 0,
     "FAIL": 0,
@@ -148,14 +148,14 @@
       "status": "BLOCKED",
       "scenario": "Older status/offline, equal-time conflict, missing source time",
       "blocker": "PERSISTENCE_RELEASE: D01-D07/D12 plus approved integrated A006 and B007/B008; isolated database authority",
-      "partialEvidence": "Related independent parser/ordering/privacy/lifecycle subchecks executed; durable/gateway portion NOT_RUN"
+      "partialEvidence": "Related independent parser/ordering/privacy/lifecycle subchecks executed; durable/gateway portion NOT_RUN | PR38 40b629d CI 39898547889: status ordered by Traccar lastUpdate: older -> OUT_OF_ORDER, equal same -> DUPLICATE, equal conflicting -> UNKNOWN (STATUS_CONFLICT), untimed never overrides a timed status and is UNKNOWN, >5 s ahead rejected. Component evidence on a PROPOSED, disabled API; case stays BLOCKED."
     },
     {
       "id": "B13B-21",
       "status": "BLOCKED",
       "scenario": "Active jeepney but device inactive/request unverified/application rejected",
       "blocker": "A_CONTEXT: approved integrated A006, transaction/visibility/advisory/mutation/generation contract",
-      "partialEvidence": "PR32 3e47dd3 CI 39882716442 (A006 #31 head b4d6942 merged, not on main): device INACTIVE -> REJECTED INELIGIBLE and retained coordinates cleared; unverified request/rejected application variants not exercised. Writer-only partial evidence; case stays BLOCKED until A006 merges and the full case runs. | PR37 a8f7ab0 CI 39886439244: reconcile after GPS verification FAILED (and B2: device INACTIVE) clears retained coordinates with INELIGIBLE. B4 component evidence only; case stays BLOCKED until A006 merges and the full case runs."
+      "partialEvidence": "PR32 3e47dd3 CI 39882716442 (A006 #31 head b4d6942 merged, not on main): device INACTIVE -> REJECTED INELIGIBLE and retained coordinates cleared; unverified request/rejected application variants not exercised. Writer-only partial evidence; case stays BLOCKED until A006 merges and the full case runs. | PR37 a8f7ab0 CI 39886439244: reconcile after GPS verification FAILED (and B2: device INACTIVE) clears retained coordinates with INELIGIBLE. B4 component evidence only; case stays BLOCKED until A006 merges and the full case runs. | PR38 40b629d CI 39898547889: proposed T2/T3 never label stale, lease-lost or context-changed data live (LAST_KNOWN/NONE with reason). Component evidence on a PROPOSED, disabled API; case stays BLOCKED."
     },
     {
       "id": "B13B-22",
@@ -183,14 +183,14 @@
       "status": "BLOCKED",
       "scenario": "Driver matches same jeepney through2groups; unrelated Driver/Operator",
       "blocker": "A_CONTEXT: approved integrated A006, transaction/visibility/advisory/mutation/generation contract",
-      "partialEvidence": "No full-case execution; design only"
+      "partialEvidence": "PR38 40b629d CI 39898547889: proposed T2 scopes: assigned driver sees only its vehicle (ASSIGNED), group driver sees group vehicles (GROUP), other operator sees only its own, commuter 403; the two-group variant is not exercised. Component evidence on a PROPOSED, disabled API; case stays BLOCKED."
     },
     {
       "id": "B13B-26",
       "status": "BLOCKED",
       "scenario": "Commuter inspects all JSON keys and error bodies",
       "blocker": "GATEWAY_CONTRACT: D09-D11 and A authorization/temporal-history approval; no released gateway/publisher",
-      "partialEvidence": "Related independent parser/ordering/privacy/lifecycle subchecks executed; durable/gateway portion NOT_RUN"
+      "partialEvidence": "Related independent parser/ordering/privacy/lifecycle subchecks executed; durable/gateway portion NOT_RUN | PR38 40b629d CI 39898547889: proposed T1 returns only the 12 allowlisted public keys; body contains no provider uniqueId, operator id, fence or IMEI; error-body inspection not exercised. Component evidence on a PROPOSED, disabled API; case stays BLOCKED."
     },
     {
       "id": "B13B-27",
@@ -365,6 +365,17 @@
       "persistenceUnitTests": 5,
       "ciEnvironment": "disposable GitHub Actions PostGIS 16-3.4; migrations 001-008 including A006 from PR #31 head b4d6942 (merged into the stack, not main)",
       "note": "B4 reconcile/sweep and flag-gated Bridge integration component evidence; persistence disabled by default; no live Traccar or deployment; no case upgraded."
+    },
+    {
+      "pr": 38,
+      "sourceHead": "40b629d57d44e308061a24b5fbc24d9ef00359b2",
+      "ciRunId": 39898547889,
+      "ciJobId": 120234523997,
+      "ciTestsPassed": 290,
+      "ciTestsSkipped": 1,
+      "apiIntegrationTests": 7,
+      "ciEnvironment": "disposable GitHub Actions PostGIS 16-3.4; migrations 001-008 including A006 from PR #31 head b4d6942 (merged into the stack, not main)",
+      "note": "Status ingestion and PROPOSED T1-T3 behind TRACKING_API_ENABLED=false; not released or frozen; no case upgraded."
     }
   ]
 }
