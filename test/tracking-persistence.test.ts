@@ -83,6 +83,35 @@ describe('Stage 13b B4 durable persistence supervisor', () => {
     await f.persistence.stop();
   });
 
+  it('fails closed on a database outage and resumes only after acquiring a new fence', async () => {
+    const f = setup();
+    await f.persistence.start();
+    f.writer.apply.mockRejectedValueOnce(new Error('database unavailable'));
+    await expect(f.persistence.sink(batch([position(23, 0)]))).rejects.toThrow('database unavailable');
+    expect(f.persistence.health()).toMatchObject({ leaseHeld: false, lastError: 'WRITE_FAILED' });
+    await expect(f.persistence.sink(batch([position(24, 0)]))).rejects.toBeInstanceOf(LeaseLostError);
+    f.leases.acquire.mockResolvedValueOnce(null);
+    await vi.advanceTimersByTimeAsync(5_000);
+    expect(f.persistence.health().leaseHeld).toBe(false);
+    await vi.advanceTimersByTimeAsync(5_000);
+    expect(f.persistence.health()).toMatchObject({ leaseHeld: true, fence: '2' });
+    await f.persistence.sink(batch([position(24, 0)]));
+    expect(f.calls.at(-1)?.lease.fence).toBe('2');
+    await f.persistence.stop();
+  });
+
+  it('discards an uncertain lease after a heartbeat exception', async () => {
+    const f = setup();
+    await f.persistence.start();
+    f.leases.heartbeat.mockRejectedValueOnce(new Error('database unavailable'));
+    await vi.advanceTimersByTimeAsync(5_000);
+    expect(f.persistence.health()).toMatchObject({ leaseHeld: false, lastError: 'LEASE_UNAVAILABLE' });
+    await expect(f.persistence.sink(batch([position(25, 0)]))).rejects.toBeInstanceOf(LeaseLostError);
+    await vi.advanceTimersByTimeAsync(5_000);
+    expect(f.persistence.health()).toMatchObject({ leaseHeld: true, fence: '2' });
+    await f.persistence.stop();
+  });
+
   it('stops ticking and releases only the lease it still holds; health carries no identities or points', async () => {
     const f = setup();
     await f.persistence.start();

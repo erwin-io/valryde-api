@@ -88,7 +88,8 @@ export class TrackingPersistence {
       this.#counts.set(result.disposition, (this.#counts.get(result.disposition) ?? 0) + 1);
       if (result.materializedChange) this.#lastCommitAt = this.#now();
     } catch (error) {
-      if (error instanceof LeaseLostError) this.#lease = null;
+      // A failed database call cannot prove the old fence is still live.
+      this.#lease = null;
       this.#lastError = error instanceof LeaseLostError ? 'LEASE_LOST' : 'WRITE_FAILED';
       throw error;
     }
@@ -126,6 +127,8 @@ export class TrackingPersistence {
       this.#lease = await this.#leases.acquire(this.#options.ownerId);
       if (this.#lease !== null) this.#log('Tracking writer lease acquired', { fence: this.#lease.fence });
     } catch {
+      // A heartbeat exception leaves ownership uncertain until a new acquisition succeeds.
+      this.#lease = null;
       this.#lastError = 'LEASE_UNAVAILABLE';
     }
   }
@@ -135,8 +138,9 @@ export class TrackingPersistence {
     if (lease === null) return;
     try {
       if (await this.#writer.sweep(lease, this.#options.sweepBatch ?? 100) > 0) this.#lastCommitAt = this.#now();
-    } catch (error) {
-      if (error instanceof LeaseLostError) this.#lease = null;
+    } catch {
+      // A failed sweep also makes the cached lease unsafe for subsequent writes.
+      this.#lease = null;
       this.#lastError = 'SWEEP_FAILED';
     }
   }
