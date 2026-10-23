@@ -11,6 +11,7 @@ import type {
   TransitRoute,
   VehicleRouteAssignment,
 } from '../domain/transit.js';
+import { lockTrackingAnchors, type QueryExecutor, runContextMutation } from '../db/tracking-context.js';
 import { ApiError } from '../lib/api-error.js';
 
 interface RouteRow {
@@ -253,7 +254,22 @@ export class TransitService {
     },
   ): Promise<TransitRoute> {
     await this.requireRoute(routeId);
-    const result = await this.pool.query<RouteRow>(
+    // Only status changes the tracking context of assigned jeepneys; names and colors do not.
+    return runContextMutation(this.pool, {
+      affected: (executor) =>
+        input.status === undefined ? Promise.resolve([]) : assignedJeepneys(executor, 'route_id', routeId),
+      lockAnchors: (client) => lockTrackingAnchors(client, 'route', [routeId]),
+      apply: (client) => this.applyRouteUpdate(client, actor, routeId, input),
+    });
+  }
+
+  private async applyRouteUpdate(
+    client: pg.PoolClient,
+    actor: User,
+    routeId: string,
+    input: { publicName?: string; description?: string | null; routeColorHex?: string; status?: RecordStatus },
+  ): Promise<TransitRoute> {
+    const result = await client.query<RouteRow>(
       `UPDATE transit_routes SET
          public_name = COALESCE($2, public_name),
          description = CASE WHEN $3::boolean THEN $4 ELSE description END,
@@ -270,11 +286,12 @@ export class TransitService {
         input.status ?? null,
       ],
     );
-    const route = mapRoute(requireRow(result.rows[0]));
+    const row = result.rows[0];
+    if (row === undefined) throw new ApiError(404, 'NOT_FOUND', 'Transit route not found');
     await this.audit(actor.id, 'TRANSIT_ROUTE_UPDATED', 'TRANSIT_ROUTE', routeId, {
       fields: Object.keys(input),
-    });
-    return route;
+    }, client);
+    return mapRoute(row);
   }
 
   async createDirection(
@@ -331,41 +348,64 @@ export class TransitService {
   ): Promise<RouteDirection> {
     await this.requireDirection(directionId, false);
     if (input.geometry !== undefined) validateLineString(input.geometry);
-    let result: pg.QueryResult<DirectionRow>;
+    // Geometry, corridor and status change compliance for every jeepney using this direction (X8).
+    const material = input.geometry !== undefined || input.corridorM !== undefined || input.status !== undefined;
     try {
-      result = await this.pool.query<DirectionRow>(
-        `UPDATE route_directions SET
-           direction_label = COALESCE($2, direction_label),
-           origin_name = COALESCE($3, origin_name),
-           destination_name = COALESCE($4, destination_name),
-           geometry = CASE WHEN $5::boolean
-             THEN ST_SetSRID(ST_GeomFromGeoJSON($6), 4326) ELSE geometry END,
-           corridor_m = COALESCE($7, corridor_m),
-           status = COALESCE($8::record_status, status),
-           updated_at = now()
-         WHERE id = $1 RETURNING ${directionReturning}`,
-        [
-          directionId,
-          input.directionLabel?.trim() ?? null,
-          input.originName?.trim() ?? null,
-          input.destinationName?.trim() ?? null,
-          input.geometry !== undefined,
-          input.geometry === undefined ? null : JSON.stringify(input.geometry),
-          input.corridorM ?? null,
-          input.status ?? null,
-        ],
-      );
+      return await runContextMutation(this.pool, {
+        affected: (executor) =>
+          material ? assignedJeepneys(executor, 'id', directionId) : Promise.resolve([]),
+        lockAnchors: (client) => lockTrackingAnchors(client, 'direction', [directionId]),
+        apply: (client) => this.applyDirectionUpdate(client, actor, directionId, input),
+      });
     } catch (error) {
       if (isUniqueViolation(error)) {
         throw new ApiError(409, 'CONFLICT', 'Direction label already exists for this route');
       }
       throw error;
     }
-    const direction = mapDirection(requireRow(result.rows[0]));
+  }
+
+  private async applyDirectionUpdate(
+    client: pg.PoolClient,
+    actor: User,
+    directionId: string,
+    input: {
+      directionLabel?: string;
+      originName?: string;
+      destinationName?: string;
+      geometry?: LineStringGeometry;
+      corridorM?: number;
+      status?: RecordStatus;
+    },
+  ): Promise<RouteDirection> {
+    const result = await client.query<DirectionRow>(
+      `UPDATE route_directions SET
+         direction_label = COALESCE($2, direction_label),
+         origin_name = COALESCE($3, origin_name),
+         destination_name = COALESCE($4, destination_name),
+         geometry = CASE WHEN $5::boolean
+           THEN ST_SetSRID(ST_GeomFromGeoJSON($6), 4326) ELSE geometry END,
+         corridor_m = COALESCE($7, corridor_m),
+         status = COALESCE($8::record_status, status),
+         updated_at = now()
+       WHERE id = $1 RETURNING ${directionReturning}`,
+      [
+        directionId,
+        input.directionLabel?.trim() ?? null,
+        input.originName?.trim() ?? null,
+        input.destinationName?.trim() ?? null,
+        input.geometry !== undefined,
+        input.geometry === undefined ? null : JSON.stringify(input.geometry),
+        input.corridorM ?? null,
+        input.status ?? null,
+      ],
+    );
+    const row = result.rows[0];
+    if (row === undefined) throw new ApiError(404, 'NOT_FOUND', 'Route direction not found');
     await this.audit(actor.id, 'ROUTE_DIRECTION_UPDATED', 'ROUTE_DIRECTION', directionId, {
       fields: Object.keys(input),
-    });
-    return direction;
+    }, client);
+    return mapDirection(row);
   }
 
   async assignRoute(
@@ -383,75 +423,100 @@ export class TransitService {
       await this.requireOwned('fleet_groups', requireValue(input.groupId), operatorId);
     }
 
-    const client = await this.pool.connect();
     try {
-      await client.query('BEGIN');
-      if (input.jeepneyId !== undefined) {
-        await client.query('SELECT 1 FROM jeepneys WHERE id = $1 FOR UPDATE', [input.jeepneyId]);
-      } else {
-        await client.query('SELECT 1 FROM fleet_groups WHERE id = $1 FOR UPDATE', [input.groupId]);
-        await client.query(
-          `SELECT j.id
-           FROM fleet_group_jeepneys fgj
-           JOIN jeepneys j ON j.id = fgj.jeepney_id
-           WHERE fgj.group_id = $1
-           ORDER BY j.id
-           FOR UPDATE OF j`,
-          [input.groupId],
-        );
-        const conflict = await client.query(
-          `SELECT target_membership.jeepney_id
-           FROM fleet_group_jeepneys target_membership
-           JOIN fleet_group_jeepneys other_membership
-             ON other_membership.jeepney_id = target_membership.jeepney_id
-            AND other_membership.group_id <> target_membership.group_id
-           JOIN vehicle_route_assignments other_assignment
-             ON other_assignment.group_id = other_membership.group_id
-            AND other_assignment.active_to IS NULL
-           WHERE target_membership.group_id = $1
-           LIMIT 1`,
-          [input.groupId],
-        );
-        if (conflict.rowCount !== 0) {
-          throw new ApiError(
-            409,
-            'ROUTE_ASSIGNMENT_CONFLICT',
-            'Group assignment would give a jeepney more than one active group route',
+      return await runContextMutation(this.pool, {
+        affected: (executor) =>
+          input.jeepneyId !== undefined
+            ? Promise.resolve([input.jeepneyId])
+            : groupJeepneys(executor, requireValue(input.groupId)),
+        lockAnchors: async (client) => {
+          if (input.groupId !== undefined) {
+            await lockTrackingAnchors(client, 'group', [input.groupId]);
+          }
+          const target = await client.query<{ route_id: string }>(
+            'SELECT route_id FROM route_directions WHERE id = $1',
+            [input.routeDirectionId],
           );
-        }
-      }
-      await client.query(
-        `UPDATE vehicle_route_assignments SET active_to = now()
-         WHERE active_to IS NULL
-           AND (($1::uuid IS NOT NULL AND jeepney_id = $1) OR ($2::uuid IS NOT NULL AND group_id = $2))`,
-        [input.jeepneyId ?? null, input.groupId ?? null],
-      );
-      const result = await client.query<AssignmentRow>(
-        `INSERT INTO vehicle_route_assignments(
-           jeepney_id, group_id, route_direction_id, assigned_by_user_id
-         ) VALUES ($1, $2, $3, $4) RETURNING *`,
-        [input.jeepneyId ?? null, input.groupId ?? null, input.routeDirectionId, actor.id],
-      );
-      const assignment = mapAssignment(requireRow(result.rows[0]));
-      await this.audit(
-        actor.id,
-        'VEHICLE_ROUTE_ASSIGNED',
-        input.jeepneyId === undefined ? 'FLEET_GROUP' : 'JEEPNEY',
-        input.jeepneyId ?? requireValue(input.groupId),
-        { routeDirectionId: input.routeDirectionId },
-        client,
-      );
-      await client.query('COMMIT');
-      return assignment;
+          const routeId = target.rows[0]?.route_id;
+          if (routeId === undefined) {
+            throw new ApiError(409, 'ROUTE_NOT_APPROVED', 'Route direction is no longer available');
+          }
+          await lockTrackingAnchors(client, 'route', [routeId]);
+          await lockTrackingAnchors(client, 'direction', [input.routeDirectionId]);
+          // The preflight check may have raced an Admin status change. Recheck after both anchors.
+          await this.requireDirection(input.routeDirectionId, true, client);
+        },
+        apply: (client) => this.applyRouteAssignment(client, actor, input),
+      });
     } catch (error) {
-      await client.query('ROLLBACK');
       if (isUniqueViolation(error)) {
         throw new ApiError(409, 'ROUTE_ASSIGNMENT_CONFLICT', 'An active route assignment already exists');
       }
       throw error;
-    } finally {
-      client.release();
     }
+  }
+
+  private async applyRouteAssignment(
+    client: pg.PoolClient,
+    actor: User,
+    input: { routeDirectionId: string; jeepneyId?: string; groupId?: string },
+  ): Promise<VehicleRouteAssignment> {
+    if (input.jeepneyId !== undefined) {
+      await client.query('SELECT 1 FROM jeepneys WHERE id = $1 FOR UPDATE', [input.jeepneyId]);
+    } else {
+      await client.query('SELECT 1 FROM fleet_groups WHERE id = $1 FOR UPDATE', [input.groupId]);
+      await client.query(
+        `SELECT j.id
+         FROM fleet_group_jeepneys fgj
+         JOIN jeepneys j ON j.id = fgj.jeepney_id
+         WHERE fgj.group_id = $1
+         ORDER BY j.id
+         FOR UPDATE OF j`,
+        [input.groupId],
+      );
+      const conflict = await client.query(
+        `SELECT target_membership.jeepney_id
+         FROM fleet_group_jeepneys target_membership
+         JOIN fleet_group_jeepneys other_membership
+           ON other_membership.jeepney_id = target_membership.jeepney_id
+          AND other_membership.group_id <> target_membership.group_id
+         JOIN vehicle_route_assignments other_assignment
+           ON other_assignment.group_id = other_membership.group_id
+          AND other_assignment.active_to IS NULL
+         WHERE target_membership.group_id = $1
+         LIMIT 1`,
+        [input.groupId],
+      );
+      if (conflict.rowCount !== 0) {
+        throw new ApiError(
+          409,
+          'ROUTE_ASSIGNMENT_CONFLICT',
+          'Group assignment would give a jeepney more than one active group route',
+        );
+      }
+    }
+    await client.query(
+      `UPDATE vehicle_route_assignments SET active_to = now()
+       WHERE active_to IS NULL
+         AND (($1::uuid IS NOT NULL AND jeepney_id = $1) OR ($2::uuid IS NOT NULL AND group_id = $2))`,
+      [input.jeepneyId ?? null, input.groupId ?? null],
+    );
+    const result = await client.query<AssignmentRow>(
+      `INSERT INTO vehicle_route_assignments(
+         jeepney_id, group_id, route_direction_id, assigned_by_user_id
+       ) VALUES ($1, $2, $3, $4) RETURNING *`,
+      [input.jeepneyId ?? null, input.groupId ?? null, input.routeDirectionId, actor.id],
+    );
+    const assignment = mapAssignment(requireRow(result.rows[0]));
+    await this.audit(
+      actor.id,
+      'VEHICLE_ROUTE_ASSIGNED',
+      input.jeepneyId === undefined ? 'FLEET_GROUP' : 'JEEPNEY',
+      input.jeepneyId ?? requireValue(input.groupId),
+      { routeDirectionId: input.routeDirectionId },
+      client,
+    );
+    return assignment;
   }
 
   async listRouteAssignments(
@@ -576,8 +641,12 @@ export class TransitService {
     return this.resolveEffectiveRouteDirection(jeepneyId);
   }
 
-  async resolveEffectiveRouteDirection(jeepneyId: string): Promise<EffectiveRouteDirection | null> {
-    const result = await this.pool.query<EffectiveRouteRow & { decision_source: EffectiveRouteSource | null }>(
+  /** With an executor every query runs on it, so callers can resolve inside their own transaction. */
+  async resolveEffectiveRouteDirection(
+    jeepneyId: string,
+    executor: QueryExecutor = this.pool,
+  ): Promise<EffectiveRouteDirection | null> {
+    const result = await executor.query<EffectiveRouteRow & { decision_source: EffectiveRouteSource | null }>(
       `WITH ${effectiveRouteDecisions('jeepney.id = $1')}
        SELECT decision.source AS decision_source, assignment.id AS assignment_id,
          assignment.group_id AS assignment_group_id, assignment.active_from AS assignment_active_from,
@@ -660,8 +729,8 @@ export class TransitService {
     if (result.rowCount !== 1) throw new ApiError(404, 'NOT_FOUND', 'Transit route not found');
   }
 
-  private async requireDirection(id: string, active: boolean): Promise<void> {
-    const result = await this.pool.query(
+  private async requireDirection(id: string, active: boolean, executor: QueryExecutor = this.pool): Promise<void> {
+    const result = await executor.query(
       `SELECT 1 FROM route_directions rd JOIN transit_routes tr ON tr.id = rd.route_id
        WHERE rd.id = $1 AND ($2::boolean = false OR (rd.status = 'ACTIVE' AND tr.status = 'ACTIVE'))`,
       [id, active],
@@ -681,7 +750,7 @@ export class TransitService {
     entityType: string,
     entityId: string,
     metadata: Record<string, unknown>,
-    executor: Pick<pg.Pool | pg.PoolClient, 'query'> = this.pool,
+    executor: QueryExecutor = this.pool,
   ): Promise<void> {
     await executor.query(
       `INSERT INTO audit_logs(actor_user_id, action, entity_type, entity_id, metadata)
@@ -702,6 +771,36 @@ const directionInsert = `INSERT INTO route_directions(
 
 const directionReturning = `id, route_id, direction_label, origin_name, destination_name,
   ST_AsGeoJSON(geometry)::json AS geometry, corridor_m, status, created_at, updated_at`;
+
+function groupJeepneys(executor: QueryExecutor, groupId: string): Promise<string[]> {
+  return executor
+    .query<{ id: string }>('SELECT jeepney_id AS id FROM fleet_group_jeepneys WHERE group_id = $1', [groupId])
+    .then((result) => result.rows.map((row) => row.id));
+}
+
+// Every jeepney with an active direct or group assignment to the direction or route: a superset of
+// those whose effective route uses it, which is safe for locking and bumping.
+function assignedJeepneys(
+  executor: QueryExecutor,
+  column: 'id' | 'route_id',
+  id: string,
+): Promise<string[]> {
+  return executor
+    .query<{ id: string }>(
+      `SELECT assignment.jeepney_id AS id
+       FROM vehicle_route_assignments assignment
+       JOIN route_directions rd ON rd.id = assignment.route_direction_id
+       WHERE assignment.active_to IS NULL AND assignment.jeepney_id IS NOT NULL AND rd.${column} = $1
+       UNION
+       SELECT membership.jeepney_id
+       FROM vehicle_route_assignments assignment
+       JOIN route_directions rd ON rd.id = assignment.route_direction_id
+       JOIN fleet_group_jeepneys membership ON membership.group_id = assignment.group_id
+       WHERE assignment.active_to IS NULL AND rd.${column} = $1`,
+      [id],
+    )
+    .then((result) => result.rows.map((row) => row.id));
+}
 
 type EffectiveRouteSource = EffectiveRouteDirection['source'] | 'CONFLICT';
 

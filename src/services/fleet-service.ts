@@ -11,6 +11,7 @@ import type {
   OperatorDirectoryEntry,
   PaginationResult,
 } from '../domain/fleet.js';
+import { lockTrackingAnchors, type QueryExecutor, runContextMutation } from '../db/tracking-context.js';
 import { ApiError } from '../lib/api-error.js';
 
 interface JeepneyRow {
@@ -398,7 +399,20 @@ export class FleetService {
     if (!actor.roles.includes('ADMIN') && input.status !== undefined) {
       throw new ApiError(403, 'FORBIDDEN', 'Only Admin may change jeepney approval status');
     }
-    const result = await this.pool.query<JeepneyRow>(
+    // Status changes telemetry eligibility; color and description do not.
+    return runContextMutation(this.pool, {
+      affected: () => Promise.resolve(input.status === undefined ? [] : [jeepneyId]),
+      apply: (client) => this.applyJeepneyUpdate(client, actor, jeepneyId, input),
+    });
+  }
+
+  private async applyJeepneyUpdate(
+    client: pg.PoolClient,
+    actor: User,
+    jeepneyId: string,
+    input: { colorHex?: string; description?: string | null; status?: JeepneyStatus },
+  ): Promise<Jeepney> {
+    const result = await client.query<JeepneyRow>(
       `UPDATE jeepneys SET
          color_hex = COALESCE($2, color_hex),
          description = CASE WHEN $3::boolean THEN $4 ELSE description END,
@@ -420,7 +434,7 @@ export class FleetService {
     const updated = mapJeepney(requireRow(result.rows[0]));
     await this.audit(actor.id, 'JEEPNEY_UPDATED', 'JEEPNEY', jeepneyId, {
       fields: Object.keys(input),
-    });
+    }, client);
     return updated;
   }
 
@@ -572,54 +586,69 @@ export class FleetService {
     if (jeepney.operatorId !== group.operatorId) {
       throw new ApiError(403, 'FORBIDDEN', 'Jeepney does not belong to this operator');
     }
-    const client = await this.pool.connect();
-    try {
-      await client.query('BEGIN');
-      await client.query('SELECT 1 FROM fleet_groups WHERE id = $1 FOR UPDATE', [groupId]);
-      await client.query('SELECT 1 FROM jeepneys WHERE id = $1 FOR UPDATE', [jeepneyId]);
-      const conflict = await client.query(
-        `SELECT 1
-         FROM vehicle_route_assignments target_assignment
-         JOIN fleet_group_jeepneys existing_membership
-           ON existing_membership.jeepney_id = $2
-          AND existing_membership.group_id <> $1
-         JOIN vehicle_route_assignments existing_assignment
-           ON existing_assignment.group_id = existing_membership.group_id
-          AND existing_assignment.active_to IS NULL
-         WHERE target_assignment.group_id = $1
-           AND target_assignment.active_to IS NULL
-         LIMIT 1`,
-        [groupId, jeepneyId],
-      );
-      if (conflict.rowCount !== 0) {
-        throw new ApiError(
-          409,
-          'ROUTE_ASSIGNMENT_CONFLICT',
-          'Jeepney cannot inherit active routes from more than one fleet group',
+    return runContextMutation(this.pool, {
+      affected: () => Promise.resolve([jeepneyId]),
+      lockAnchors: async (client) => {
+        // Group assignment changes take this anchor too, so its route set cannot change between
+        // discovery and the membership insert. Route/direction edits then share the same anchors.
+        await lockTrackingAnchors(client, 'group', [groupId]);
+        const assignments = await client.query<{ route_id: string; route_direction_id: string }>(
+          `SELECT rd.route_id, assignment.route_direction_id
+           FROM vehicle_route_assignments assignment
+           JOIN route_directions rd ON rd.id = assignment.route_direction_id
+           WHERE assignment.group_id = $1 AND assignment.active_to IS NULL`,
+          [groupId],
         );
-      }
-      await client.query(
-        `INSERT INTO fleet_group_jeepneys(group_id, jeepney_id) VALUES ($1, $2)
-         ON CONFLICT DO NOTHING`,
-        [groupId, jeepneyId],
-      );
-      await this.audit(
-        actor.id,
-        'FLEET_GROUP_JEEPNEY_ADDED',
-        'FLEET_GROUP',
-        groupId,
-        { jeepneyId },
-        client,
-      );
-      await client.query('COMMIT');
-    } catch (error) {
-      await client.query('ROLLBACK');
-      throw error;
-    } finally {
-      client.release();
-    }
+        await lockTrackingAnchors(client, 'route', assignments.rows.map((row) => row.route_id));
+        await lockTrackingAnchors(
+          client,
+          'direction',
+          assignments.rows.map((row) => row.route_direction_id),
+        );
+      },
+      apply: async (client) => {
+        await client.query('SELECT 1 FROM fleet_groups WHERE id = $1 FOR UPDATE', [groupId]);
+        await client.query('SELECT 1 FROM jeepneys WHERE id = $1 FOR UPDATE', [jeepneyId]);
+        const conflict = await client.query(
+          `SELECT 1
+           FROM vehicle_route_assignments target_assignment
+           JOIN fleet_group_jeepneys existing_membership
+             ON existing_membership.jeepney_id = $2
+            AND existing_membership.group_id <> $1
+           JOIN vehicle_route_assignments existing_assignment
+             ON existing_assignment.group_id = existing_membership.group_id
+            AND existing_assignment.active_to IS NULL
+           WHERE target_assignment.group_id = $1
+             AND target_assignment.active_to IS NULL
+           LIMIT 1`,
+          [groupId, jeepneyId],
+        );
+        if (conflict.rowCount !== 0) {
+          throw new ApiError(
+            409,
+            'ROUTE_ASSIGNMENT_CONFLICT',
+            'Jeepney cannot inherit active routes from more than one fleet group',
+          );
+        }
+        await client.query(
+          `INSERT INTO fleet_group_jeepneys(group_id, jeepney_id) VALUES ($1, $2)
+           ON CONFLICT DO NOTHING`,
+          [groupId, jeepneyId],
+        );
+        await this.audit(
+          actor.id,
+          'FLEET_GROUP_JEEPNEY_ADDED',
+          'FLEET_GROUP',
+          groupId,
+          { jeepneyId },
+          client,
+        );
+      },
+    });
   }
 
+  // Visibility-only (X8): changes private recipients, not the vehicle's tracking context, so no
+  // advisory key or version bump. REST reads re-authorize immediately.
   async removeGroupDriver(actor: User, groupId: string, driverId: string): Promise<void> {
     const group = await this.requireGroup(groupId);
     await this.assertOperatorScope(actor, group.operatorId);
@@ -654,33 +683,28 @@ export class FleetService {
   async removeGroupJeepney(actor: User, groupId: string, jeepneyId: string): Promise<void> {
     const group = await this.requireGroup(groupId);
     await this.assertOperatorScope(actor, group.operatorId);
-    const client = await this.pool.connect();
-    try {
-      await client.query('BEGIN');
-      await client.query('SELECT 1 FROM fleet_groups WHERE id = $1 FOR UPDATE', [groupId]);
-      await client.query('SELECT 1 FROM jeepneys WHERE id = $1 FOR UPDATE', [jeepneyId]);
-      const removed = await client.query(
-        'DELETE FROM fleet_group_jeepneys WHERE group_id = $1 AND jeepney_id = $2 RETURNING 1',
-        [groupId, jeepneyId],
-      );
-      if (removed.rowCount !== 1) {
-        throw new ApiError(404, 'NOT_FOUND', 'Jeepney membership not found');
-      }
-      await this.audit(
-        actor.id,
-        'FLEET_GROUP_JEEPNEY_REMOVED',
-        'FLEET_GROUP',
-        groupId,
-        { jeepneyId },
-        client,
-      );
-      await client.query('COMMIT');
-    } catch (error) {
-      await client.query('ROLLBACK');
-      throw error;
-    } finally {
-      client.release();
-    }
+    return runContextMutation(this.pool, {
+      affected: () => Promise.resolve([jeepneyId]),
+      apply: async (client) => {
+        await client.query('SELECT 1 FROM fleet_groups WHERE id = $1 FOR UPDATE', [groupId]);
+        await client.query('SELECT 1 FROM jeepneys WHERE id = $1 FOR UPDATE', [jeepneyId]);
+        const removed = await client.query(
+          'DELETE FROM fleet_group_jeepneys WHERE group_id = $1 AND jeepney_id = $2 RETURNING 1',
+          [groupId, jeepneyId],
+        );
+        if (removed.rowCount !== 1) {
+          throw new ApiError(404, 'NOT_FOUND', 'Jeepney membership not found');
+        }
+        await this.audit(
+          actor.id,
+          'FLEET_GROUP_JEEPNEY_REMOVED',
+          'FLEET_GROUP',
+          groupId,
+          { jeepneyId },
+          client,
+        );
+      },
+    });
   }
 
   async assignDriver(actor: User, jeepneyId: string, driverId: string): Promise<DriverAssignment> {
@@ -725,6 +749,7 @@ export class FleetService {
     }
   }
 
+  // Visibility-only (X8), like removeGroupDriver: no tracking context bump.
   async unassignDriver(actor: User, jeepneyId: string): Promise<DriverAssignment> {
     const jeepney = await this.requireJeepney(jeepneyId);
     if (jeepney.operatorId === null) {
@@ -887,7 +912,7 @@ export class FleetService {
     entityType: string,
     entityId: string,
     metadata: Record<string, unknown>,
-    executor: Pick<pg.Pool | pg.PoolClient, 'query'> = this.pool,
+    executor: QueryExecutor = this.pool,
   ): Promise<void> {
     await executor.query(
       `INSERT INTO audit_logs(actor_user_id, action, entity_type, entity_id, metadata)
