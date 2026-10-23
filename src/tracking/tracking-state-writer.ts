@@ -31,12 +31,31 @@ export interface TrackingObservation {
   serverTime: string;
   speedKph: number;
   heading: number;
+  /** Provider-reported motion (Traccar `attributes.motion`); null/absent when not reported. */
+  motion?: boolean | null;
   receivedAt: string;
+}
+
+/**
+ * One Traccar device record (socket `devices` frame or REST reconciliation). Connectivity only:
+ * independent of fixes and movement, and ordered by Traccar's own `lastUpdate`.
+ */
+export interface DeviceStatusObservation {
+  deviceId: string;
+  uniqueId: string;
+  /** Traccar `status`: online / offline / unknown; anything else is UNKNOWN. */
+  status: string;
+  /** Traccar `lastUpdate` (ISO); null when absent: never ordered against a source-timed status. */
+  lastUpdate: string | null;
+  source: 'DEVICE' | 'REST_RECONCILIATION';
+  /** Non-negative decimal ingress sequence within the current lease fence (the status epoch). */
+  sequence: string;
 }
 
 export type PersistDisposition =
   'APPLIED' | 'DUPLICATE' | 'OUT_OF_ORDER' | 'INVALIDATED' | 'REJECTED' | 'UNMAPPED' | 'RECONCILED';
-export type PersistReason = 'MALFORMED' | 'CLOCK_AHEAD' | 'INELIGIBLE' | 'PRE_MAPPING' | 'PRE_CUTOVER';
+export type PersistReason =
+  'MALFORMED' | 'CLOCK_AHEAD' | 'INELIGIBLE' | 'PRE_MAPPING' | 'PRE_CUTOVER' | 'STATUS_CONFLICT';
 
 /** Resolved only after COMMIT, so a result is the commit acknowledgement. */
 export interface PersistResult {
@@ -64,6 +83,13 @@ type State = Record<(typeof columns)[number], unknown>;
 type StoredState = State & { revision: string };
 
 interface Parsed { fix: Date; received: Date; device: Date | null; server: Date | null; qualifies: boolean }
+interface ParsedStatus {
+  tracker: 'ONLINE' | 'OFFLINE' | 'UNKNOWN';
+  sourceTime: Date | null;
+}
+type Item =
+  | { kind: 'POSITION'; observation: TrackingObservation; parsed: Parsed }
+  | { kind: 'STATUS'; observation: DeviceStatusObservation; status: ParsedStatus };
 interface Clock {
   now: Date; lease_live: boolean; expired: boolean;
   // Null when reconciling without an observation.
@@ -114,7 +140,22 @@ export class TrackingStateWriter {
     );
     const jeepneyId = found.rows[0]?.jeepney_id;
     if (jeepneyId === undefined) return outcome('UNMAPPED');
-    return this.transaction((client) => this.applyLocked(client, jeepneyId, lease, { observation, parsed }));
+    return this.transaction((client) =>
+      this.applyLocked(client, jeepneyId, lease, { kind: 'POSITION', observation, parsed }));
+  }
+
+  /** Tracker connectivity (B4-1): same lease, key, context revalidation and CAS as positions. */
+  async applyStatus(observation: DeviceStatusObservation, lease: WriterLease): Promise<PersistResult> {
+    const status = parseStatus(observation);
+    if (status === null) return outcome('REJECTED', 'MALFORMED');
+    const found = await this.pool.query<{ jeepney_id: string }>(
+      'SELECT jeepney_id FROM traccar_device_mappings WHERE traccar_unique_id = $1',
+      [observation.uniqueId],
+    );
+    const jeepneyId = found.rows[0]?.jeepney_id;
+    if (jeepneyId === undefined) return outcome('UNMAPPED');
+    return this.transaction((client) =>
+      this.applyLocked(client, jeepneyId, lease, { kind: 'STATUS', observation, status }));
   }
 
   /**
@@ -153,7 +194,7 @@ export class TrackingStateWriter {
     client: pg.PoolClient,
     jeepneyId: string,
     lease: WriterLease,
-    item: { observation: TrackingObservation; parsed: Parsed } | null,
+    item: Item | null,
   ): Promise<PersistResult> {
     const held = await client.query(
       `SELECT 1 FROM tracking_bridge_leases
@@ -190,7 +231,8 @@ export class TrackingStateWriter {
        JOIN jeepneys j ON j.id = $3
        LEFT JOIN traccar_device_mappings m ON m.id = $4
        LEFT JOIN vehicle_latest_states s ON s.jeepney_id = j.id`,
-      [lease.ownerId, lease.fence, jeepneyId, mapping?.mappingId ?? null, item?.parsed.fix ?? null,
+      [lease.ownerId, lease.fence, jeepneyId, mapping?.mappingId ?? null,
+        item?.kind === 'POSITION' ? item.parsed.fix : null,
         this.#databaseNow?.() ?? null],
     );
     const clock = clockRow.rows[0];
@@ -259,6 +301,10 @@ export class TrackingStateWriter {
       expireCompliance(compliance, clock.now);
     }
     if (item === null) return write('RECONCILED');
+    if (item.kind === 'STATUS') {
+      const [disposition, reason] = applyTrackerStatus(next, item.observation, item.status, lease.fence, clock.now);
+      return write(disposition, reason);
+    }
     const { observation, parsed } = item;
     // X5: the cutover fences use the GPS fix time only.
     if (clock.pre_mapping) return write('INVALIDATED', 'PRE_MAPPING');
@@ -294,7 +340,13 @@ export class TrackingStateWriter {
       // An invalid fix advances the watermark but keeps the last valid point private and unchanged.
       Object.assign(next, { location_status: 'INVALID', location_reason: 'INVALID_FIX' });
     }
-    Object.assign(next, { observed_at: parsed.fix, received_at: parsed.received, motion_status: 'UNKNOWN' });
+    Object.assign(next, {
+      observed_at: parsed.fix,
+      received_at: parsed.received,
+      // Movement is the provider's report on a fresh valid fix; never derived from speed or connectivity.
+      motion_status: parsed.qualifies && !clock.arrived_stale && typeof observation.motion === 'boolean'
+        ? (observation.motion ? 'MOVING' : 'STOPPED') : 'UNKNOWN',
+    });
 
     // Only a newly accepted, fresh, not-ahead fix on a usable route counts toward compliance.
     let transition: ComplianceTransition | null = null;
@@ -446,6 +498,61 @@ function parse(observation: TrackingObservation): Parsed | null {
     within(observation.latitude, -90, 90) && within(observation.longitude, -180, 180) &&
     within(observation.speedKph, 0, maxSpeedKph) && within(observation.heading, 0, 360) && observation.heading < 360;
   return { fix, received, device, server, qualifies };
+}
+
+const statusFutureToleranceMs = 5_000;
+
+function parseStatus(observation: DeviceStatusObservation): ParsedStatus | null {
+  if (!isBigint(observation.deviceId) || typeof observation.uniqueId !== 'string' || observation.uniqueId === '') {
+    return null;
+  }
+  if (typeof observation.sequence !== 'string' || !/^(0|[1-9][0-9]{0,17})$/.test(observation.sequence)) return null;
+  if (observation.source !== 'DEVICE' && observation.source !== 'REST_RECONCILIATION') return null;
+  const sourceTime = observation.lastUpdate === null ? null : time(observation.lastUpdate);
+  if (observation.lastUpdate !== null && sourceTime === null) return null;
+  const reported = observation.status === 'online' ? 'ONLINE' : observation.status === 'offline' ? 'OFFLINE' : 'UNKNOWN';
+  // Without a communication time there is no evidence to confirm either ONLINE or OFFLINE.
+  return { tracker: sourceTime === null ? 'UNKNOWN' : reported, sourceTime };
+}
+
+/**
+ * Orders connectivity by Traccar `lastUpdate`: older -> OUT_OF_ORDER; equal and same -> DUPLICATE;
+ * equal but different -> UNKNOWN (conflict). An untimed observation never overrides a timed one and
+ * only advances within the current epoch (lease fence) by ingress sequence.
+ */
+function applyTrackerStatus(
+  state: State,
+  observation: DeviceStatusObservation,
+  status: ParsedStatus,
+  fence: string,
+  now: Date,
+): [PersistDisposition, PersistReason | null] {
+  const prior = state.status_source_time instanceof Date ? state.status_source_time : null;
+  const priorSequence = state.status_epoch === fence && typeof state.status_sequence === 'string'
+    ? BigInt(state.status_sequence) : null;
+  if (priorSequence !== null && BigInt(observation.sequence) <= priorSequence) return ['DUPLICATE', null];
+  let tracker = status.tracker;
+  let reason: PersistReason | null = null;
+  if (status.sourceTime !== null) {
+    if (status.sourceTime.getTime() > now.getTime() + statusFutureToleranceMs) return ['REJECTED', 'CLOCK_AHEAD'];
+    if (prior !== null && status.sourceTime.getTime() < prior.getTime()) return ['OUT_OF_ORDER', null];
+    if (prior !== null && status.sourceTime.getTime() === prior.getTime()) {
+      if (state.tracker_status === tracker) return ['DUPLICATE', null];
+      tracker = 'UNKNOWN';
+      reason = 'STATUS_CONFLICT';
+    }
+  } else if (prior !== null) {
+    return ['OUT_OF_ORDER', null];
+  }
+  Object.assign(state, {
+    tracker_status: tracker,
+    status_source_time: status.sourceTime,
+    status_observed_at: now,
+    status_source: observation.source,
+    status_epoch: fence,
+    status_sequence: observation.sequence,
+  });
+  return ['APPLIED', reason];
 }
 
 function isBigint(value: unknown): value is string {

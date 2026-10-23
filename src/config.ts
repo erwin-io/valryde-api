@@ -20,6 +20,8 @@ export interface AppConfig {
   authResendCooldownSeconds: number;
   googleClientIds: string[];
   email: EmailConfig;
+  /** Stage 13b proposed tracking REST (T1–T3). Off unless TRACKING_API_ENABLED=true. */
+  trackingApiEnabled?: boolean;
   /** Absent means place search is disabled. */
   geocoder?: GeocoderConfig;
 }
@@ -121,6 +123,7 @@ export function loadConfig(source: NodeJS.ProcessEnv = process.env): AppConfig {
       .map((id) => id.trim())
       .filter(Boolean),
     email: emailConfig(source, environment(source.NODE_ENV)),
+    trackingApiEnabled: source.TRACKING_API_ENABLED === 'true',
     geocoder: geocoderConfig(source, environment(source.NODE_ENV)),
   };
 }

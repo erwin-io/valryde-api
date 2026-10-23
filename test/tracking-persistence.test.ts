@@ -14,12 +14,12 @@ function position(id: number, offsetMs: number): NormalizedPosition {
   const time = new Date(T + offsetMs).toISOString();
   return {
     deviceId: 7, uniqueId: 'VALRYDE-SIM-0001', positionId: id, latitude: 10.3, longitude: 123.88,
-    fixTime: time, deviceTime: time, serverTime: time, speedKph: 20, heading: 90,
+    fixTime: time, deviceTime: time, serverTime: time, speedKph: 20, heading: 90, motion: true,
   };
 }
 
 function batch(positions: NormalizedPosition[], invalidPositions: NormalizedPosition[] = []): TelemetryBatch {
-  return { devices: [], positions, invalidPositions, events: [] };
+  return { devices: [], positions, invalidPositions, events: [], reconciliation: false };
 }
 
 function setup() {
@@ -27,6 +27,7 @@ function setup() {
   const calls: Array<{ item: TrackingObservation; lease: WriterLease }> = [];
   const writer = {
     apply: vi.fn(async (item: TrackingObservation, lease: WriterLease) => { calls.push({ item, lease }); return applied; }),
+    applyStatus: vi.fn(async () => applied),
     sweep: vi.fn(async () => 0),
   };
   const leases = {

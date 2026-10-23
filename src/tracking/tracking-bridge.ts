@@ -25,12 +25,17 @@ export interface TelemetryBatch {
   /** Parseable fixes Traccar flags invalid; durable mode records them as observations (13b). */
   invalidPositions: NormalizedPosition[];
   events: TraccarEvent[];
+  /** True for the REST snapshot taken while (re)connecting; false for live socket frames. */
+  reconciliation: boolean;
 }
 /** 13a delivers to an injected sink; 13b plugs latest-state persistence in here. */
 export type TelemetrySink = (batch: TelemetryBatch) => void | Promise<void>;
 export type BridgeLogger = (message: string, fields?: Record<string, unknown>) => void;
 
-interface Frame { devices: TraccarDevice[]; positions: TraccarPosition[]; events: TraccarEvent[]; invalidItems: number }
+interface Frame {
+  devices: TraccarDevice[]; positions: TraccarPosition[]; events: TraccarEvent[]; invalidItems: number;
+  reconciliation?: boolean;
+}
 
 export interface BridgeDependencies {
   client: Pick<TraccarClient, 'sessionCookie' | 'invalidateSession' | 'devices' | 'positions'>;
@@ -219,7 +224,9 @@ export class TrackingBridge {
       if (!current.has(id)) { this.#registry.delete(id); this.#gate.forget(id); }
     }
     // REST latest positions and Traccar's cached on-open push overlap; the gate deduplicates them.
-    await this.#process({ devices, positions: await this.#client.positions(), events: [], invalidItems: 0 });
+    await this.#process({
+      devices, positions: await this.#client.positions(), events: [], invalidItems: 0, reconciliation: true,
+    });
   }
 
   async #process(frame: Frame): Promise<void> {
@@ -252,7 +259,9 @@ export class TrackingBridge {
     }
     if (frame.devices.length === 0 && positions.length === 0 && invalidPositions.length === 0 && events.length === 0) return;
     try {
-      await this.#sink({ devices: frame.devices, positions, invalidPositions, events });
+      await this.#sink({
+        devices: frame.devices, positions, invalidPositions, events, reconciliation: frame.reconciliation === true,
+      });
     } catch (error) {
       // Forget watermarks so reconnect reconciliation redelivers what the sink failed to store.
       this.#gate.clear();

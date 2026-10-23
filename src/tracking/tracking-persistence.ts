@@ -1,7 +1,9 @@
 import type { BridgeLogger, BridgeState, TelemetryBatch, TelemetrySink } from './tracking-bridge.js';
 import { LeaseLostError, leaseHeartbeatMs, type TrackingLeaseService, type WriterLease } from './tracking-lease.js';
 import type { NormalizedPosition } from './telemetry.js';
-import type { PersistDisposition, TrackingObservation, TrackingStateWriter } from './tracking-state-writer.js';
+import type {
+  PersistDisposition, PersistResult, TrackingObservation, TrackingStateWriter,
+} from './tracking-state-writer.js';
 
 export interface PersistenceOptions {
   ownerId: string;
@@ -22,7 +24,7 @@ export interface PersistenceOptions {
  * redelivers; nothing uncommitted is acknowledged.
  */
 export class TrackingPersistence {
-  readonly #writer: Pick<TrackingStateWriter, 'apply' | 'sweep'>;
+  readonly #writer: Pick<TrackingStateWriter, 'apply' | 'applyStatus' | 'sweep'>;
   readonly #leases: Pick<TrackingLeaseService, 'acquire' | 'heartbeat' | 'release'>;
   readonly #options: PersistenceOptions;
   readonly #now: () => number;
@@ -33,9 +35,11 @@ export class TrackingPersistence {
   #tick: Promise<void> = Promise.resolve();
   #lastCommitAt: number | undefined;
   #lastError: string | undefined;
+  /** Status ingress order; strictly increasing for the life of the process (epoch = lease fence). */
+  #statusSequence = 0n;
 
   constructor(
-    writer: Pick<TrackingStateWriter, 'apply' | 'sweep'>,
+    writer: Pick<TrackingStateWriter, 'apply' | 'applyStatus' | 'sweep'>,
     leases: Pick<TrackingLeaseService, 'acquire' | 'heartbeat' | 'release'>,
     options: PersistenceOptions,
   ) {
@@ -60,23 +64,35 @@ export class TrackingPersistence {
     const lease = this.#lease;
     if (lease === null) throw new LeaseLostError();
     const receivedAt = new Date(this.#now()).toISOString();
+    // Connectivity first, in arrival order; ordered in the DB by Traccar lastUpdate, never by fixes.
+    for (const device of batch.devices) {
+      this.#statusSequence += 1n;
+      await this.#write(() => this.#writer.applyStatus({
+        deviceId: String(device.id), uniqueId: device.uniqueId, status: device.status,
+        lastUpdate: device.lastUpdate ?? null,
+        source: batch.reconciliation ? 'REST_RECONCILIATION' : 'DEVICE',
+        sequence: String(this.#statusSequence),
+      }, lease));
+    }
     // Fix-time order inside a batch, so an invalid fix never makes an earlier valid one look old.
     const items = [
       ...batch.positions.map((position) => observation(position, true, receivedAt)),
       ...batch.invalidPositions.map((position) => observation(position, false, receivedAt)),
     ].sort((left, right) => Date.parse(left.fixTime) - Date.parse(right.fixTime));
-    for (const item of items) {
-      try {
-        const result = await this.#writer.apply(item, lease);
-        this.#counts.set(result.disposition, (this.#counts.get(result.disposition) ?? 0) + 1);
-        if (result.materializedChange) this.#lastCommitAt = this.#now();
-      } catch (error) {
-        if (error instanceof LeaseLostError) this.#lease = null;
-        this.#lastError = error instanceof LeaseLostError ? 'LEASE_LOST' : 'WRITE_FAILED';
-        throw error;
-      }
-    }
+    for (const item of items) await this.#write(() => this.#writer.apply(item, lease));
   };
+
+  async #write(run: () => Promise<PersistResult>): Promise<void> {
+    try {
+      const result = await run();
+      this.#counts.set(result.disposition, (this.#counts.get(result.disposition) ?? 0) + 1);
+      if (result.materializedChange) this.#lastCommitAt = this.#now();
+    } catch (error) {
+      if (error instanceof LeaseLostError) this.#lease = null;
+      this.#lastError = error instanceof LeaseLostError ? 'LEASE_LOST' : 'WRITE_FAILED';
+      throw error;
+    }
+  }
 
   /** Idempotent: stops ticks, waits for the running one, then releases only a still-matching lease. */
   async stop(): Promise<void> {
@@ -131,6 +147,6 @@ function observation(position: NormalizedPosition, valid: boolean, receivedAt: s
     deviceId: String(position.deviceId), uniqueId: position.uniqueId, positionId: String(position.positionId), valid,
     latitude: position.latitude, longitude: position.longitude,
     fixTime: position.fixTime, deviceTime: position.deviceTime, serverTime: position.serverTime,
-    speedKph: position.speedKph, heading: position.heading, receivedAt,
+    speedKph: position.speedKph, heading: position.heading, motion: position.motion, receivedAt,
   };
 }
