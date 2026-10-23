@@ -2,17 +2,17 @@
 
 ## Current snapshot
 
-- Updated at (ISO 8601, Asia/Manila): 2026-10-23T22:00:00+08:00
-- Agent / module: A — Core Platform / Fastify API (execution owner: Claude, taken over from Codex under `VALRYDE-CLAUDE-A-CODEX-RECOVERY-AND-COMPLETION-003`)
+- Updated at (ISO 8601, Asia/Manila): 2026-10-23T15:45:00+08:00
+- Agent / module: A — Core Platform / Fastify API (Codex takeover)
 - Repository: `erwin-io/valryde-api`
 - Branch / head: canonical copy on #29 (`docs/agent-a-backend-release-handoff`). #31 keeps its 18:00 copy (blob `223a802`) frozen for review; #33, #34 and #35 carry no status change. Base `origin/main` `810c8a13356ddbf0e28a4faf5ad7f86ce0a30479`
 - Checklist IDs: 1–11 (gap slices G1–G11, D3); G6 backend for ID 37
 - GitHub issues / PRs: merged into `main` by Agent G with merge commits: #1, #2, #4–#8, #10–#12, #15–#17, #19–#21, #23–#28 (and Agent B #22). Open Agent A PRs: [#29](https://github.com/erwin-io/valryde-api/pull/29) API handoff, [#31](https://github.com/erwin-io/valryde-api/pull/31) A006, [#33](https://github.com/erwin-io/valryde-api/pull/33) G8 audit-log read, [#34](https://github.com/erwin-io/valryde-api/pull/34) G9 proposal, [#35](https://github.com/erwin-io/valryde-api/pull/35) G7 decision matrix. Agent B: [#14](https://github.com/erwin-io/valryde-api/pull/14), [#30](https://github.com/erwin-io/valryde-api/pull/30) (B007/B008, blocked on A006).
 - Implementation progress: IN_PROGRESS — every independently executable, approved Agent A slice is merged; remaining work waits on the decisions listed under "Blocked by".
-- Tech Lead review decision (if actually issued): IDs 1–11 baseline ACCEPTED (PR #1). G1–G6, G10 read, G11, D3, fixtures and mobile testing policy merged by Agent G. Stage 13b design APPROVED (merge of #17, confirmed 2026-10-23). #31 at `b4d6942`: test hardening COMPLETE, CI workflow 39881541394 passed (verified by Agent G), code review pending. No decision yet on #29, #33, #34 or #35.
+- Tech Lead review decision (if actually issued): IDs 1–11 baseline ACCEPTED (PR #1). G1–G6, G10 read, G11, D3, fixtures and mobile testing policy merged by Agent G. Stage 13b design APPROVED (merge of #17, confirmed 2026-10-23). No Tech Lead acceptance of #31 recorded; Agent A found an assignment/update race requiring correction. No decision yet on #29, #33, #34 or #35.
 - Current objective: directive `VALRYDE-AGENT-A-FINAL-BACKEND-RELEASE-008` (milestone `AGENT_A_FULL_INDEPENDENT_BACKEND_RELEASE_READY`).
-- Last confirmed result: CI green on #29 `92da88a`, #31 `b4d6942`, #33 `13763ae`, #34 `089dd62`, #35 `e10963d`. Review corrections applied to #33 (metadata inventory and allowlist proposal), #34 (opt-in envelope, zero-record fix) and #35 (accepted D1, D3, D6). Checkpoint A-UI-READY-001 delivered in #29 (`AGENT_A_UI_READY_001.md`, availability matrix MD/JSON).
-- Next concrete action: Agent G code review of #31 and merge order #31 → #30; review #29; decide G8-D3, G9-D1/D3–D6, G7-D4/D5/D7; approve opening G12 (Admin summary) and G13 (GPS device list) proposals. Agent A then implements G9, the G8 allowlist and G7 as each is approved.
+- Last confirmed result: #31 at `9c39dcf` passed local lint, typecheck, build and 165 non-DB tests; 79 tests skipped without a disposable PostgreSQL URL. CI green on #29, #31, #33, #34 and #35. #29 G6 capability classes corrected locally. Existing G8/G9/G7 review gates remain.
+- Next concrete action: Correct and reproduce the #31 assignment/update race on an isolated PostGIS database before any #31 merge; verify and push the #29 documentation correction; obtain remaining G8-D3, G9-D1/D3–D6 and G7-D4/D5/D7 decisions.
 - Blocked by / decision owner: Agent G for the reviews and decisions above; Agent B for B007/B008 and the Bridge-side tests (T14, T17, T18, T19 persistence, T23–T25); owner for the geocoding provider and its terms (G6-D4), audit retention policy (G8-D4), the production callback domain and App Links hosting (G5), the first real Admin, and physical GPS/Traccar mapping.
 - Dependencies / affected agents: B (tracking/latest state/realtime), C (public route/live APIs), D (driver invitation and operator APIs), E (Admin APIs), F (device runbooks), G (shared-contract review).
 
@@ -129,6 +129,17 @@
 - Gate: Physical GPS/Traccar mapping and activation. Required actor: operator/Agent F/Agent B. Requested evidence: power, SIM/APN, server connectivity, GPS fix, correct IMEI/uniqueId mapping. State: OWNER_VERIFICATION_PENDING.
 
 ## Activity log (newest first; preserve prior entries)
+
+### 2026-10-23 15:45 +08:00 — Codex Agent A takeover review checkpoint
+
+- Action / reason: Inventoried all API worktrees and local-only work; fetched remote metadata without altering checkout files; reviewed #31 and #29. Earlier entries dated 20:00 and 22:00 on this same date were already present and are future-dated relative to this session's local clock; they are preserved below.
+- Checklist/issue: Agent A IDs 1–11; Stage 13b A006 #31; C/D/E API handoff #29; G7–G9 review gates.
+- Files/config/services affected: Corrected the two merged G6 capability classes in `docs/integration/AGENT_A_BACKEND_RELEASE_API_HANDOFF.md`. No application source, migration, database, or tracking runtime changed.
+- Observed result: #31 remains at frozen head `9c39dcfae9220e946baace7bb306fdc8b367d801`. Route/direction updates can miss a concurrently inserted assignment after the affected-set recheck, leaving a jeepney context version unchanged across a material route change; #31 requires a concurrency correction and a reproducing PostgreSQL test before merge. #29 generator guard labels match inspected route guards, but its handoff classified two already merged #28 endpoints as pending.
+- Validation and evidence: On #31 head, `npm run lint`, `npm run typecheck`, `npm test -- --run` (165 passed, 79 skipped including PostgreSQL tests), `npm run build`, and `git diff --check` passed locally. #31 and #29 API CI runs 39916881762 and 39891484978 succeeded. No disposable PostgreSQL URL was configured, so DB tests were not independently reproduced. #29 doc diff passes `git diff --check`.
+- Contracts / risks / dependencies: A006 concurrency correction must preserve approved X1–X8, tenant isolation, migration lock timeout, and Agent B writer fencing. G8 metadata policy, G9 pagination, and G7 remaining decisions are still gated. Existing untracked and ignored files in other checkouts were left untouched.
+- Commit/PR link or SHA: #31 `9c39dcfae9220e946baace7bb306fdc8b367d801`; #29 baseline `7eb027d42f05889d18023616704a7f203eb264f1`; this entry accompanies the #29 documentation correction.
+- Next action / owner gate: Add a deterministic concurrent assignment versus route/direction update test on an isolated PostGIS database, correct A006 serialization on a separate branch from the frozen #31 head, and submit it for Tech Lead review. Regenerate/verify #29 docs and push its correction after local checks.
 
 ### 2026-10-23 22:00 +08:00 — Review corrections and checkpoint A-UI-READY-001
 

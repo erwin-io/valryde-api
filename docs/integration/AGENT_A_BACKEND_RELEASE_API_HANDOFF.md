@@ -104,8 +104,8 @@ Classes:
 | Auth, session, profile, recovery | `/api/auth/*` (`role: "COMMUTER"`) | 1 |
 | Route list/search/pagination, route detail with geometry | `GET /api/transit-routes`, `GET /api/transit-routes/{routeId}` | 1 |
 | Draw routes on the map | route detail `direction.geometry` (GeoJSON `[lon, lat]`) and `routeColorHex` | 2 |
-| Place search (ID 37) | `GET /api/places/search` | 3 — merged (#28); provider disabled by default (`503 GEOCODER_UNAVAILABLE`) until the owner approves one. Show a fallback to route search on 503. |
-| Direct-route discovery (ID 37) | `GET /api/transit-routes/discover` | 3 — merged (#28); public; returns `directRouteFound:false` with no candidates when no single route serves both points |
+| Place search (ID 37) | `GET /api/places/search` | 1 — merged (#28); provider disabled by default (`503 GEOCODER_UNAVAILABLE`) until the owner approves one. Show a fallback to route search on 503. |
+| Direct-route discovery (ID 37) | `GET /api/transit-routes/discover` | 1 — merged (#28); public; returns `directRouteFound:false` with no candidates when no single route serves both points |
 | Live jeepneys, availability, freshness, Pusher | — | 5 |
 | Favorites, stops, fares, ETA, transfers | — | 6 |
 
