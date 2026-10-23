@@ -2,7 +2,7 @@
   "directive": "VALRYDE-AGENT-B-TRACKING-COMPLETION-001",
   "baseline": "827738c0f2c33ad3082f6a4a38a8e35669d4b0ea",
   "designHead": "149cefc82d0ccea3c1efe06aebaf157a607c1d8e",
-  "approvalState": "GATES-001: M1-M3 approved, M4 conditional, M5/M6/M7 pending, M8 infrastructure-gated; A006 not merged; B2 writer draft PR #32; B3 compliance draft PR #36",
+  "approvalState": "GATES-001: M1-M3 approved, M4 conditional, M5/M6/M7 pending, M8 infrastructure-gated; A006 not merged; B2 writer draft PR #32; B3 compliance draft PR #36; B4 reconcile/Bridge draft PR #37",
   "counts": {
     "PASS": 0,
     "FAIL": 0,
@@ -155,14 +155,14 @@
       "status": "BLOCKED",
       "scenario": "Active jeepney but device inactive/request unverified/application rejected",
       "blocker": "A_CONTEXT: approved integrated A006, transaction/visibility/advisory/mutation/generation contract",
-      "partialEvidence": "PR32 3e47dd3 CI 39882716442 (A006 #31 head b4d6942 merged, not on main): device INACTIVE -> REJECTED INELIGIBLE and retained coordinates cleared; unverified request/rejected application variants not exercised. Writer-only partial evidence; case stays BLOCKED until A006 merges and the full case runs."
+      "partialEvidence": "PR32 3e47dd3 CI 39882716442 (A006 #31 head b4d6942 merged, not on main): device INACTIVE -> REJECTED INELIGIBLE and retained coordinates cleared; unverified request/rejected application variants not exercised. Writer-only partial evidence; case stays BLOCKED until A006 merges and the full case runs. | PR37 a8f7ab0 CI 39886439244: reconcile after GPS verification FAILED (and B2: device INACTIVE) clears retained coordinates with INELIGIBLE. B4 component evidence only; case stays BLOCKED until A006 merges and the full case runs."
     },
     {
       "id": "B13B-22",
       "status": "BLOCKED",
       "scenario": "Remap to new UUID/time while old-device work queued",
       "blocker": "A_CONTEXT: approved integrated A006, transaction/visibility/advisory/mutation/generation contract",
-      "partialEvidence": "PR32 3e47dd3 CI 39882716442 (A006 #31 head b4d6942 merged, not on main): fix before mapped_at -> INVALIDATED PRE_MAPPING; mapping/device-ID change clears state in code, remap with queued old-device work not exercised (no remap API). Writer-only partial evidence; case stays BLOCKED until A006 merges and the full case runs."
+      "partialEvidence": "PR32 3e47dd3 CI 39882716442 (A006 #31 head b4d6942 merged, not on main): fix before mapped_at -> INVALIDATED PRE_MAPPING; mapping/device-ID change clears state in code, remap with queued old-device work not exercised (no remap API). Writer-only partial evidence; case stays BLOCKED until A006 merges and the full case runs. | PR37 a8f7ab0 CI 39886439244: mapping removal is swept to UNMAPPED with provider identifiers and point cleared. B4 component evidence only; case stays BLOCKED until A006 merges and the full case runs."
     },
     {
       "id": "B13B-23",
@@ -176,7 +176,7 @@
       "status": "BLOCKED",
       "scenario": "Ownership/group/route/geometry/corridor changes without GPS",
       "blocker": "A_CONTEXT: approved integrated A006, transaction/visibility/advisory/mutation/generation contract",
-      "partialEvidence": "PR32 3e47dd3 CI 39882716442 (A006 #31 head b4d6942 merged, not on main): A006 version bump clears point/status/compliance with CONTEXT_CHANGED and fences pre-cutover fixes (X5); change without GPS (sweep/reconciler, B4) not implemented. Writer-only partial evidence; case stays BLOCKED until A006 merges and the full case runs."
+      "partialEvidence": "PR32 3e47dd3 CI 39882716442 (A006 #31 head b4d6942 merged, not on main): A006 version bump clears point/status/compliance with CONTEXT_CHANGED and fences pre-cutover fixes (X5); change without GPS (sweep/reconciler, B4) not implemented. Writer-only partial evidence; case stays BLOCKED until A006 merges and the full case runs. | PR37 a8f7ab0 CI 39886439244: A006 version bump without GPS is swept to CONTEXT_CHANGED with point and compliance cleared. B4 component evidence only; case stays BLOCKED until A006 merges and the full case runs."
     },
     {
       "id": "B13B-25",
@@ -218,7 +218,7 @@
       "status": "BLOCKED",
       "scenario": "Sweep selects expired row; newer fresh fix wins before sweep lock",
       "blocker": "PERSISTENCE_RELEASE: D01-D07/D12 plus approved integrated A006 and B007/B008; isolated database authority",
-      "partialEvidence": "No full-case execution; design only"
+      "partialEvidence": "PR37 a8f7ab0 CI 39886439244: sweep leaves a still-fresh row untouched and rechecks candidates under the locks; an explicit sweep-vs-newer-fix race is not exercised. B4 component evidence only; case stays BLOCKED until A006 merges and the full case runs."
     },
     {
       "id": "B13B-31",
@@ -239,7 +239,7 @@
       "status": "BLOCKED",
       "scenario": "Two owners race acquisition; expired/stale writer overlaps new fence",
       "blocker": "PERSISTENCE_RELEASE: D01-D07/D12 plus approved integrated A006 and B007/B008; isolated database authority",
-      "partialEvidence": "PR32 3e47dd3 CI 39882716442 (A006 #31 head b4d6942 merged, not on main): released/expired lease takeover issues a new fence; stale owner write -> LeaseLostError with no change; concurrent acquisition race not exercised. Writer-only partial evidence; case stays BLOCKED until A006 merges and the full case runs."
+      "partialEvidence": "PR32 3e47dd3 CI 39882716442 (A006 #31 head b4d6942 merged, not on main): released/expired lease takeover issues a new fence; stale owner write -> LeaseLostError with no change; concurrent acquisition race not exercised. Writer-only partial evidence; case stays BLOCKED until A006 merges and the full case runs. | PR37 a8f7ab0 CI 39886439244: persistence supervisor drops a lost lease, refuses writes and reacquires with a new fence (unit, fake lease); stale fence cannot reconcile (PostGIS). B4 component evidence only; case stays BLOCKED until A006 merges and the full case runs."
     },
     {
       "id": "B13B-34",
@@ -260,7 +260,7 @@
       "status": "BLOCKED",
       "scenario": "DB outage between point write and event/intent write",
       "blocker": "PERSISTENCE_RELEASE: D01-D07/D12 plus approved integrated A006 and B007/B008; isolated database authority",
-      "partialEvidence": "No full-case execution; design only"
+      "partialEvidence": "PR37 a8f7ab0 CI 39886439244: a writer/lease failure fails the batch so the Bridge redelivers (unit); DB-outage injection between point and event is not exercised. B4 component evidence only; case stays BLOCKED until A006 merges and the full case runs."
     },
     {
       "id": "B13B-37",
@@ -353,6 +353,18 @@
       "complianceUnitTests": 9,
       "ciEnvironment": "disposable GitHub Actions PostGIS 16-3.4; migrations 001-008 including A006 from PR #31 head b4d6942 (merged into the stack, not main)",
       "note": "B3 compliance engine component evidence. A006 not merged; gateway/publisher absent; no case upgraded."
+    },
+    {
+      "pr": 37,
+      "sourceHead": "a8f7ab0ff828c30f4f5a1485416056dd9333a911",
+      "ciRunId": 39886439244,
+      "ciJobId": 120195591993,
+      "ciTestsPassed": 283,
+      "ciTestsSkipped": 1,
+      "writerIntegrationTests": 20,
+      "persistenceUnitTests": 5,
+      "ciEnvironment": "disposable GitHub Actions PostGIS 16-3.4; migrations 001-008 including A006 from PR #31 head b4d6942 (merged into the stack, not main)",
+      "note": "B4 reconcile/sweep and flag-gated Bridge integration component evidence; persistence disabled by default; no live Traccar or deployment; no case upgraded."
     }
   ]
 }
