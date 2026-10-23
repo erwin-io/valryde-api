@@ -22,11 +22,14 @@ import { adminUserRoutes } from './routes/admin-user-routes.js';
 import { authRoutes } from './routes/auth-routes.js';
 import { fleetRoutes } from './routes/fleet-routes.js';
 import { placeRoutes } from './routes/place-routes.js';
+import { trackingRoutes } from './routes/tracking-routes.js';
 import { transitRoutes } from './routes/transit-routes.js';
 import { vehicleWorkflowRoutes } from './routes/vehicle-workflow-routes.js';
 import { AuthService } from './services/auth-service.js';
 import { SmtpEmailService } from './services/email-service.js';
 import { FleetService } from './services/fleet-service.js';
+import { TrackingContextService } from './services/tracking-context-service.js';
+import { TrackingVisibilityService } from './services/tracking-visibility-service.js';
 import {
   DisabledGeocoderService,
   PhotonGeocoderService,
@@ -34,6 +37,7 @@ import {
 } from './services/geocoder-service.js';
 import { TransitService } from './services/transit-service.js';
 import { VehicleWorkflowService } from './services/vehicle-workflow-service.js';
+import { TrackingReadService } from './tracking/tracking-read-service.js';
 import {
   GoogleAuthLibraryIdentityService,
   type GoogleIdentityService,
@@ -249,6 +253,16 @@ export async function buildApp(options: BuildAppOptions) {
       prefix: '/api',
       workflowService: new VehicleWorkflowService(pool),
     });
+    if (options.config.trackingApiEnabled === true) {
+      await app.register(trackingRoutes, {
+        prefix: '/api',
+        readService: new TrackingReadService(
+          pool,
+          new TrackingContextService(new TransitService(pool)),
+          new TrackingVisibilityService(pool),
+        ),
+      });
+    }
   }
 
   if (pool !== undefined) {

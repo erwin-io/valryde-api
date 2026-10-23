@@ -6,7 +6,7 @@
 
 **Consumers:** Agent B durable tracking Stage 13b (D05, D06, D07)
 
-**Status:** PROPOSED FOR TECH LEAD REVIEW — **Amendment 1 (2026-10-23)** applies the Agent B X1–X8 reconciliation from PR #14 `FINAL_DECISION_OPTIONS.md` §2 and proposes the MVP constants in §13. Amendment 1 is binding over any earlier wording it changes. This document specifies interfaces and concurrency behavior only. It does not authorize or implement a migration, tracking persistence, a production data change, a Traccar write, or a permanent Bridge process.
+**Status:** APPROVED — Agent G's merge of PR #17 is the formal approval of X1–X8, the §13 constants, D01–D12 and the codes `TRACKING_CONTEXT_MUTATION_TOO_LARGE` and `TRACKING_CONTEXT_BUSY` (confirmed 2026-10-23). Agent A implements it in the A006 PR (`006_tracking_context_generation.sql`). Text as reviewed: **Amendment 1 (2026-10-23)** applies the Agent B X1–X8 reconciliation from PR #14 `FINAL_DECISION_OPTIONS.md` §2 and proposes the MVP constants in §13. Amendment 1 is binding over any earlier wording it changes. This document specifies interfaces and concurrency behavior only. It does not authorize or implement a migration, tracking persistence, a production data change, a Traccar write, or a permanent Bridge process.
 
 **Reviewed baseline:** `origin/main` `827738c0f2c33ad3082f6a4a38a8e35669d4b0ea`, migrations 001–005, Agent B design PR #14, G1 PR #12, and fixture PR #15.
 

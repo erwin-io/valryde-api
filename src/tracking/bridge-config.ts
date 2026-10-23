@@ -17,6 +17,14 @@ export interface BridgeConfig {
   maxFrameItems: number;
   maxQueuedFrames: number;
   futureToleranceMs: number;
+  /** Stage 13b durable writer. Null (the default) keeps the Bridge log-only. */
+  persistence: PersistenceConfig | null;
+}
+
+export interface PersistenceConfig {
+  databaseUrl: string;
+  databaseSchema: string;
+  databaseSsl: boolean;
 }
 
 // Operational settings only; these are not route-compliance or commuter-availability thresholds.
@@ -38,5 +46,17 @@ export function loadBridgeConfig(source: NodeJS.ProcessEnv = process.env): Bridg
     futureToleranceMs: bounded(source, 'BRIDGE_FUTURE_TOLERANCE_MS', 5_000, 0, 60_000),
   };
   if (config.reconnectMaxMs < config.reconnectBaseMs) throw new Error('Bridge reconnect maximum must cover base delay');
-  return config;
+  return { ...config, persistence: loadPersistenceConfig(source) };
+}
+
+// Off unless explicitly enabled; enabling needs a separately approved database identity (M4 grants).
+function loadPersistenceConfig(source: NodeJS.ProcessEnv): PersistenceConfig | null {
+  const flag = source.TRACKING_PERSISTENCE_ENABLED ?? 'false';
+  if (flag === 'false') return null;
+  if (flag !== 'true') throw new Error('TRACKING_PERSISTENCE_ENABLED must be true or false');
+  const databaseUrl = source.TRACKING_DATABASE_URL ?? '';
+  if (databaseUrl.length === 0) throw new Error('TRACKING_DATABASE_URL is required when persistence is enabled');
+  const databaseSchema = source.DATABASE_SCHEMA ?? 'dbo';
+  if (!/^[a-z_][a-z0-9_]*$/.test(databaseSchema)) throw new Error('DATABASE_SCHEMA must be a lowercase PostgreSQL identifier');
+  return { databaseUrl, databaseSchema, databaseSsl: source.DATABASE_SSL === 'true' };
 }

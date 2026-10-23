@@ -12,6 +12,8 @@ export interface NormalizedPosition {
   serverTime: string;
   speedKph: number;
   heading: number;
+  /** Provider-reported motion; null when not reported. */
+  motion: boolean | null;
 }
 
 export type Verdict = 'ACCEPT' | 'INVALID' | 'FUTURE' | 'DUPLICATE' | 'OUT_OF_ORDER';
@@ -23,6 +25,7 @@ export function normalizePosition(position: TraccarPosition, uniqueId: string): 
     fixTime: position.fixTime, deviceTime: position.deviceTime, serverTime: position.serverTime,
     speedKph: position.speed * 1.852,
     heading: position.course === 360 ? 0 : position.course,
+    motion: position.motion ?? null,
   };
 }
 

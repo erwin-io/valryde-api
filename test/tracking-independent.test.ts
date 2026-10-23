@@ -88,7 +88,7 @@ describe('independent provider admission and classification', () => {
   });
   it('strips provider attributes and identity metadata from the normalized record allowlist', () => {
     const normalized = normalizePosition(parsePosition({ ...position(1), attributes: { secret: 'attribute-canary' }, driverId: 'private-driver-canary' }), device.uniqueId);
-    expect(Object.keys(normalized).sort()).toEqual(['deviceId', 'uniqueId', 'positionId', 'latitude', 'longitude', 'fixTime', 'deviceTime', 'serverTime', 'speedKph', 'heading'].sort());
+    expect(Object.keys(normalized).sort()).toEqual(['deviceId', 'uniqueId', 'positionId', 'latitude', 'longitude', 'fixTime', 'deviceTime', 'serverTime', 'speedKph', 'heading', 'motion'].sort());
     expect(JSON.stringify(normalized)).not.toMatch(/attribute-canary|private-driver-canary/);
     // Provider identity/coordinates remain private in this internal model: this is not a public DTO.
     expect(normalized.uniqueId).toBe(device.uniqueId);

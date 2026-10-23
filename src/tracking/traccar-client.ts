@@ -13,10 +13,16 @@ export class TraccarError extends Error {
 }
 
 // Provider-only records. Never serialize these directly to a client.
-export interface TraccarDevice { id: number; uniqueId: string; status: string; }
+export interface TraccarDevice {
+  id: number; uniqueId: string; status: string;
+  /** Traccar's last communication time; absent when never connected or unparseable (status then unordered). */
+  lastUpdate?: string;
+}
 export interface TraccarPosition {
   id: number; deviceId: number; valid: boolean; latitude: number; longitude: number;
   fixTime: string; deviceTime: string; serverTime: string; speed: number; course: number;
+  /** Traccar's `attributes.motion`; absent when the device/protocol does not report it. */
+  motion?: boolean;
 }
 export interface TraccarEvent { id: number; deviceId: number; type: string; eventTime: string; }
 export interface HistoryRange { from: string; to: string; }
@@ -197,7 +203,14 @@ function timestamp(value: unknown): string {
 }
 export function parseDevice(value: unknown): TraccarDevice {
   const row = object(value);
-  return { id: id(row.id), uniqueId: string(row.uniqueId), status: string(row.status) };
+  const device: TraccarDevice = { id: id(row.id), uniqueId: string(row.uniqueId), status: string(row.status) };
+  const lastUpdate = optionalTimestamp(row.lastUpdate);
+  if (lastUpdate !== undefined) device.lastUpdate = lastUpdate;
+  return device;
+}
+function optionalTimestamp(value: unknown): string | undefined {
+  if (typeof value !== 'string' || !Number.isFinite(Date.parse(value))) return undefined;
+  return new Date(value).toISOString();
 }
 export function parsePosition(value: unknown): TraccarPosition {
   const row = object(value);
@@ -205,12 +218,18 @@ export function parsePosition(value: unknown): TraccarPosition {
   const speed = number(row.speed, 0, Number.MAX_VALUE);
   // A finite provider value must also remain finite after the shared knots-to-km/h conversion.
   if (!Number.isFinite(speed * 1.852)) throw new TraccarError('INVALID_RESPONSE');
-  return {
+  const position: TraccarPosition = {
     id: id(row.id), deviceId: id(row.deviceId), valid: row.valid,
     latitude: number(row.latitude, -90, 90), longitude: number(row.longitude, -180, 180),
     fixTime: timestamp(row.fixTime), deviceTime: timestamp(row.deviceTime), serverTime: timestamp(row.serverTime),
     speed, course: number(row.course, 0, 360),
   };
+  // Only the provider's own boolean counts; movement is never inferred from speed here.
+  const attributes = row.attributes;
+  if (typeof attributes === 'object' && attributes !== null && typeof (attributes as Record<string, unknown>).motion === 'boolean') {
+    position.motion = (attributes as Record<string, unknown>).motion as boolean;
+  }
+  return position;
 }
 export function parseEvent(value: unknown): TraccarEvent {
   const row = object(value);
