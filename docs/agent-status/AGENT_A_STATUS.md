@@ -2,17 +2,17 @@
 
 ## Current snapshot
 
-- Updated at (ISO 8601, Asia/Manila): 2026-10-23T18:00:00+08:00
-- Agent / module: A — Core Platform / Fastify API (execution owner: Claude, taken over from Codex under `VALRYDE-CLAUDE-A-CODEX-RECOVERY-AND-COMPLETION-003`)
+- Updated at (ISO 8601, Asia/Manila): 2026-10-23T16:12:00+08:00
+- Agent / module: A — Core Platform / Fastify API (Codex A006 race correction)
 - Repository: `erwin-io/valryde-api`
-- Branch / head: canonical copy carried identically by open Agent A PRs #29 (`docs/agent-a-backend-release-handoff`) and #31 (`feat/a006-tracking-context-generation`); base `origin/main` `810c8a13356ddbf0e28a4faf5ad7f86ce0a30479`
+- Branch / head: `feat/a006-tracking-context-generation` (PR #31), correcting frozen head `9c39dcfae9220e946baace7bb306fdc8b367d801`; base `origin/main` `810c8a13356ddbf0e28a4faf5ad7f86ce0a30479`
 - Checklist IDs: 1–11 (gap slices G1–G11, D3); G6 backend for ID 37
 - GitHub issues / PRs: merged into `main` by Agent G with merge commits: #1, #2, #4–#8, #10–#12, #15–#17, #19–#21, #23–#28 (and Agent B #22). Open Agent A PRs: [#29](https://github.com/erwin-io/valryde-api/pull/29) backend release API handoff, [#31](https://github.com/erwin-io/valryde-api/pull/31) A006 tracking context generation. Agent B [#14](https://github.com/erwin-io/valryde-api/pull/14) open.
 - Implementation progress: IN_PROGRESS — every independently executable, approved Agent A slice is merged; remaining work waits on the decisions listed under "Blocked by".
-- Tech Lead review decision (if actually issued): IDs 1–11 baseline ACCEPTED (PR #1). G1–G6, G10 read, G11, D3, fixtures and mobile testing policy merged by Agent G. Stage 13b design APPROVED (owner confirmed 2026-10-23 that Agent G's merge of #17 is the formal approval). #31 at `9446557`: CI ACCEPTED, code review pending (`VALRYDE-G-A006-CI-VERIFIED-001`, run 39849795193); Agent G then ordered test hardening (`VALRYDE-G-A006-TEST-HARDENING-001`). No decision yet on #29.
+- Tech Lead review decision (if actually issued): IDs 1–11 baseline ACCEPTED (PR #1). Stage 13b design APPROVED by merge of #17. Tech Lead decision on #31: CHANGES REQUIRED for the route/direction update versus concurrent assignment race; this branch contains the correction for renewed review, not acceptance.
 - Current objective: directive `VALRYDE-AGENT-A-FINAL-BACKEND-RELEASE-008` (milestone `AGENT_A_FULL_INDEPENDENT_BACKEND_RELEASE_READY`).
-- Last confirmed result: #31 hardening tests committed (`7e42b52`); local lint, typecheck and unit tests pass (165 passed, 77 PostgreSQL tests skipped locally). CI on the new head not yet recorded.
-- Next concrete action: confirm CI on #31's new head, then hand #31 back to Agent G for code review; merge #31 before Agent B's 007; regenerate the handoff matrix after #29 and #31 merge. Agent G decides G7-D1, D3–D7.
+- Last confirmed result: Isolated PostgreSQL 16/PostGIS 3.6 cluster on loopback port 55432 reproduced the race in two failing direct-assignment tests before the fix. Ordered group, route and direction anchors corrected it; all four direct/group route/direction cases now pass. Final full DB suite: 248 passed, 1 owner/live skipped. Lint, typecheck, build and diff check passed. No shared database was used.
+- Next concrete action: Commit and push the correction to #31, verify CI, then hand the exact head to Agent G for review. Do not merge.
 - Blocked by / decision owner: Agent G review of #29 and #31 and the G7 decisions; Agent B for B007/B008 and the Bridge-side tests (T14, T17, T18, T19 persistence, T23–T25); owner for the geocoding provider and its terms (G6-D4), the production callback domain and App Links hosting (G5), the first real Admin, and physical GPS/Traccar mapping.
 - Dependencies / affected agents: B (tracking/latest state/realtime), C (public route/live APIs), D (driver invitation and operator APIs), E (Admin APIs), F (device runbooks), G (shared-contract review).
 
@@ -127,6 +127,17 @@
 - Gate: Physical GPS/Traccar mapping and activation. Required actor: operator/Agent F/Agent B. Requested evidence: power, SIM/APN, server connectivity, GPS fix, correct IMEI/uniqueId mapping. State: OWNER_VERIFICATION_PENDING.
 
 ## Activity log (newest first; preserve prior entries)
+
+### 2026-10-23 16:12 +08:00 — A006 concurrent assignment race correction
+
+- Action / reason: Tech Lead marked #31 CHANGES REQUIRED. Reproduced the race in an isolated PostgreSQL 16/PostGIS 3.6 cluster using a trigger barrier and separate mutation transactions: while an Admin route or direction edit was paused after affected-set recheck, a direct assignment committed first. Both baseline regressions failed with `assignment-committed` where serialization was required. Earlier status entries dated 18:00 on this date were already present and are preserved below.
+- Checklist/issue: Agent A IDs 8–10 and Stage 13b A006; PR #31.
+- Files/config/services affected: `src/db/tracking-context.ts`, `src/services/transit-service.ts`, `src/services/fleet-service.ts`, `test/pg-tracking-context.integration.test.ts`. Migration 006, Driver visibility and other worktrees unchanged.
+- Observed result: Group, route and direction anchors are acquired in that order before sorted jeepney keys. Edits rediscover the affected set after acquiring anchors; direct/group assignments and group membership additions take matching anchors. Assignment approval is rechecked after waiting. Four route/direction × direct/group regressions pass; the 251-jeepney cap is still rejected before anchors; new anchor contention exhausts four attempts and returns 503 without committing.
+- Validation and evidence: Disposable database migration 001–006 passed. Final full PostgreSQL suite with bounded file concurrency: 27 files passed, 1 owner/live file skipped, 248 tests passed, 1 skipped. Focused four-case regression passed. `npm run lint`, `npm run typecheck`, `npm run build`, and `git diff --check` passed. A default parallel full-suite attempt hit local Windows hook timeouts under concurrent lint/build; the isolated serial-file run passed.
+- Contracts / risks / dependencies: Existing 2-second lock timeout, three retries, READ COMMITTED, 250 cap, transaction rollback, per-jeepney version/cutover and tenant isolation retained. No production or shared database, Traccar device, credential or deployment touched.
+- Commit/PR link or SHA: #31 frozen source `9c39dcfae9220e946baace7bb306fdc8b367d801`; correction pending commit and push.
+- Next action / owner gate: Complete final full DB suite and push #31 for Tech Lead review. Merge requires explicit authorization after review.
 
 ### 2026-10-23 18:00 +08:00 — A006 test hardening (#31)
 

@@ -11,7 +11,7 @@ import type {
   TransitRoute,
   VehicleRouteAssignment,
 } from '../domain/transit.js';
-import { type QueryExecutor, runContextMutation } from '../db/tracking-context.js';
+import { lockTrackingAnchors, type QueryExecutor, runContextMutation } from '../db/tracking-context.js';
 import { ApiError } from '../lib/api-error.js';
 
 interface RouteRow {
@@ -258,6 +258,7 @@ export class TransitService {
     return runContextMutation(this.pool, {
       affected: (executor) =>
         input.status === undefined ? Promise.resolve([]) : assignedJeepneys(executor, 'route_id', routeId),
+      lockAnchors: (client) => lockTrackingAnchors(client, 'route', [routeId]),
       apply: (client) => this.applyRouteUpdate(client, actor, routeId, input),
     });
   }
@@ -353,6 +354,7 @@ export class TransitService {
       return await runContextMutation(this.pool, {
         affected: (executor) =>
           material ? assignedJeepneys(executor, 'id', directionId) : Promise.resolve([]),
+        lockAnchors: (client) => lockTrackingAnchors(client, 'direction', [directionId]),
         apply: (client) => this.applyDirectionUpdate(client, actor, directionId, input),
       });
     } catch (error) {
@@ -427,6 +429,23 @@ export class TransitService {
           input.jeepneyId !== undefined
             ? Promise.resolve([input.jeepneyId])
             : groupJeepneys(executor, requireValue(input.groupId)),
+        lockAnchors: async (client) => {
+          if (input.groupId !== undefined) {
+            await lockTrackingAnchors(client, 'group', [input.groupId]);
+          }
+          const target = await client.query<{ route_id: string }>(
+            'SELECT route_id FROM route_directions WHERE id = $1',
+            [input.routeDirectionId],
+          );
+          const routeId = target.rows[0]?.route_id;
+          if (routeId === undefined) {
+            throw new ApiError(409, 'ROUTE_NOT_APPROVED', 'Route direction is no longer available');
+          }
+          await lockTrackingAnchors(client, 'route', [routeId]);
+          await lockTrackingAnchors(client, 'direction', [input.routeDirectionId]);
+          // The preflight check may have raced an Admin status change. Recheck after both anchors.
+          await this.requireDirection(input.routeDirectionId, true, client);
+        },
         apply: (client) => this.applyRouteAssignment(client, actor, input),
       });
     } catch (error) {
@@ -710,8 +729,8 @@ export class TransitService {
     if (result.rowCount !== 1) throw new ApiError(404, 'NOT_FOUND', 'Transit route not found');
   }
 
-  private async requireDirection(id: string, active: boolean): Promise<void> {
-    const result = await this.pool.query(
+  private async requireDirection(id: string, active: boolean, executor: QueryExecutor = this.pool): Promise<void> {
+    const result = await executor.query(
       `SELECT 1 FROM route_directions rd JOIN transit_routes tr ON tr.id = rd.route_id
        WHERE rd.id = $1 AND ($2::boolean = false OR (rd.status = 'ACTIVE' AND tr.status = 'ACTIVE'))`,
       [id, active],

@@ -14,6 +14,27 @@ const transientCodes = new Set(['55P03', '40P01', '40001']);
 
 const keySql = `hashtextextended('valryde:tracking-context:' || id::text, 0)`;
 
+// Two-int advisory locks occupy a separate key space from the bigint jeepney locks. The global
+// acquisition order is group -> route -> direction -> jeepney; each tier sorts its hashed keys.
+// A route/direction edit holds its anchor while it discovers and bumps members. Every mutation
+// that can introduce a new assignment to that anchor must take it before its jeepney keys.
+const anchorNamespaces = { group: 1, route: 2, direction: 3 } as const;
+export type TrackingAnchor = keyof typeof anchorNamespaces;
+
+export async function lockTrackingAnchors(
+  executor: QueryExecutor,
+  kind: TrackingAnchor,
+  ids: readonly string[],
+): Promise<void> {
+  if (ids.length === 0) return;
+  await executor.query(
+    `SELECT pg_advisory_xact_lock($1::int, key)
+     FROM (SELECT DISTINCT hashtext(id::text) AS key FROM unnest($2::uuid[]) AS id) anchors
+     ORDER BY key`,
+    [anchorNamespaces[kind], ids],
+  );
+}
+
 /**
  * Takes the shared jeepney advisory keys for this transaction: computed, de-duplicated and
  * acquired in bigint key order (X3), so a hash collision can serialize but never deadlock.
@@ -61,6 +82,8 @@ export async function bumpTrackingContexts(
 export interface ContextMutation<T> {
   /** Jeepneys whose tracking context this change alters. Runs once unlocked, then again under the locks. */
   affected(executor: QueryExecutor): Promise<string[]>;
+  /** Optional group/route/direction anchors, acquired in that order before jeepney keys. */
+  lockAnchors?(client: pg.PoolClient): Promise<void>;
   /** Business change and audit on the locked READ COMMITTED transaction. */
   apply(client: pg.PoolClient, affected: string[]): Promise<T>;
 }
@@ -79,7 +102,12 @@ export async function runContextMutation<T>(pool: pg.Pool, mutation: ContextMuta
     try {
       await client.query('BEGIN ISOLATION LEVEL READ COMMITTED');
       await client.query(`SET LOCAL lock_timeout = '${mutationLockTimeout}'`);
-      const locked = await lockTrackingContexts(client, discovered);
+      await mutation.lockAnchors?.(client);
+      // An assignment may have committed while an anchor was queued. Discover again after taking
+      // it, then lock the complete current set before the final key-set recheck.
+      const anchored = unique(await mutation.affected(client));
+      assertWithinCap(anchored);
+      const locked = await lockTrackingContexts(client, anchored);
       const current = unique(await mutation.affected(client));
       assertWithinCap(current);
       const currentKeys = await trackingContextKeys(client, current);

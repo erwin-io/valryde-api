@@ -11,7 +11,7 @@ import type {
   OperatorDirectoryEntry,
   PaginationResult,
 } from '../domain/fleet.js';
-import { type QueryExecutor, runContextMutation } from '../db/tracking-context.js';
+import { lockTrackingAnchors, type QueryExecutor, runContextMutation } from '../db/tracking-context.js';
 import { ApiError } from '../lib/api-error.js';
 
 interface JeepneyRow {
@@ -588,6 +588,24 @@ export class FleetService {
     }
     return runContextMutation(this.pool, {
       affected: () => Promise.resolve([jeepneyId]),
+      lockAnchors: async (client) => {
+        // Group assignment changes take this anchor too, so its route set cannot change between
+        // discovery and the membership insert. Route/direction edits then share the same anchors.
+        await lockTrackingAnchors(client, 'group', [groupId]);
+        const assignments = await client.query<{ route_id: string; route_direction_id: string }>(
+          `SELECT rd.route_id, assignment.route_direction_id
+           FROM vehicle_route_assignments assignment
+           JOIN route_directions rd ON rd.id = assignment.route_direction_id
+           WHERE assignment.group_id = $1 AND assignment.active_to IS NULL`,
+          [groupId],
+        );
+        await lockTrackingAnchors(client, 'route', assignments.rows.map((row) => row.route_id));
+        await lockTrackingAnchors(
+          client,
+          'direction',
+          assignments.rows.map((row) => row.route_direction_id),
+        );
+      },
       apply: async (client) => {
         await client.query('SELECT 1 FROM fleet_groups WHERE id = $1 FOR UPDATE', [groupId]);
         await client.query('SELECT 1 FROM jeepneys WHERE id = $1 FOR UPDATE', [jeepneyId]);

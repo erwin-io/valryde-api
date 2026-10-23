@@ -5,6 +5,7 @@ import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 
 import {
   bumpTrackingContexts,
+  lockTrackingAnchors,
   lockTrackingContexts,
   maxAffectedJeepneys,
   mutationRetries,
@@ -224,6 +225,28 @@ describeDatabase('Stage 13b tracking context generation with PostgreSQL', () => 
     expect(await state(jeepneyId)).toMatchObject({ version: '1', status: 'DRAFT' });
   }, 30_000);
 
+  it('T15-X7: route anchor contention retries, times out, and rolls back the route edit', async () => {
+    const ownDirectionId = await createDirection('ANCHOR-TIMEOUT');
+    const routeId = await routeOf(ownDirectionId);
+    const jeepneyId = await createJeepney();
+    await transit.assignRoute(operator, { jeepneyId, routeDirectionId: ownDirectionId });
+    const before = await state(jeepneyId);
+    await withClient(async (holder) => {
+      await holder.query('BEGIN');
+      await lockTrackingAnchors(holder, 'route', [routeId]);
+      const started = Date.now();
+      await expect(transit.updateRoute(admin, routeId, { status: 'INACTIVE' })).rejects.toMatchObject({
+        statusCode: 503,
+        code: 'TRACKING_CONTEXT_BUSY',
+      });
+      expect(Date.now() - started).toBeGreaterThanOrEqual((mutationRetries + 1) * 2000 - 100);
+      await holder.query('ROLLBACK');
+    });
+    expect((await state(jeepneyId)).version).toBe(before.version);
+    const route = await pool.query<{ status: string }>('SELECT status FROM transit_routes WHERE id = $1', [routeId]);
+    expect(route.rows[0]?.status).toBe('ACTIVE');
+  }, 30_000);
+
   it('T16: a member committed after discovery forces a retry with the complete key set', async () => {
     const member = await createJeepney();
     const lateMember = await createJeepney();
@@ -244,6 +267,69 @@ describeDatabase('Stage 13b tracking context generation with PostgreSQL', () => 
     expect((await state(lateMember)).version).toBe('2');
     expect(await transit.resolveEffectiveRouteDirection(lateMember)).toMatchObject({ source: 'GROUP' });
   });
+
+  for (const [target, assignmentScope] of [
+    ['direction', 'direct'],
+    ['direction', 'group'],
+    ['route', 'direct'],
+    ['route', 'group'],
+  ] as const) {
+    it(`T16-X: a new ${assignmentScope} assignment cannot enter after a ${target} edit rechecks`, async () => {
+      const newDirectionId = await createDirection(`PHANTOM-${target.toUpperCase()}-${assignmentScope.toUpperCase()}`);
+      const routeId = await routeOf(newDirectionId);
+      const jeepneyId = await createJeepney();
+      const groupId = assignmentScope === 'group' ? await createGroup([jeepneyId]) : undefined;
+      const table = target === 'direction' ? 'route_directions' : 'transit_routes';
+      const editedId = target === 'direction' ? newDirectionId : routeId;
+      const gateKey = BigInt(`0x7${randomUUID().replace(/-/g, '').slice(0, 14)}`).toString();
+      const triggerName = `a006_race_${randomUUID().replace(/-/g, '').slice(0, 12)}`;
+      const gate = await pool.connect();
+      let edit: Promise<unknown> | undefined;
+      let assignment: Promise<unknown> | undefined;
+      try {
+        await pool.query(
+          `CREATE FUNCTION ${triggerName}() RETURNS trigger LANGUAGE plpgsql AS $$
+           BEGIN PERFORM pg_advisory_xact_lock(${gateKey}); RETURN NEW; END $$`,
+        );
+        await pool.query(
+          `CREATE TRIGGER ${triggerName} BEFORE UPDATE ON ${table}
+           FOR EACH ROW WHEN (NEW.id = '${editedId}'::uuid)
+           EXECUTE FUNCTION ${triggerName}()`,
+        );
+        await gate.query('SELECT pg_advisory_lock($1::bigint)', [gateKey]);
+        edit = target === 'direction'
+          ? transit.updateDirection(admin, newDirectionId, { corridorM: 150 })
+          : transit.updateRoute(admin, routeId, { status: 'INACTIVE' });
+        await waitForAdvisoryWaiterCount(1);
+        assignment = transit.assignRoute(
+          operator,
+          groupId === undefined
+            ? { jeepneyId, routeDirectionId: newDirectionId }
+            : { groupId, routeDirectionId: newDirectionId },
+        );
+        const order = await Promise.race([
+          assignment.then(() => 'assignment-committed'),
+          waitForAdvisoryWaiterCount(2).then(() => 'assignment-blocked'),
+        ]);
+        expect(order).toBe('assignment-blocked');
+        await gate.query('SELECT pg_advisory_unlock($1::bigint)', [gateKey]);
+        await edit;
+        if (target === 'direction') {
+          await assignment;
+          expect((await state(jeepneyId)).version).toBe('2');
+        } else {
+          await expect(assignment).rejects.toMatchObject({ code: 'ROUTE_NOT_APPROVED' });
+          expect((await state(jeepneyId)).version).toBe('1');
+        }
+      } finally {
+        await gate.query('SELECT pg_advisory_unlock($1::bigint)', [gateKey]);
+        await Promise.allSettled([edit, assignment].filter((value) => value !== undefined));
+        await pool.query(`DROP TRIGGER IF EXISTS ${triggerName} ON ${table}`);
+        await pool.query(`DROP FUNCTION IF EXISTS ${triggerName}()`);
+        gate.release();
+      }
+    }, 15_000);
+  }
 
   it('T20: the cutover instant is read after the lock is acquired, not at transaction start', async () => {
     const jeepneyId = await createJeepney();
@@ -308,9 +394,10 @@ describeDatabase('Stage 13b tracking context generation with PostgreSQL', () => 
     const ids = created.rows.map((row) => row.id);
     jeepneyIds.push(...ids);
     const groupId = await createGroup(ids);
-    // A held member key proves the 422 is pre-lock: an attempt to lock would block, then return 503.
+    // Held group and member keys prove 422 is pre-lock: an attempted lock would time out as 503.
     await withClient(async (holder) => {
       await holder.query('BEGIN');
+      await lockTrackingAnchors(holder, 'group', [groupId]);
       await lockTrackingContexts(holder, [ids[0] ?? '']);
       await expect(
         transit.assignRoute(operator, { groupId, routeDirectionId: directionId }),
@@ -979,6 +1066,18 @@ describeDatabase('Stage 13b tracking context generation with PostgreSQL', () => 
            AND ((classid::bigint << 32) | objid::bigint)
              = hashtextextended('valryde:tracking-context:' || $1::text, 0)`,
         [jeepneyId],
+      );
+      if ((result.rows[0]?.waiting ?? 0) >= count) return;
+      await new Promise((resolve) => setTimeout(resolve, 10));
+    }
+    throw new Error(`Timed out waiting for ${count} advisory-lock waiter(s)`);
+  }
+
+  async function waitForAdvisoryWaiterCount(count: number): Promise<void> {
+    for (let attempt = 0; attempt < 500; attempt += 1) {
+      const result = await pool.query<{ waiting: number }>(
+        `SELECT count(*)::int AS waiting FROM pg_locks
+         WHERE locktype = 'advisory' AND NOT granted`,
       );
       if ((result.rows[0]?.waiting ?? 0) >= count) return;
       await new Promise((resolve) => setTimeout(resolve, 10));
