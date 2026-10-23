@@ -220,7 +220,7 @@ describeDatabase('Stage 13b B2 durable tracking writer', () => {
     expect(await state(vehicle.jeepneyId)).toMatchObject({
       location_status: 'UNKNOWN', location_reason: 'CONTEXT_CHANGED', context_version: '2', point: null, fix_time: null,
     });
-    expect(await writer.apply(observation(vehicle, await dbNow(0)), lease))
+    expect(await writer.apply(observation(vehicle, await dbNow(1)), lease))
       .toMatchObject({ disposition: 'APPLIED', revision: '3' });
     expect(await state(vehicle.jeepneyId)).toMatchObject({ location_status: 'FRESH', context_version: '2' });
   });
@@ -389,7 +389,7 @@ describeDatabase('Stage 13b B2 durable tracking writer', () => {
     for (const offset of [0, 2_000, 4_000]) await timed.at(t + offset, observation(moved, t + offset, away));
     await bump(moved.jeepneyId);
     // The new context bootstraps from a qualifying fix; the old latch and its pending re-entry are gone.
-    await writer.apply(observation(moved, await dbNow(0)), lease);
+    await writer.apply(observation(moved, await dbNow(1)), lease);
     expect(await state(moved.jeepneyId)).toMatchObject({
       route_compliance: 'ON_ROUTE', reentry_required: false, context_version: '2',
     });
@@ -611,6 +611,8 @@ describeDatabase('Stage 13b B2 durable tracking writer', () => {
     return row;
   }
 
+  // Millisecond precision: callers after an A006 bump add >= 1 ms so a fix cannot share the
+  // (microsecond) cutover's millisecond and be fenced as PRE_CUTOVER.
   async function dbNow(offsetMs: number): Promise<number> {
     const result = await pool.query<{ now: Date }>('SELECT clock_timestamp() AS now');
     return (result.rows[0]?.now ?? new Date()).getTime() + offsetMs;
