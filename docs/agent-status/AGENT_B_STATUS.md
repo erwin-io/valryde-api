@@ -1,15 +1,15 @@
 # VALRYDE — Agent B Status
 
 ## Current snapshot
-- Updated at: 2026-10-23T15:49:06+08:00 (Asia/Singapore; same offset as Asia/Manila).
+- Updated at: 2026-10-23T15:51:09+08:00 (Asia/Singapore; same offset as Asia/Manila).
 - Agent / module: B — Traccar / Tracking Engine. Codex executor; prior Claude/Codex evidence and history preserved below.
 - Repository: erwin-io/valryde-api. Overall checklist IDs12–21 remain IN_PROGRESS.
-- Current branch / last pushed HEAD: feat/13b-b4-status-ingestion, 77a951e0585c6cd07449ad09ec04d25c04687c1f in C:/Development/valryde/.worktrees/agent-b-13b-status. Current origin/main: 810c8a13356ddbf0e28a4faf5ad7f86ce0a30479. PR #38 remains a draft stacked on #37/#36/#32/#30 and the unmerged #31; the outage correction below is the next local change.
+- Current branch / source HEAD: feat/13b-b4-status-ingestion, 99507d6271930bdab7974530776c880c356e3307 in C:/Development/valryde/.worktrees/agent-b-13b-status. Current origin/main: 810c8a13356ddbf0e28a4faf5ad7f86ce0a30479. PR #38 remains a draft stacked on #37/#36/#32/#30 and the unmerged #31.
 - Accepted REST foundation: PR #4 MERGED as 068da0c7cbb3bd5759d90c26ac96026eb706b999; accepted source a4062c800944457f11f6f8e97848b15c18d507b4, Tech Lead review comment6267265303. No change to accepted PR4.
 - Accepted Stage13a: [PR #10](https://github.com/erwin-io/valryde-api/pull/10) ACCEPTED per Tech Lead release and MERGED; final head9d009d5a9467c498125d54c8f844dabacd3cc6c3, merge69deb572a9e323ce5cb2f0fb0f163dafe8df2bbd. Scoped progress DONE_AFTER_ACCEPTANCE; prior runtime/live evidence preserved, not rerun for design.
 - Current objective: Agent B takeover of the existing Stage 13b stack. Overall IDs 12–21 remain IN_PROGRESS. B007/B008, the writer, compliance, recovery and flag-disabled status/T1–T3 implementation exist in draft PRs #30/#32/#36/#37/#38; no merge, deployment or shared-database migration is claimed.
 - Current review: #30/#32/#36/#37/#38 are open drafts; #31 A006 is open and must be reviewed/merged first by its owner. No Agent B draft has a Tech Lead acceptance decision. Historical [PR22](https://github.com/erwin-io/valryde-api/pull/22), [PR14](https://github.com/erwin-io/valryde-api/pull/14), [PR10](https://github.com/erwin-io/valryde-api/pull/10) and [PR4](https://github.com/erwin-io/valryde-api/pull/4) retain their separate evidence.
-- Last confirmed result: loopback health now reports durable persistence state and returns 503 if the writer lease is absent, even when the Traccar socket is RUNNING. A failed write, heartbeat or sweep drops the cached lease until a new fence is acquired. Local lint, typecheck, build, 9 focused tests and 182 full-suite tests passed; 111 DB/live tests skipped without an isolated test database. PR #38 at 77a951e passed remote CI/security; the outage correction below is local pending push.
+- Last confirmed result: loopback health now reports durable persistence state and returns 503 if the writer lease is absent, even when the Traccar socket is RUNNING. A failed write, heartbeat or sweep drops the cached lease until a new fence is acquired. Local lint, typecheck, build, 9 focused tests and 182 full-suite tests passed; 111 DB/live tests skipped without an isolated test database. PR #38 source 99507d6 passed remote verify and GitGuardian checks.
 - Next concrete action: review and merge #31 under owner/Tech Lead authority, then restack #30 → #32 → #36 → #37 → #38 one layer at a time without force-push. Continue B4 device reconciliation, outage and shutdown drills in isolated development scope; freeze T1–T3 auth before enabling the API.
 - Shared blockers: #31 A006 review/merge, ordered tracking-stack integration, T1–T3 public/private authorization contract, device-remap reconciliation, retention and history decisions, and isolated database/process drill evidence. Pusher remains separately gated.
 - Dependencies: A business eligibility/authorization/route precedence; C/D/E versioned DTOs and REST/Pusher reconciliation; Infrastructure/owner approved app test writer and later rollout; F stationary-reporting/physical GPS evidence.
@@ -32,7 +32,7 @@ Current design verification is separate from historical implementation results b
 | Command/check | Result | Evidence |
 |---|---|---|
 | 2026-10-23 outage correction local gates | PASSED WITH SKIPS | npm run lint; npm run typecheck; npm run build; focused 9 tests; full local 182 passed, 111 DB/live skipped; git diff --check |
-| 2026-10-23 PR #38 CI at 77a951e | PASSED | verify job 120303065058 and GitGuardian passed; before subsequent outage correction |
+| 2026-10-23 PR #38 CI at 99507d6 | PASSED | verify job 120303899156 and GitGuardian passed; after outage correction |
 | 2026-10-23 local lint/typecheck/build | PASSED | npm run lint; npm run typecheck; npm run build on #38 worktree with health change |
 | 2026-10-23 focused health/persistence tests | PASSED | npx vitest run test/tracking-bridge.integration.test.ts test/tracking-persistence.test.ts; 7 tests |
 | 2026-10-23 full local Vitest | PASSED WITH SKIPS | npm test -- --run --maxWorkers=1 --no-file-parallelism; 180 passed, 111 DB/live skipped |
@@ -100,6 +100,11 @@ Current design verification is separate from historical implementation results b
 - Pusher configuration/hardware evidence are pending later slices. No physical verification claimed.
 
 ## Activity log (newest first; preserve prior entries)
+### 2026-10-23 15:51 +08:00 — Draft PR #38 follow-up published and verified
+- Pushed the outage correction as 99507d6271930bdab7974530776c880c356e3307 and updated the existing draft PR #38 handoff with exact behavior, local test limits, and stack dependency. GitHub verify job 120303899156 and GitGuardian both passed on this source head. No review decision or merge was made.
+- Confirmed #32/#36/#37/#38 still contain the earlier A006 b4d6942 and do not contain current #31 head 9c39dcf. Restack only after authorized #31 merge; do not force-push or let old A006 reappear in downstream diffs.
+- No shared/production database, Traccar, Pusher, hardware, credential or infrastructure changes. Real database outage and process-shutdown drills remain unverified.
+
 ### 2026-10-23 15:49 +08:00 — Fail closed after persistence database errors
 - Found that heartbeat exceptions retained an uncertain cached writer lease and could leave loopback readiness at 200 while the database was unavailable. A failed write or sweep had the same lease-state risk. Changed TrackingPersistence to discard the cached lease on all three error paths; reacquisition must return a new fence before the sink can write again.
 - Added fake-timer outage/recovery regressions for a failed write and heartbeat exception, including refusal to write before reacquisition. No database or Traccar service was contacted; this is process-level synthetic evidence, not the requested isolated real-process outage drill.
