@@ -304,8 +304,8 @@ describeDatabase('Stage 13b B2 durable tracking writer', () => {
        VALUES ($1, $2, 'APPROVED', $2, now()) RETURNING id`, [jeepneyId, userId]);
     const request = await pool.query<{ id: string }>(
       `INSERT INTO gps_setup_requests(vehicle_application_id, jeepney_id, requested_by_user_id, status,
-         scheduled_at, installed_at, verification_status)
-       VALUES ($1, $2, $3, 'INSTALLED', now(), now(), 'VERIFIED') RETURNING id`,
+         scheduled_at, installed_at, verification_status, verified_by_user_id, verified_at)
+       VALUES ($1, $2, $3, 'INSTALLED', now(), now(), 'VERIFIED', $3, now()) RETURNING id`,
       [application.rows[0]?.id, jeepneyId, userId]);
     const imei = String(100_000_000_000_000 + Math.floor(Math.random() * 899_999_999_999_999));
     const device = await pool.query<{ id: string }>(
