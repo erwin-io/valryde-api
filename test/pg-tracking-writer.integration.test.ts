@@ -474,7 +474,7 @@ describeDatabase('Stage 13b B2 durable tracking writer', () => {
   async function events(jeepneyId: string): Promise<Row[]> {
     const result = await pool.query<Row>(
       `SELECT *, state_revision::text AS state_revision, context_version::text AS context_version
-       FROM route_compliance_events WHERE jeepney_id = $1 ORDER BY state_revision`, [jeepneyId]);
+       FROM route_compliance_events WHERE jeepney_id = $1 ORDER BY route_compliance_events.state_revision`, [jeepneyId]);
     return result.rows;
   }
 
