@@ -22,6 +22,8 @@ export type SocketFactory = (url: string, cookie: string) => BridgeSocket;
 export interface TelemetryBatch {
   devices: TraccarDevice[];
   positions: NormalizedPosition[];
+  /** Parseable fixes Traccar flags invalid; durable mode records them as observations (13b). */
+  invalidPositions: NormalizedPosition[];
   events: TraccarEvent[];
 }
 /** 13a delivers to an injected sink; 13b plugs latest-state persistence in here. */
@@ -230,10 +232,12 @@ export class TrackingBridge {
     }
     const now = this.#now();
     const positions: NormalizedPosition[] = [];
+    const invalidPositions: NormalizedPosition[] = [];
     for (const position of frame.positions) {
       const uniqueId = this.#registry.get(position.deviceId);
       if (uniqueId === undefined) { this.#counters.unknownDevice++; continue; }
       const verdict = this.#gate.admit(position, now);
+      if (verdict === 'INVALID') invalidPositions.push(normalizePosition(position, uniqueId));
       if (verdict !== 'ACCEPT') { this.#counters[verdictCounter[verdict]]++; continue; }
       positions.push(normalizePosition(position, uniqueId));
     }
@@ -246,9 +250,9 @@ export class TrackingBridge {
       }
       events.push(event);
     }
-    if (frame.devices.length === 0 && positions.length === 0 && events.length === 0) return;
+    if (frame.devices.length === 0 && positions.length === 0 && invalidPositions.length === 0 && events.length === 0) return;
     try {
-      await this.#sink({ devices: frame.devices, positions, events });
+      await this.#sink({ devices: frame.devices, positions, invalidPositions, events });
     } catch (error) {
       // Forget watermarks so reconnect reconciliation redelivers what the sink failed to store.
       this.#gate.clear();

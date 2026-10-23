@@ -34,7 +34,8 @@ export interface TrackingObservation {
   receivedAt: string;
 }
 
-export type PersistDisposition = 'APPLIED' | 'DUPLICATE' | 'OUT_OF_ORDER' | 'INVALIDATED' | 'REJECTED' | 'UNMAPPED';
+export type PersistDisposition =
+  'APPLIED' | 'DUPLICATE' | 'OUT_OF_ORDER' | 'INVALIDATED' | 'REJECTED' | 'UNMAPPED' | 'RECONCILED';
 export type PersistReason = 'MALFORMED' | 'CLOCK_AHEAD' | 'INELIGIBLE' | 'PRE_MAPPING' | 'PRE_CUTOVER';
 
 /** Resolved only after COMMIT, so a result is the commit acknowledgement. */
@@ -65,7 +66,9 @@ type StoredState = State & { revision: string };
 interface Parsed { fix: Date; received: Date; device: Date | null; server: Date | null; qualifies: boolean }
 interface Clock {
   now: Date; lease_live: boolean; expired: boolean;
-  pre_mapping: boolean; pre_cutover: boolean; ahead: boolean; fix_ahead: boolean; arrived_stale: boolean;
+  // Null when reconciling without an observation.
+  pre_mapping: boolean | null; pre_cutover: boolean | null; ahead: boolean | null; fix_ahead: boolean | null;
+  arrived_stale: boolean | null;
 }
 interface Corridor { distance_m: number; inside: boolean; corridor_m: number }
 
@@ -111,15 +114,46 @@ export class TrackingStateWriter {
     );
     const jeepneyId = found.rows[0]?.jeepney_id;
     if (jeepneyId === undefined) return outcome('UNMAPPED');
-    return this.transaction((client) => this.applyLocked(client, jeepneyId, observation, parsed, lease));
+    return this.transaction((client) => this.applyLocked(client, jeepneyId, lease, { observation, parsed }));
+  }
+
+  /**
+   * B4: materializes expiry, mapping removal or change, eligibility loss and A006 context changes for
+   * one jeepney without an observation, under the same lock protocol and CAS as apply.
+   */
+  async reconcile(jeepneyId: string, lease: WriterLease): Promise<PersistResult> {
+    return this.transaction((client) => this.applyLocked(client, jeepneyId, lease, null));
+  }
+
+  /**
+   * B4 sweep: one transaction per jeepney (X6), sequential, at most `limit` candidates per call.
+   * Candidates are rechecked under the locks, so a concurrent newer fix always wins.
+   * Returns how many rows gained a new revision.
+   */
+  async sweep(lease: WriterLease, limit = 100): Promise<number> {
+    const candidates = await this.pool.query<{ jeepney_id: string }>(
+      `SELECT s.jeepney_id FROM vehicle_latest_states s
+       JOIN jeepneys j ON j.id = s.jeepney_id
+       LEFT JOIN traccar_device_mappings m ON m.jeepney_id = s.jeepney_id
+       WHERE (s.location_status = 'FRESH' AND s.fresh_until < clock_timestamp())
+          OR s.context_version IS DISTINCT FROM j.tracking_context_version
+          OR (s.mapping_id IS NOT NULL AND m.id IS DISTINCT FROM s.mapping_id)
+       ORDER BY s.jeepney_id
+       LIMIT $1`,
+      [limit],
+    );
+    let changed = 0;
+    for (const { jeepney_id: jeepneyId } of candidates.rows) {
+      if ((await this.reconcile(jeepneyId, lease)).materializedChange) changed += 1;
+    }
+    return changed;
   }
 
   private async applyLocked(
     client: pg.PoolClient,
     jeepneyId: string,
-    observation: TrackingObservation,
-    parsed: Parsed,
     lease: WriterLease,
+    item: { observation: TrackingObservation; parsed: Parsed } | null,
   ): Promise<PersistResult> {
     const held = await client.query(
       `SELECT 1 FROM tracking_bridge_leases
@@ -131,7 +165,9 @@ export class TrackingStateWriter {
     await lockTrackingContexts(client, [jeepneyId]);
     const context = await this.contexts.resolve(jeepneyId, client);
     const mapping = context.mapping;
-    if (mapping === null || mapping.traccarUniqueId !== observation.uniqueId) return outcome('UNMAPPED');
+    if (item !== null && (mapping === null || mapping.traccarUniqueId !== item.observation.uniqueId)) {
+      return outcome('UNMAPPED');
+    }
 
     const stored = await client.query<StoredState>(
       `SELECT ${columns.join(', ')}, revision FROM vehicle_latest_states WHERE jeepney_id = $1 FOR UPDATE`,
@@ -152,9 +188,10 @@ export class TrackingStateWriter {
          c.now > $5::timestamptz + interval '30 seconds' AS arrived_stale
        FROM c
        JOIN jeepneys j ON j.id = $3
-       JOIN traccar_device_mappings m ON m.id = $4
+       LEFT JOIN traccar_device_mappings m ON m.id = $4
        LEFT JOIN vehicle_latest_states s ON s.jeepney_id = j.id`,
-      [lease.ownerId, lease.fence, jeepneyId, mapping.mappingId, parsed.fix, this.#databaseNow?.() ?? null],
+      [lease.ownerId, lease.fence, jeepneyId, mapping?.mappingId ?? null, item?.parsed.fix ?? null,
+        this.#databaseNow?.() ?? null],
     );
     const clock = clockRow.rows[0];
     if (clock === undefined) throw new Error('Tracking context disappeared under its advisory key');
@@ -163,13 +200,27 @@ export class TrackingStateWriter {
 
     const next: State = current === undefined ? blankState() : pick(current);
     const compliance = next as unknown as ComplianceFields;
+    const write = (disposition: PersistDisposition, reason: PersistReason | null = null) =>
+      this.persist(client, jeepneyId, current, next, lease, disposition, reason);
+    if (mapping === null) {
+      // Reconcile only: the mapping is gone, so no provider identity or point may remain.
+      if (current !== undefined && next.mapping_id !== null) {
+        clear(next, 'UNMAPPED', clock.now);
+        Object.assign(next, {
+          mapping_id: null, gps_device_id: null, mapping_mapped_at: null, mapping_fingerprint: null,
+          traccar_device_id: null,
+        });
+      }
+      return write('RECONCILED');
+    }
+    const deviceId = item?.observation.deviceId ?? next.traccar_device_id;
     const mappingFingerprint = sha256([
       mapping.mappingId, mapping.mappedAt.toISOString(), mapping.gpsDeviceId, mapping.gpsSetupRequestId,
       mapping.traccarUniqueId,
     ]);
     const contextFingerprint = sha256(contextIdentity(context, mappingFingerprint));
     if (current !== undefined) {
-      if (next.mapping_id !== mapping.mappingId || next.traccar_device_id !== observation.deviceId ||
+      if (next.mapping_id !== mapping.mappingId || next.traccar_device_id !== deviceId ||
           next.mapping_fingerprint !== mappingFingerprint) {
         clear(next, 'MAPPING_CHANGED', clock.now);
       } else if (next.context_fingerprint !== null && next.context_fingerprint !== contextFingerprint) {
@@ -178,12 +229,17 @@ export class TrackingStateWriter {
       }
     }
     const effective = context.effectiveRouteDirection;
+    // Without a provider device ID (reconciling an unmapped row) the mapping fields stay empty.
+    if (deviceId !== null) {
+      Object.assign(next, {
+        mapping_id: mapping.mappingId,
+        gps_device_id: mapping.gpsDeviceId,
+        mapping_mapped_at: mapping.mappedAt,
+        mapping_fingerprint: mappingFingerprint,
+        traccar_device_id: deviceId,
+      });
+    }
     Object.assign(next, {
-      mapping_id: mapping.mappingId,
-      gps_device_id: mapping.gpsDeviceId,
-      mapping_mapped_at: mapping.mappedAt,
-      mapping_fingerprint: mappingFingerprint,
-      traccar_device_id: observation.deviceId,
       route_direction_id: context.routeUsability === 'USABLE' || context.routeUsability === 'INACTIVE'
         ? effective?.direction.id ?? null : null,
       route_assignment_id: effective?.assignmentId ?? null,
@@ -193,18 +249,17 @@ export class TrackingStateWriter {
       context_fingerprint: contextFingerprint,
     });
 
-    const write = (disposition: PersistDisposition, reason: PersistReason | null = null) =>
-      this.persist(client, jeepneyId, current, next, lease, disposition, reason);
-
     if (!context.telemetryEligible) {
       if (next.location_reason !== 'INELIGIBLE') clear(next, 'INELIGIBLE', clock.now);
-      return write('REJECTED', 'INELIGIBLE');
+      return item === null ? write('RECONCILED') : write('REJECTED', 'INELIGIBLE');
     }
     // Expiry is strictly DB now > fresh_until, normalized before the observation is classified.
     if (next.location_status === 'FRESH' && clock.expired) {
       Object.assign(next, { location_status: 'STALE', location_reason: 'EXPIRED', motion_status: 'UNKNOWN' });
       expireCompliance(compliance, clock.now);
     }
+    if (item === null) return write('RECONCILED');
+    const { observation, parsed } = item;
     // X5: the cutover fences use the GPS fix time only.
     if (clock.pre_mapping) return write('INVALIDATED', 'PRE_MAPPING');
     if (clock.pre_cutover) return write('INVALIDATED', 'PRE_CUTOVER');

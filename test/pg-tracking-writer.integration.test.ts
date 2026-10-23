@@ -449,6 +449,54 @@ describeDatabase('Stage 13b B2 durable tracking writer', () => {
     expect((await events(vehicle.jeepneyId)).map((event) => event.event_type)).toEqual(['ROUTE_DEVIATION', 'ROUTE_REENTRY']);
   });
 
+  it('B4: the sweep materializes expiry, A006 context changes and mapping removal without new GPS', async () => {
+    const expired = await eligibleVehicle();
+    const changed = await eligibleVehicle();
+    const unmapped = await eligibleVehicle();
+    const fresh = await eligibleVehicle();
+    const t = await dbNow(-40_000);
+    const timed = clockedWriter();
+    await timed.at(t, observation(expired, t));
+    await writer.apply(observation(changed, await dbNow(-1_000)), lease);
+    await writer.apply(observation(unmapped, await dbNow(-1_000)), lease);
+    await writer.apply(observation(fresh, await dbNow(-1_000)), lease);
+    await bump(changed.jeepneyId);
+    await pool.query('DELETE FROM traccar_device_mappings WHERE jeepney_id = $1', [unmapped.jeepneyId]);
+    const before = await state(fresh.jeepneyId);
+
+    await writer.sweep(lease);
+    expect(await state(expired.jeepneyId)).toMatchObject({
+      revision: '2', location_status: 'STALE', location_reason: 'EXPIRED', route_compliance: 'UNKNOWN',
+    });
+    expect(await state(changed.jeepneyId)).toMatchObject({
+      revision: '2', location_status: 'UNKNOWN', location_reason: 'CONTEXT_CHANGED', context_version: '2', point: null,
+    });
+    expect(await state(unmapped.jeepneyId)).toMatchObject({
+      revision: '2', location_reason: 'UNMAPPED', mapping_id: null, traccar_device_id: null, point: null,
+    });
+    // A still-fresh row is not a candidate, and reconciling it directly changes nothing.
+    expect((await state(fresh.jeepneyId)).revision).toBe(before.revision);
+    expect(await writer.reconcile(fresh.jeepneyId, lease)).toMatchObject({
+      disposition: 'RECONCILED', materializedChange: false, revision: before.revision,
+    });
+    // Materialized rows stop being candidates: a second sweep leaves them alone.
+    await writer.sweep(lease);
+    for (const vehicle of [expired, changed, unmapped]) expect((await state(vehicle.jeepneyId)).revision).toBe('2');
+  });
+
+  it('B4: reconcile clears coordinates on lost eligibility and a stale lease cannot reconcile', async () => {
+    const vehicle = await eligibleVehicle();
+    await writer.apply(observation(vehicle, await dbNow(-1_000)), lease);
+    await pool.query(`UPDATE gps_setup_requests SET verification_status = 'FAILED', verified_by_user_id = NULL,
+      verified_at = NULL WHERE jeepney_id = $1`, [vehicle.jeepneyId]);
+    expect(await writer.reconcile(vehicle.jeepneyId, lease))
+      .toMatchObject({ disposition: 'RECONCILED', materializedChange: true });
+    expect(await state(vehicle.jeepneyId)).toMatchObject({ location_reason: 'INELIGIBLE', point: null });
+
+    const stale = { ownerId: lease.ownerId, fence: String(BigInt(lease.fence) - 1n) };
+    await expect(writer.reconcile(vehicle.jeepneyId, stale)).rejects.toBeInstanceOf(LeaseLostError);
+  });
+
   /** A writer whose post-lock DB clock reading is pinned per call (test hook), for exact boundaries. */
   function clockedWriter() {
     let pinned = 0;
